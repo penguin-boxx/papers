@@ -19,10 +19,25 @@ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 \usepackage{minted}
 \setminted{xleftmargin=\parindent, autogobble, escapeinside=??, numberblanklines=false, fontsize=\small}
-\usepackage{hyperref}
+%\usepackage{hyperref} todo comment gives error code on \url
 \usepackage{proof}
 \newcommand{\seq}{;~}
 \newcommand{\ap}{~}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+% https://tex.stackexchange.com/questions/13896/how-to-remove-the-top-horizontal-bar-in-fancyhdr
+\fancyhf{} % sets both header and footer to nothing
+\renewcommand{\headrulewidth}{0pt}
+% https://tex.stackexchange.com/questions/30228/custom-first-page-with-fancyhdr
+\fancypagestyle{firststyle}
+{
+   \fancyhf{}
+   \fancyfoot[L]{\color{gray} 979-8-3315-2602-3/24/\$31.00 \copyright 2024 IEEE}
+   \renewcommand{\headrulewidth}{0pt} % removes horizontal header line
+}
+
+\usepackage{lipsum}
 
 \begin{document}
 
@@ -39,6 +54,7 @@ T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
 
 
     \maketitle
+    \thispagestyle{firststyle}
 
 
     \begin{abstract}
