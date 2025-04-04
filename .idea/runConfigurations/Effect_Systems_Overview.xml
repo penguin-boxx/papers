@@ -9,7 +9,7 @@
       <compiler-arguments>-shell-escape</compiler-arguments>
       <envs />
       <before-run-command />
-      <main-file>$PROJECT_DIR$/effect-systems-overview-ivennikov.tex</main-file>
+      <main-file>$PROJECT_DIR$/effect-systems-overview-ivannikov.tex</main-file>
       <output-path>$PROJECT_DIR$</output-path>
       <auxil-path>{projectDir}/auxil</auxil-path>
       <compile-twice>false</compile-twice>
