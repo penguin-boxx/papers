@@ -266,30 +266,16 @@ Another example is the inversion of control: we abstract a computation over sema
 An effect system reflects effects of a computation on the type level.
 It serves two main purposes.
 Firstly, it makes effects visible in a type signature, so functional abstraction boundaries appear to be more precise: implementation details will not leak unnoticed as context interactions.
-Secondly, it statically controls safety of effectful computation use: it should be executed in an appropriate context (as we discussed before, contexts may have limited activity scopes).
-For example, it is a responsibility of an effect system to check whether all functionality requested by the inversion of control will be provided, and all exceptions will be handled.
+Secondly, an effect system statically controls safety of effectful computation use: it should be executed in an appropriate context (as we discussed before, contexts may have limited activity scopes).
+For instance, it is a responsibility of an effect system to check whether all functionality requested by the inversion of control will be provided, and all exceptions will be handled.
 
+Many designs of effect systems were proposed: row-polymorphic types~\cite{leijen2014koka}, capabilities and contextual polymorphism~\cite{brachthauser2022effects, odersky2022scoped}, modal types~\cite{tang2024modal}.
+However, all of them have pros and cons, and overall design space configuration remains unclear.
+At the same time we think that it is useful for language designers to see the whole space and freely choose the most suitable point in it, considering specific language characteristics and limitations.
 
-
-
-
-
-
-
-
-
-
-
-
-% todo different semantics in different contexts
-
-
-
-% todo effects
-
-% todo effect systems
-
-% todo problem
+In this paper we argue that effect systems can be understood as a combination of two more simple and grounded language features: implicit parameters and type-based escape analysis.
+This understanding from one hand places axis on the effect system design space: different points in it can be chosen by varying designs of these two features.
+And from another hand, it can help to seamlessly incorporate an effect system into existing mainstream languages, since many of them have at least one of these features, which are quite useful by themselves.
 
 % рассматриваем сразу и модели и системы эффектов, потому что делается type-based translation
 
