@@ -4,10 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="15554d1e-d56c-434a-97ac-1758983892bd" name="Changes" comment="Update modal types">
-      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/Effect_System_as_a_Synergy.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/bib_synergy.xml" afterDir="false" />
+    <list default="true" id="15554d1e-d56c-434a-97ac-1758983892bd" name="Changes" comment="Start synergy">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bib.bib" beforeDir="false" afterPath="$PROJECT_DIR$/bib.bib" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/effect-system-synergy.tex" beforeDir="false" afterPath="$PROJECT_DIR$/effect-system-synergy.tex" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -83,14 +83,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1729770043791</updated>
-    </task>
-    <task id="LOCAL-00005" summary="Update">
-      <option name="closed" value="true" />
-      <created>1730096323528</created>
-      <option name="number" value="00005" />
-      <option name="presentableId" value="LOCAL-00005" />
-      <option name="project" value="LOCAL" />
-      <updated>1730096323528</updated>
     </task>
     <task id="LOCAL-00006" summary="Update">
       <option name="closed" value="true" />
@@ -476,7 +468,15 @@
       <option name="project" value="LOCAL" />
       <updated>1735159657358</updated>
     </task>
-    <option name="localTasksCounter" value="54" />
+    <task id="LOCAL-00054" summary="Start synergy">
+      <option name="closed" value="true" />
+      <created>1750151096528</created>
+      <option name="number" value="00054" />
+      <option name="presentableId" value="LOCAL-00054" />
+      <option name="project" value="LOCAL" />
+      <updated>1750151096528</updated>
+    </task>
+    <option name="localTasksCounter" value="55" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -497,6 +497,7 @@
     <MESSAGE value="Fix capabilities" />
     <MESSAGE value="Update sergey" />
     <MESSAGE value="Update modal types" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update modal types" />
+    <MESSAGE value="Start synergy" />
+    <option name="LAST_COMMIT_MESSAGE" value="Start synergy" />
   </component>
 </project>
