@@ -109,6 +109,8 @@
 % ------------------------------------------------
 
 \usepackage{multicol}
+\usepackage{minted}
+\setminted{xleftmargin=\parindent, autogobble, escapeinside=??, numberblanklines=false, fontsize=\small}
 
 \newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
 \newcommand{\vor}{~|~}
@@ -164,12 +166,12 @@
 %    \state{Arunachal Pradesh}
 %    \country{India}}
 
-\author{Name Surname}
+\author{Andrey Stoyan}
 \affiliation{%
-    \institution{Institution}
-    \city{City}
-    \country{Country}}
-\email{mail@mail.net}
+    \institution{HSE University}
+    \city{Saint Peterburg}
+    \country{Russian Federation}}
+\email{a.stoyan@hse.ru}
 
 %%
 %% By default, the full list of authors will be used in the page
@@ -177,7 +179,8 @@
 %% other information printed in the page headers. This command allows
 %% the author to define a more concise list
 %% of authors' names for this purpose.
-\renewcommand{\shortauthors}{Surname et al.} % todo
+%\renewcommand{\shortauthors}{Surname et al.}
+\renewcommand{\shortauthors}{Andrey Stoyan}
 
 %%
 %% The abstract is a short summary of the work to be presented in the
@@ -188,10 +191,10 @@
     Effect systems bring information about a program's effects to the type level, which makes abstraction boundaries clearer and context validity statically verifiable.
     Unfortunately, effect systems still lack mainstream adoption due to alien design and general unfamiliarity of practitioners with the concept.
 
-    In this paper, we propose a perspective on effect system design as a combination of two well-designed language features: implicit parameters and type-based escape analysis.
+    In this paper, we propose a perspective on effect system design as a combination of two properly-designed language features: implicit parameters and type-based escape analysis.
     We believe that both of them are naturally achievable in mainstream languages, familiar to practitioners and useful by themselves.
     We motivate our approach by considering effect systems as systems for tracking free variables.
-    We discuss requirements on an implicit parameters design and provide a formalized example.
+    We discuss requirements on an implicit parameters design and provide a formal example.
     We also present a novel type-based escape analysis technique that only requires straight-forward dataflow descriptions from a programmer.
     Finally, we provide a formal calculus with an effect system built upon these two pieces.
 \end{abstract}
@@ -266,10 +269,11 @@ Another example is the inversion of control: we abstract a computation over sema
 An effect system reflects effects of a computation on the type level.
 It serves two main purposes.
 Firstly, it makes effects visible in a type signature, so functional abstraction boundaries appear to be more precise: implementation details will not leak unnoticed as context interactions.
-Secondly, an effect system statically controls safety of effectful computation use: it should be executed in an appropriate context (as we discussed before, contexts may have limited activity scopes).
+Secondly, an effect system statically controls safety of an effectful computation use: it should be executed in an appropriate context (as we discussed before, contexts may have limited activity scopes).
 For instance, it is a responsibility of an effect system to check whether all functionality requested by the inversion of control will be provided, and all exceptions will be handled.
+% todo effects are a matter of taste
 
-Many designs of effect systems were proposed: row-polymorphic types~\cite{leijen2014koka}, capabilities and contextual polymorphism~\cite{brachthauser2022effects, odersky2022scoped}, modal types~\cite{tang2024modal}.
+Many designs of effect systems were proposed: row-polymorphic types~\cite{leijen2014koka}, capabilities and contextual polymorphism~\cite{brachthauser2022effects, boruch2023capturing}, modal types~\cite{tang2024modal}. % todo more links
 However, all of them have pros and cons, and overall design space configuration remains unclear.
 At the same time we think that it is useful for language designers to see the whole space and freely choose the most suitable point in it, considering specific language characteristics and limitations.
 
@@ -277,32 +281,151 @@ In this paper we argue that effect systems can be understood as a combination of
 This understanding from one hand places axis on the effect system design space: different points in it can be chosen by varying designs of these two features.
 And from another hand, it can help to seamlessly incorporate an effect system into existing mainstream languages, since many of them have at least one of these features, which are quite useful by themselves.
 
+The idea we present is not new.
+For example, recent works in the Scala programming language~\cite{boruch2023capturing} are based on similar observations.
+However, we phrase the idea explicitly, investigate its consequences and build a novel practical effect system out of it.
+
 % рассматриваем сразу и модели и системы эффектов, потому что делается type-based translation
 
 Contributions of this paper are summarized as follows:
 
 \begin{itemize}
-    \item We propose a perspective on effect system design as a combination of two well-designed language features: implicit parameters and type-based escape analysis; and motivate our approach by looking at effect systems as systems for managing free variables (Section~\ref{sec:idea}).
-    \item We discuss required properties of implicit parameters design and provide a suitable one using a formal calculi (Section~\ref{sec:implicits}).
+    \item We propose a perspective on effect system design as a combination of two properly-designed language features: implicit parameters and type-based escape analysis; and motivate our approach by looking at effect systems as systems for managing free variables (Section~\ref{sec:idea}).
+    \item We describe required properties of implicit parameters design and provide a suitable one using a formal calculi (Section~\ref{sec:implicits}).
     \item We provide a novel type-based escape analysis technique that only requires straight-forward dataflow descriptions from a programmer (Section~\ref{sec:escape}).
-    \item TODO % todo about mainstream
+    \item We show that our design is appropriate in the object-oriented setting (Section~\ref{sec:mainstream}).
+%    \item We explore practical subtleties of our design and its applicability to object-oriented programming languages (Section~\ref{sec:mainstream}).
     \item We compare our approach with previous art and show that other designs can be considered in implicit parameters and escape analysis basis (Section~\ref{sec:related}).
 \end{itemize}
 
 
 \section{Two simple pieces of an effect system design} \label{sec:idea}
 
-Properties of a good effect system:
-\begin{itemize}
-    \item Observability of effects
-    \item Effect safety
-    \item Effect encapsulation
-    \item Different interpretations
-\end{itemize}
+In this section we introduce the main idea of this paper using practical examples.
+We show that the pragmatics of effect systems arise naturally from everyday programming concerns.
+
+\subsection{The road to implicit parameters} \label{subsec:implicits}
+
+Consider our running example (fig.\ \ref{fig:db}), where a business logic function updates a database storage.
+
+The leftmost version opens a database connection by itself and sends it a query.
+Firstly, note that this code is not convenient for testing, because there is no simple way to substitute some mock database, for instance, to check the logic.
+Another drawback is that this function produces observable side effects, which are definitely a part of its public contract, but it does not mention that fact in its signature.
+
+Version in the center is much better: business logic function is abstracted over a database connection, so an execution context is able to choose an appropriate semantics for it.
+Moreover, a possibility of observable side effects become explicit through \texttt{db} parameter!
+However, this simple approach has a cost of an additional syntactic noise on the call site caused by administrative parameter passing.
+It may sound insignificant, by imagine passing four such parameters everywhere through the call stack, whereas good practices should be at least as approachable as suboptimal ones.
+
+To reduce the boilerplate, in the rightmost version we replace ordinary parameters with dynamically scoped free variables, which obtain their meaning by lookup in the dynamic scope of a function call.
+At the same time we have lost other benefits: static typing and explicitness of context dependence.
+
+\begin{figure}
+    \begin{tabular}{p{0.3\textwidth} rrr}
+        \begin{minipage}[t]{0.3\textwidth}
+            \begin{minted}{swift}
+                func business1() {
+                    let db = Db.open(...)
+                    db.query("update ...")
+                    db.close()
+                }
+            \end{minted}
+        \end{minipage}
+        &
+        \begin{minipage}[t]{0.3\textwidth}
+            \begin{minted}{swift}
+                func business2(db: Db) {
+                    db.query("...")
+                }
+
+                func caller() {
+                    let db = Db.open(...)
+                    business2(db)
+                    db.close()
+                }
+            \end{minted}
+        \end{minipage}
+        &
+        \begin{minipage}[t]{0.3\textwidth}
+            \begin{minted}{swift}
+                func business3() {
+                    db.query("...")
+                }
+
+                func caller() {
+                    let db = Db.open(...)
+                    business3()
+                    db.close()
+                }
+            \end{minted}
+        \end{minipage}
+    \end{tabular}
+    \caption{The road to dynamically bound free variables.}
+    \label{fig:db}
+\end{figure}
+
+
+
+
+
+
+\begin{figure}
+    \begin{tabular}{p{0.5\textwidth} rl}
+        \begin{minipage}[t]{0.3\textwidth}
+            \begin{minted}{swift}
+                context(db: Db)
+                func business4() {
+                    db.query("...")
+                }
+            \end{minted}
+        \end{minipage}
+        &
+        \begin{minipage}[t]{0.3\textwidth}
+            \begin{minted}{swift}
+                func caller() {
+                    context let db = Db.open(...)
+                    business3()
+                    db.close()
+                }
+            \end{minted}
+        \end{minipage}
+    \end{tabular}
+    \caption{Reclaming static type safety.}
+    \label{fig:implicits}
+\end{figure}
+
+\subsection{Retain effect safety with escape analysis} \label{subsec:escape}
+
+%\begin{multicols}{3}
+%
+%    \columnbreak
+%    \begin{minted}{swift}
+%        func business() {
+%            let db = Db(...)
+%            db.query("...")
+%        }
+%    \end{minted}
+%\end{multicols}
+
+
+
+
+
+%Properties of a good effect system:
+%\begin{itemize}
+%    \item Observability of effects
+%    \item Effect safety
+%    \item Effect encapsulation
+%    \item Different interpretations
+%\end{itemize}
 
 % todo link to first class names for effect handlers
 
+% todo every method is a higher-order functin (see citatioon in Capturing types)
+
 % todo design space
+
+\subsection{The idea summary} \label{subsec:idea-summary}
 
 TODO % todo
 

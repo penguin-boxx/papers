@@ -4,8 +4,9 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="15554d1e-d56c-434a-97ac-1758983892bd" name="Changes" comment="Start synergy">
+    <list default="true" id="15554d1e-d56c-434a-97ac-1758983892bd" name="Changes" comment="Update">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bib.bib" beforeDir="false" afterPath="$PROJECT_DIR$/bib.bib" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/effect-system-synergy.tex" beforeDir="false" afterPath="$PROJECT_DIR$/effect-system-synergy.tex" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -82,14 +83,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1729770043791</updated>
-    </task>
-    <task id="LOCAL-00007" summary="Update">
-      <option name="closed" value="true" />
-      <created>1730119177460</created>
-      <option name="number" value="00007" />
-      <option name="presentableId" value="LOCAL-00007" />
-      <option name="project" value="LOCAL" />
-      <updated>1730119177460</updated>
     </task>
     <task id="LOCAL-00008" summary="Update">
       <option name="closed" value="true" />
@@ -475,7 +468,15 @@
       <option name="project" value="LOCAL" />
       <updated>1750155150569</updated>
     </task>
-    <option name="localTasksCounter" value="56" />
+    <task id="LOCAL-00056" summary="Update">
+      <option name="closed" value="true" />
+      <created>1750162987521</created>
+      <option name="number" value="00056" />
+      <option name="presentableId" value="LOCAL-00056" />
+      <option name="project" value="LOCAL" />
+      <updated>1750162987521</updated>
+    </task>
+    <option name="localTasksCounter" value="57" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
@@ -491,12 +492,12 @@
     <MESSAGE value="Add modal effect types" />
     <MESSAGE value="Remove author" />
     <MESSAGE value="Fix Sergey" />
-    <MESSAGE value="Update" />
     <MESSAGE value="Fix feedback" />
     <MESSAGE value="Fix capabilities" />
     <MESSAGE value="Update sergey" />
     <MESSAGE value="Update modal types" />
     <MESSAGE value="Start synergy" />
-    <option name="LAST_COMMIT_MESSAGE" value="Start synergy" />
+    <MESSAGE value="Update" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update" />
   </component>
 </project>
