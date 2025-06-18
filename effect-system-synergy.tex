@@ -285,6 +285,8 @@ The idea we present is not new.
 For example, recent works in the Scala programming language~\cite{boruch2023capturing} are based on similar observations.
 However, we phrase the idea explicitly, investigate its consequences and build a novel practical effect system out of it.
 
+% todo define effect safety
+
 % рассматриваем сразу и модели и системы эффектов, потому что делается type-based translation
 
 Contributions of this paper are summarized as follows:
@@ -312,10 +314,12 @@ The leftmost version opens a database connection by itself and sends it a query.
 Firstly, note that this code is not convenient for testing, because there is no simple way to substitute some mock database, for instance, to check the logic.
 Another drawback is that this function produces observable side effects, which are definitely a part of its public contract, but it does not mention that fact in its signature.
 
+% todo testability and variable semantics
+
 Version in the center is much better: business logic function is abstracted over a database connection, so an execution context is able to choose an appropriate semantics for it.
 Moreover, a possibility of observable side effects become explicit through \texttt{db} parameter!
 However, this simple approach has a cost of an additional syntactic noise on the call site caused by administrative parameter passing.
-It may sound insignificant, by imagine passing four such parameters everywhere through the call stack, whereas good practices should be at least as approachable as suboptimal ones.
+It may sound insignificant, by imagine passing four such parameters everywhere through the call stack, whereas good practices should be at least as approachable as suboptimal ones. % todo effects and boilerplate
 
 To reduce the boilerplate, in the rightmost version we replace ordinary parameters with dynamically scoped free variables, which obtain their meaning by lookup in the dynamic scope of a function call.
 At the same time we have lost other benefits: static typing and explicitness of context dependence.
@@ -364,10 +368,11 @@ At the same time we have lost other benefits: static typing and explicitness of 
     \label{fig:db}
 \end{figure}
 
-
-
-
-
+To reclaim static type safety, we approximate dynamically scoped free variables with implicit function parameters. % todo references
+On the declaration site \texttt{context} keyword allows to declare a group of implicit parameters, which will be passed on the call site automatically by a compiler (fig.\ \ref{fig:implicits}).
+To make a value participate in the implicit parameter resolution, we use \mintinline{swift}|context let| variable declaration syntax.
+Let us evaluate this solution: the code is testable in a sense that \texttt{db} semantics can vary depending on the execution context; effects are visible in the signature.
+Also note that effects here are just ordinary bindings, we do not introduce any new concepts for now.
 
 \begin{figure}
     \begin{tabular}{p{0.5\textwidth} rl}
@@ -394,7 +399,13 @@ At the same time we have lost other benefits: static typing and explicitness of 
     \label{fig:implicits}
 \end{figure}
 
+% todo что-то про доказательство валидности контекста
+
+To sum up, implicit parameters represent context requirements of a computation.
+
 \subsection{Retain effect safety with escape analysis} \label{subsec:escape}
+
+
 
 %\begin{multicols}{3}
 %

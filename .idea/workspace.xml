@@ -6,7 +6,6 @@
   <component name="ChangeListManager">
     <list default="true" id="15554d1e-d56c-434a-97ac-1758983892bd" name="Changes" comment="Update">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bib.bib" beforeDir="false" afterPath="$PROJECT_DIR$/bib.bib" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/effect-system-synergy.tex" beforeDir="false" afterPath="$PROJECT_DIR$/effect-system-synergy.tex" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -83,14 +82,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1729770043791</updated>
-    </task>
-    <task id="LOCAL-00008" summary="Update">
-      <option name="closed" value="true" />
-      <created>1730121610279</created>
-      <option name="number" value="00008" />
-      <option name="presentableId" value="LOCAL-00008" />
-      <option name="project" value="LOCAL" />
-      <updated>1730121610279</updated>
     </task>
     <task id="LOCAL-00009" summary="Update">
       <option name="closed" value="true" />
@@ -476,7 +467,15 @@
       <option name="project" value="LOCAL" />
       <updated>1750162987521</updated>
     </task>
-    <option name="localTasksCounter" value="57" />
+    <task id="LOCAL-00057" summary="Update">
+      <option name="closed" value="true" />
+      <created>1750259284596</created>
+      <option name="number" value="00057" />
+      <option name="presentableId" value="LOCAL-00057" />
+      <option name="project" value="LOCAL" />
+      <updated>1750259284596</updated>
+    </task>
+    <option name="localTasksCounter" value="58" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
