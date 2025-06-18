@@ -56,8 +56,8 @@
 %% values in them; it is your responsibility as an author to replace
 %% the commands and values with those provided to you when you
 %% complete the rights form.
-\setcopyright{acmlicensed}
-\copyrightyear{2026}
+%\setcopyright{acmlicensed}
+%\copyrightyear{2026}
 %\acmYear{2026}
 %\acmDOI{XXXXXXX.XXXXXXX}
 
@@ -123,7 +123,7 @@
 %%
 %% The "title" command has an optional parameter,
 %% allowing the author to define a "short title" to be used in page headers.
-\title{Two Simple Pieces: Effect System as a Synergy of Implicit Parameters and Type-Based Escape Analysis}
+\title{One Plus One: Effect System as a Synergy of Implicit Parameters and Type-Based Escape Analysis}
 
 %%
 %% The "author" command and its associated commands are used to define
@@ -169,7 +169,7 @@
 \author{Andrey Stoyan}
 \affiliation{%
     \institution{HSE University}
-    \city{Saint Peterburg}
+    \city{Saint Petersburg}
     \country{Russian Federation}}
 \email{a.stoyan@hse.ru}
 
@@ -193,7 +193,7 @@
 
     In this paper, we propose a perspective on effect system design as a combination of two properly-designed language features: implicit parameters and type-based escape analysis.
     We believe that both of them are naturally achievable in mainstream languages, familiar to practitioners and useful by themselves.
-    We motivate our approach by considering effect systems as systems for tracking free variables.
+    We motivate our approach by considering effect systems as systems for tracking free variables. % todo
     We discuss requirements on an implicit parameters design and provide a formal example.
     We also present a novel type-based escape analysis technique that only requires straight-forward dataflow descriptions from a programmer.
     Finally, we provide a formal calculus with an effect system built upon these two pieces.
@@ -236,8 +236,7 @@
 %%
 %% Keywords. The author(s) should pick words that accurately describe
 %% the work being presented. Separate the keywords with commas.
-\keywords{Do, Not, Us, This, Code, Put, the, Correct, Terms, for,
-    Your, Paper} % todo
+\keywords{static analysis, type systems, effects, capabilities}
 
 %\received{10 July 2025}
 %\received[revised]{12 March 2009}
@@ -254,26 +253,28 @@
 % Introducton makes claims, all of them should be supported later.
 
 The art of programming is a lot about managing complexity to be able to focus in a particular piece of code on a limited fragment of behaviour.
-Helpful tools here are abstraction and separation of concerns: we delegate some functionality to different program entities (e.g.\ functions, modules, etc.).
-In many cases, such an entity can be abstractly called an execution context of a computation, and effects arise naturally here as an interactions of a computation with that context~\cite{kiselyov2013extensible}.
+Helpful tools here are abstraction and separation of concerns: we delegate some responsibilities to different program entities (e.g.\ functions, modules, etc.).
+In many cases, such an entity can be abstractly called \textit{execution context} of a computation, and effects arise naturally here as an interactions of a computation with that context~\cite{kiselyov2013extensible}.
 
-An execution context can be distinguished by at least one of the following properties.
-Firstly, it can be responsible for bookkeeping using some kind of storage, in a way that one act of interaction with it may affect others.
-For example, a language memory management subsystem can be considered as such a context: mutation of a memory cell affects subsequent reads.
-Secondly, a context can have a limited activity scope, such that only code in a particular scope can communicate with that context.
-For example, an exception handler is an execution context that only handles exceptions thrown inside a \texttt{try-catch} block.
-Effect of throwing an exception delegates a handler dealing with an exceptional situation.
-Another example is the inversion of control: we abstract a computation over semantics of some operations, and different contexts provide these operations an appropriate meaning in their responsibility zones.
-% todo think what to cite
+An execution context can be distinguished by at least one of the following properties:
+\begin{enumerate}
+    \item An act of interaction with it is observable.
+    For example, a language memory management subsystem can be considered as such a context: an allocation affects addresses of subsequent allocations.
+    In that case the context is responsible for memory cells bookkeeping.
+    \item A context can have a limited activity scope: only code in a particular scope can communicate with it.
+    For example, an exception handler is an execution context that handles exceptions thrown inside a \texttt{try-catch} block.
+    Effect of throwing an exception delegates a handler dealing with an exceptional situation.
+    Another example is the inversion of control: an execution context is responsible for providing some functionality only to the code in a specific scope, code from the outside of the scope may have different context.
+\end{enumerate}
 
 An effect system reflects effects of a computation on the type level.
 It serves two main purposes.
-Firstly, it makes effects visible in a type signature, so functional abstraction boundaries appear to be more precise: implementation details will not leak unnoticed as context interactions.
-Secondly, an effect system statically controls safety of an effectful computation use: it should be executed in an appropriate context (as we discussed before, contexts may have limited activity scopes).
+Firstly, it makes effects visible in a type signature, so functional abstraction boundaries become to be more precise: implementation details will not leak unnoticed as context interactions.
+Secondly, an effect system statically controls \textit{effect safety} of a computation use: it should be executed in an appropriate context (as we discussed before, contexts may have limited activity scopes).
 For instance, it is a responsibility of an effect system to check whether all functionality requested by the inversion of control will be provided, and all exceptions will be handled.
-% todo effects are a matter of taste
+Note that effect systems may track more information of interest, for example, about divergence.
 
-Many designs of effect systems were proposed: row-polymorphic types~\cite{leijen2014koka}, capabilities and contextual polymorphism~\cite{brachthauser2022effects, boruch2023capturing}, modal types~\cite{tang2024modal}. % todo more links
+Many promising designs of effect systems were proposed: row-polymorphic types~\cite{leijen2014koka}, capabilities and contextual polymorphism~\cite{brachthauser2022effects, boruch2023capturing}, modal types~\cite{tang2025modal}, etc.
 However, all of them have pros and cons, and overall design space configuration remains unclear.
 At the same time we think that it is useful for language designers to see the whole space and freely choose the most suitable point in it, considering specific language characteristics and limitations.
 
@@ -281,11 +282,9 @@ In this paper we argue that effect systems can be understood as a combination of
 This understanding from one hand places axis on the effect system design space: different points in it can be chosen by varying designs of these two features.
 And from another hand, it can help to seamlessly incorporate an effect system into existing mainstream languages, since many of them have at least one of these features, which are quite useful by themselves.
 
-The idea we present is not new.
-For example, recent works in the Scala programming language~\cite{boruch2023capturing} are based on similar observations.
-However, we phrase the idea explicitly, investigate its consequences and build a novel practical effect system out of it.
-
-% todo define effect safety
+The general idea we present is not new.
+For example, recent work in the Scala programming language~\cite{boruch2023capturing} bases on similar observations.
+However, we phrase the idea explicitly, investigate its consequences and use its inspiration to build a novel practical though minimalistic effect system.
 
 % рассматриваем сразу и модели и системы эффектов, потому что делается type-based translation
 
@@ -400,6 +399,8 @@ Also note that effects here are just ordinary bindings, we do not introduce any 
 \end{figure}
 
 % todo что-то про доказательство валидности контекста
+
+% todo имплиситы в существующих языках
 
 To sum up, implicit parameters represent context requirements of a computation.
 
