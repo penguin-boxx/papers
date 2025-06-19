@@ -330,7 +330,6 @@ At the same time we have lost other benefits: static typing and explicitness of 
                 func business1() {
                     let db = Db.open(...)
                     db.query("update ...")
-                    db.close()
                 }
             \end{minted}
         \end{minipage}
@@ -344,7 +343,6 @@ At the same time we have lost other benefits: static typing and explicitness of 
                 func caller() {
                     let db = Db.open(...)
                     business2(db)
-                    db.close()
                 }
             \end{minted}
         \end{minipage}
@@ -358,7 +356,6 @@ At the same time we have lost other benefits: static typing and explicitness of 
                 func caller() {
                     let db = Db.open(...)
                     business3()
-                    db.close()
                 }
             \end{minted}
         \end{minipage}
@@ -367,17 +364,15 @@ At the same time we have lost other benefits: static typing and explicitness of 
     \label{fig:db}
 \end{figure}
 
-
-
-
-
-
-
 To reclaim the static type safety, we approximate dynamically scoped free variables with implicit function parameters.
-On the declaration site \texttt{context} keyword allows to declare a group of implicit parameters, which will be passed on the call site automatically by a compiler (fig.\ \ref{fig:implicits}).
-To make a value participate in the implicit parameter resolution, we use \mintinline{swift}|context let| variable declaration syntax.
-Let us evaluate this solution: the code is testable in a sense that \texttt{db} semantics can vary depending on the execution context; effects are visible in the signature.
-Also note that effects here are just ordinary bindings, we do not introduce any new concepts for now.
+On the declaration site we use \texttt{context} keyword to declare a group of implicit parameters, which will be passed on the call site automatically by a compiler (fig.\ \ref{fig:implicits}).
+To make a value participate in the implicit parameter resolution, we use \texttt{context let} declaration syntax.
+
+In terms of effects and contexts, \texttt{context let} creates an execution context limited with the corresponding lexical scope, providing a functionality of a database storage.
+Implicit parameters represent the function's requirements for a context.
+To be able to call such a function, context should prove its validity by passing some values to these implicit parameters.
+We call these values \textit{capabilities}, and logically they serve as witnesses of context validity.
+Nevertheless, note that for now we rely only on the notion of bindings and understanding the concept of effects is not strongly required.
 
 \begin{figure}
     \begin{tabular}{p{0.5\textwidth} rl}
@@ -395,47 +390,22 @@ Also note that effects here are just ordinary bindings, we do not introduce any 
                 func caller() {
                     context let db = Db.open(...)
                     business4()
-                    db.close()
                 }
             \end{minted}
         \end{minipage}
     \end{tabular}
-    \caption{Reclaming static type safety.}
+    \caption{Reclaming static type safety with implicit parameters.}
     \label{fig:implicits}
 \end{figure}
 
-% todo что-то про доказательство валидности контекста
-
-% todo имплиситы в существующих языках  % todo references
-
-To sum up, implicit parameters represent context requirements of a computation.
+Nowadays, some widespread languages have a feature of implicit parameters and their inference is well-understood. % todo papers and links (Kotlin, Scala, Haskell)
 
 \subsection{Retain effect safety with escape analysis} \label{subsec:escape}
 
 
 
-%\begin{multicols}{3}
-%
-%    \columnbreak
-%    \begin{minted}{swift}
-%        func business() {
-%            let db = Db(...)
-%            db.query("...")
-%        }
-%    \end{minted}
-%\end{multicols}
 
 
-
-
-
-%Properties of a good effect system:
-%\begin{itemize}
-%    \item Observability of effects
-%    \item Effect safety
-%    \item Effect encapsulation
-%    \item Different interpretations
-%\end{itemize}
 
 % todo link to first class names for effect handlers
 
