@@ -118,6 +118,7 @@
 
 %%
 %% end of the preamble, start of the body of the document source.
+%! suppress = TooLargeSection
 \begin{document}
 
 %%
@@ -300,27 +301,26 @@ Contributions of this paper are summarized as follows:
 \end{itemize}
 
 
-\section{Two simple pieces of an effect system design} \label{sec:idea}
+\section{Two pieces of an effect system design} \label{sec:idea}
 
 In this section we introduce the main idea of this paper using practical examples.
-We show that the pragmatics of effect systems arise naturally from everyday programming concerns.
+We also demonstrate that the pragmatics of effect systems arise naturally from everyday programming concerns.
 
 \subsection{The road to implicit parameters} \label{subsec:implicits}
 
 Consider our running example (fig.\ \ref{fig:db}), where a business logic function updates a database storage.
 
-The leftmost version opens a database connection by itself and sends it a query.
-Firstly, note that this code is not convenient for testing, because there is no simple way to substitute some mock database, for instance, to check the logic.
+The first version opens a database connection by itself and sends it a query.
+Note that this code is not convenient for testing, because there is no simple way to substitute some mock database, for instance, to check the logic.
 Another drawback is that this function produces observable side effects, which are definitely a part of its public contract, but it does not mention that fact in its signature.
 
-% todo testability and variable semantics
-
-Version in the center is much better: business logic function is abstracted over a database connection, so an execution context is able to choose an appropriate semantics for it.
-Moreover, a possibility of observable side effects become explicit through \texttt{db} parameter!
+The second version is much better.
+A business logic function is abstracted over a database connection, so an execution context is able to choose an appropriate semantics for it.
+Moreover, note that observable effects become explicit through \texttt{db} parameter!
 However, this simple approach has a cost of an additional syntactic noise on the call site caused by administrative parameter passing.
-It may sound insignificant, by imagine passing four such parameters everywhere through the call stack, whereas good practices should be at least as approachable as suboptimal ones. % todo effects and boilerplate
+It may sound insignificant, but imagine passing four such parameters everywhere through the call stack, whereas good practices should be at least as approachable as suboptimal ones.
 
-To reduce the boilerplate, in the rightmost version we replace ordinary parameters with dynamically scoped free variables, which obtain their meaning by lookup in the dynamic scope of a function call.
+To reduce the boilerplate, in the third version we replace ordinary parameters with dynamically scoped free variables, which obtain their meaning by lookup in the dynamic scope of a function call.
 At the same time we have lost other benefits: static typing and explicitness of context dependence.
 
 \begin{figure}
@@ -363,11 +363,17 @@ At the same time we have lost other benefits: static typing and explicitness of 
             \end{minted}
         \end{minipage}
     \end{tabular}
-    \caption{The road to dynamically bound free variables.}
+    \caption{The road to dynamically scoped free variables.}
     \label{fig:db}
 \end{figure}
 
-To reclaim static type safety, we approximate dynamically scoped free variables with implicit function parameters. % todo references
+
+
+
+
+
+
+To reclaim the static type safety, we approximate dynamically scoped free variables with implicit function parameters.
 On the declaration site \texttt{context} keyword allows to declare a group of implicit parameters, which will be passed on the call site automatically by a compiler (fig.\ \ref{fig:implicits}).
 To make a value participate in the implicit parameter resolution, we use \mintinline{swift}|context let| variable declaration syntax.
 Let us evaluate this solution: the code is testable in a sense that \texttt{db} semantics can vary depending on the execution context; effects are visible in the signature.
@@ -388,7 +394,7 @@ Also note that effects here are just ordinary bindings, we do not introduce any 
             \begin{minted}{swift}
                 func caller() {
                     context let db = Db.open(...)
-                    business3()
+                    business4()
                     db.close()
                 }
             \end{minted}
@@ -400,7 +406,7 @@ Also note that effects here are just ordinary bindings, we do not introduce any 
 
 % todo что-то про доказательство валидности контекста
 
-% todo имплиситы в существующих языках
+% todo имплиситы в существующих языках  % todo references
 
 To sum up, implicit parameters represent context requirements of a computation.
 
