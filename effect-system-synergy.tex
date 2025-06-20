@@ -315,7 +315,7 @@ Note that this code is not convenient for testing, because there is no simple wa
 Another drawback is that this function produces observable side effects, which are definitely a part of its public contract, but it does not mention that fact in its signature.
 
 The second version is much better.
-A business logic function is abstracted over a database connection, so an execution context is able to choose an appropriate semantics for it.
+A business logic function is abstracted over a database connection, so a call site is able to choose an appropriate semantics for it.
 Moreover, note that observable effects become explicit through \texttt{db} parameter!
 However, this simple approach has a cost of an additional syntactic noise on the call site caused by administrative parameter passing.
 It may sound insignificant, but imagine passing four such parameters everywhere through the call stack, whereas good practices should be at least as approachable as suboptimal ones.
@@ -368,13 +368,7 @@ To reclaim the static type safety, we approximate dynamically scoped free variab
 On the declaration site we use \texttt{context} keyword to declare a group of implicit parameters, which will be passed on the call site automatically by a compiler (fig.\ \ref{fig:implicits}).
 To make a value participate in the implicit parameter resolution, we use \texttt{context let} declaration syntax.
 
-In terms of effects and contexts, \texttt{context let} creates an execution context limited with the corresponding lexical scope, providing a functionality of a database storage.
-Implicit parameters represent the function's requirements for a context.
-To be able to call such a function, context should prove its validity by passing some values to these implicit parameters.
-We call these values \textit{capabilities}, and logically they serve as witnesses of context validity.
-Nevertheless, note that for now we rely only on the notion of bindings and understanding the concept of effects is not strongly required.
-
-\begin{figure}
+\begin{figure}[h]
     \begin{tabular}{p{0.5\textwidth} rl}
         \begin{minipage}[t]{0.3\textwidth}
             \begin{minted}{swift}
@@ -398,7 +392,18 @@ Nevertheless, note that for now we rely only on the notion of bindings and under
     \label{fig:implicits}
 \end{figure}
 
+In terms of effects and contexts, \texttt{context let} creates an execution context limited with the corresponding lexical scope, providing a functionality of a database storage.
+Implicit parameters represent the function's requirements for a context.
+To be able to call such a function, context should prove its validity by passing some values to these implicit parameters.
+We call these values \textit{capabilities}, and logically they serve as witnesses of context validity.
+Nevertheless, note that for now we rely only on the notion of bindings and understanding the abstract concept of effects is not strongly required.
+
+Exceptions and other algebraic operations can be tracked in the same manner. % todo cite CanThrow
+For example, a \texttt{throw SomeException()} construct can be recognized as an invocation of a function requiring an implicit parameter of \texttt{Handler<SomeException>} type.
+At the same time, handling constructs should provide such witness values.
+
 Nowadays, some widespread languages have a feature of implicit parameters and their inference is well-understood. % todo papers and links (Kotlin, Scala, Haskell)
+Moreover, implicit parameters are enough as an evidence-passing technique to implement tail-resumptive algebraic operations. % todo link
 
 \subsection{Retain effect safety with escape analysis} \label{subsec:escape}
 
@@ -412,6 +417,12 @@ Nowadays, some widespread languages have a feature of implicit parameters and th
 % todo every method is a higher-order functin (see citatioon in Capturing types)
 
 % todo design space
+
+% todo a dataflow term
+
+% todo higher-rank polymorphism is required for lambdas, иначе ничего не будет работать с абстракцией по хендлерам. Хотя можно просто всё сделать локалом в контексте по умолчанию, но тогда могут быть траблы с кепчурингом. Нужно исследовать, можно ли это как-то попроще добавить.
+
+kek\cite{hannan1998type, boruch2023capturing} % todo papers about regions?
 
 \subsection{The idea summary} \label{subsec:idea-summary}
 
@@ -427,6 +438,8 @@ Thirdly, we develop algorithmic type-directed translation rules from surface cal
 
 In past decades several approaches to defining custom effects and execution contexts were discovered~\cite{plotkin2003algebraic, plotkin2013handling, moggi1988computational, liang1995monad, schrijvers2019monad}.
 In this paper we will use
+
+% todo Barendregt’s ‘variable convention for simplicity?
 
 \subsection{Syntax of $Core$} \label{subsec:core-syntax}
 
