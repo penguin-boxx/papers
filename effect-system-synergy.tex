@@ -433,9 +433,9 @@ Namely, a \texttt{map} function type should not bother about effects (we will co
 \begin{minted}{swift}
     func map(xs: List<a>, f: #\color{gray}\texttt{scoped}# (a) -> b): List<b>
 
-    context(Handler<SomeException>)
-    func caller(xs: List<Int>) {
-        map(xs, (x) => throw SomeException()) // capability capturing is safe here
+    context(io: IO)
+    func printAll(xs: List<Int>) {
+        map(xs, (x) => io.print(x)) // capability capturing is safe here
     }
 \end{minted}
 
@@ -452,7 +452,7 @@ Let us five an informal brief introduction of the type-based escape analysis tec
 We call values that should not escape some scope \textit{tracked} (as well as their types).
 For instance, capabilities are tracked.
 We augment each type $T$ with a special lifetime label $lab$ using a syntax: \[scoped(lab)\ap T\]
-Lifetime labels range through \texttt{free}, \texttt{local} and polymorphic lifetime variables.
+Lifetime labels range over \texttt{free}, \texttt{local} and polymorphic lifetime variables.
 \texttt{free} lifetime label is used to type non-tracked values.
 We assume it by default for every type.
 \texttt{local} present in tracked types, and a type system treats \texttt{local} specially to prevent escaping (for instance, a function cannot return a value of a tracked type).
@@ -461,10 +461,10 @@ For example, the \texttt{map} function can explicitly declare that it do not lea
     func map(xs: List<a>, f: scoped(local) (a) -> b): List<b>
 \end{minted}
 
-If a function returns a value that captures some of the arguments, it can use polymorphic lifetime variables to explicitly specify its dataflow.
+If a function returns a value that captures some of the arguments, we can use polymorphic lifetime variables to explicitly specify its dataflow.
 For example, a lazy \texttt{map} function instead of eagerly computing a result, immediately returns a collection that remembers required processing inside.
 We specify it by assigning the same lifetime variable \texttt{l} to both argument \texttt{f} and a result type.
-Such a function still supports contextual polymorphism since it can leak \texttt{f} only with a result and a call site is aware that this result should not escape as well:
+Such a function still supports contextual polymorphism since it can leak \texttt{f} only with a result and a call site is aware that this result should not escape:
 \begin{minted}{swift}
     func lazyMap(xs: LazyList<a>, f: scoped(l) (a) -> b): scoped(l) LazyList<b>
 
@@ -527,17 +527,19 @@ Lifetimes of components themselves on destructuring are approximated with a life
 
 \subsection{Summary} \label{subsec:idea-summary}
 
-A term depends on a context with its free variables: in different contexts it obtains different semantics.
+In fact our previous discussion anyway was centered around free variables.
+Indeed, a term depends on a context with its free variables: in different contexts it obtains different semantics through them.
 So an effect system as a type system extension for managing free variables.
+
 Free variables can be dynamically or lexically scoped.
 It is convenient to use them one way or another depending on the situation.
-We summarize how an effect system manages with free variables in the table~\ref{fig:free-vars}.
+We summarize their role in an effect system construction in the table~\ref{fig:free-vars}.
 
 \begin{figure}
     \centering
     \begin{tabular}{|l|l|l|}
         \hline
-        Scoping of free variables & dynamic & static \\
+        Free variables & dynamically scoped & statically scoped \\
         \hline
         Dealt by & implicit parameters & type-based escape analysis \\
         Represent & unfulfilled context requirements & fulfilled context requirements \\
@@ -547,6 +549,8 @@ We summarize how an effect system manages with free variables in the table~\ref{
     \caption{Effect systems are for managing free variables.}
     \label{fig:free-vars}
 \end{figure}
+
+TODO % todo
 
 
 \section{Design of implicit parameters} \label{sec:implicits}
