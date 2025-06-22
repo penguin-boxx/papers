@@ -295,7 +295,7 @@ Contributions of this paper are summarized as follows:
     \item We propose a perspective on effect system design as a combination of two properly-designed language features: implicit parameters and type-based escape analysis; and motivate our approach by looking at effect systems as systems for managing free variables (Section~\ref{sec:idea}).
     \item We describe required properties of implicit parameters design and provide a suitable one using a formal calculi (Section~\ref{sec:implicits}).
     \item We provide a novel type-based escape analysis technique that only requires straight-forward dataflow descriptions from a programmer (Section~\ref{sec:escape}).
-    \item We show that our design is appropriate in the object-oriented setting (Section~\ref{sec:mainstream}).
+    \item We show that our design is appropriate in the object-oriented setting (Section~\ref{sec:mainstream}). % todo расширить скоуп на просто финтифлюшки делающие дизайн более прикладным
 %    \item We explore practical subtleties of our design and its applicability to object-oriented programming languages (Section~\ref{sec:mainstream}).
     \item We compare our approach with previous art and show that other designs can be considered in implicit parameters and escape analysis basis (Section~\ref{sec:related}).
 \end{itemize}
@@ -446,6 +446,7 @@ Compare with a similar function type from the Koka language, featuring row-polym
 
 To control escaping of capabilities, we need some form of escape analysis. % todo citations
 Since effect systems operate the type-level, it is natural to use types for escape analysis as well.
+Moreover, we need this analysis to be cross-procedural, so it should affect function signatures.
 Let us five an informal brief introduction of the type-based escape analysis technique that we feature in this paper.
 
 We call values that should not escape some scope \textit{tracked} (as well as their types).
@@ -474,19 +475,43 @@ Such a function still supports contextual polymorphism since it can leak \texttt
     }
 \end{minted}
 
+We use intersection of lifetimes to express capturing two or more lifetime-polymorphic values:
+\begin{minted}{swift}
+    func compose(f: scoped(l1) (b) -> c, g: scoped(l2) (a) -> b): scoped(l1&l2) (a) -> c
+        = (x) => f(g(x))
+\end{minted}
+
+For simplicity, we get rid of lifetime polymorphism for compound datatypes by computing their lifetimes as an intersection of component's lifetimes.
+Lifetimes of components themselves on destructuring are approximated with a lifetime of a compound datatype.
+\begin{minted}{swift}
+    func compound(x: scoped(l1) Int, y: scoped(l2) Int): scoped(l1&l2) Int {
+        let intPair: scoped(l1&l2) IntPair = IntPair(x, y)
+        return intPair.fst
+    }
+\end{minted}
+
+% todo subtyping
+% todo tuneling
+% todo bounded polymorphism
+
+
+
+
+
+
 %We establish subtyping in a way that non-tracked values can be used in positions where tracked values are expected.
+%It increases the number of safe well-typed programs and helps for smooth migration for languages with untyped effects to the effect system.
+%In fact all function arguments could have \texttt{local} lifetime label by default
+%
+%Most of the polymorphic lifetime variables can be omitted having a lifetime elision mechanism (see~\ref{subsec:lifetime-elision}).
+%\texttt{scoped} keyword
+
 
 
 
 
 
 % todo польза от эскейп анализа
-
-
-
-
-
-
 
 % todo link to first class names for effect handlers
 
@@ -500,9 +525,28 @@ Such a function still supports contextual polymorphism since it can leak \texttt
 
 %kek\cite{hannan1998type, boruch2023capturing} % todo papers about regions?
 
-\subsection{The idea summary} \label{subsec:idea-summary}
+\subsection{Summary} \label{subsec:idea-summary}
 
-TODO % todo
+A term depends on a context with its free variables: in different contexts it obtains different semantics.
+So an effect system as a type system extension for managing free variables.
+Free variables can be dynamically or lexically scoped.
+It is convenient to use them one way or another depending on the situation.
+We summarize how an effect system manages with free variables in the table~\ref{fig:free-vars}.
+
+\begin{figure}
+    \centering
+    \begin{tabular}{|l|l|l|}
+        \hline
+        Scoping of free variables & dynamic & static \\
+        \hline
+        Dealt by & implicit parameters & type-based escape analysis \\
+        Represent & unfulfilled context requirements & fulfilled context requirements \\
+        User specifies & more function parameters & a function’s dataflow \\
+        \hline
+    \end{tabular}
+    \caption{Effect systems are for managing free variables.}
+    \label{fig:free-vars}
+\end{figure}
 
 
 \section{Design of implicit parameters} \label{sec:implicits}
@@ -569,6 +613,8 @@ TODO % todo
 
 
 \section{Adoption in mainstream languages} \label{sec:mainstream}
+
+\subsection{Lifetime elision} \label{subsec:lifetime-elision}
 
 % todo OOP
 % todo escape hatches
