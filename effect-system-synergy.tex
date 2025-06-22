@@ -110,7 +110,7 @@
 
 \usepackage{multicol}
 \usepackage{minted}
-\setminted{xleftmargin=\parindent, autogobble, escapeinside=??, numberblanklines=false, fontsize=\small}
+\setminted{xleftmargin=\parindent, autogobble, escapeinside=\#\#, numberblanklines=false, fontsize=\small}
 
 \newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
 \newcommand{\vor}{~|~}
@@ -401,11 +401,87 @@ Nevertheless, note that for now we rely only on the notion of bindings and under
 Exceptions and other algebraic operations can be tracked in the same manner. % todo cite CanThrow
 For example, a \texttt{throw SomeException()} construct can be recognized as an invocation of a function requiring an implicit parameter of \texttt{Handler<SomeException>} type.
 At the same time, handling constructs should provide such witness values.
+\begin{minted}{swift}
+    func checkingExceptions() {
+        try { // provides a capability of type Handler<SomeException>
+            throw SomeException() // requires a capability of type Handler<SomeException>
+        } catch (e: SomeException) { ... }
+    }
+\end{minted}
 
 Nowadays, some widespread languages have a feature of implicit parameters and their inference is well-understood. % todo papers and links (Kotlin, Scala, Haskell)
 Moreover, implicit parameters are enough as an evidence-passing technique to implement tail-resumptive algebraic operations. % todo link
 
 \subsection{Retain effect safety with escape analysis} \label{subsec:escape}
+
+An effect system should ensure that all computations are executed in appropriate contexts (we call this property \textit{effect safety}).
+In our case, context should provide capabilities to proof its validity.
+Hence, capabilities should not escape corresponding contexts.
+For example, if a \texttt{Handler} value can escape a corresponding \texttt{try-catch} block, we loose a guarantee of handling an exception and the effect safety as well:
+\begin{minted}{swift}
+    func unsafe() {
+        let f = try {
+            () => throw SomeException() // captures the Handler<SomeException> capability
+        } catch (e: SomeException) { ... }
+        f() // throws SomeException
+    }
+\end{minted}
+
+Note that for the lambda function in the example, the \texttt{Handler<SomeException>} capability is the lexically scoped free variable.
+An opportunity to close over capabilities support a technique called \textit{contextual polymorphism}, which allows higher-order functions to be transparent regarding effects without additional polymorphic type variables ranging over effects. % todo citations (contextual polymorphism, OOP and higher-order)
+Namely, a \texttt{map} function type should not bother about effects (we will cover \texttt{scoped} syntax later)\footnote{We use Haskell naming convention, where type names starting with a lowercase letter stand for type variables, which are implicitly universally quantified by default.}:
+\begin{minted}{swift}
+    func map(xs: List<a>, f: #\color{gray}\texttt{scoped}# (a) -> b): List<b>
+
+    context(Handler<SomeException>)
+    func caller(xs: List<Int>) {
+        map(xs, (x) => throw SomeException()) // capability capturing is safe here
+    }
+\end{minted}
+
+Compare with a similar function type from the Koka language, featuring row-polymorphic types~\cite{leijen2014koka}:
+\begin{minted}{kotlin}
+    fun map(xs: list<a>, f: (a) -> e b): e list<b>
+\end{minted}
+
+To control escaping of capabilities, we need some form of escape analysis. % todo citations
+Since effect systems operate the type-level, it is natural to use types for escape analysis as well.
+Let us five an informal brief introduction of the type-based escape analysis technique that we feature in this paper.
+
+We call values that should not escape some scope \textit{tracked} (as well as their types).
+For instance, capabilities are tracked.
+We augment each type $T$ with a special lifetime label $lab$ using a syntax: \[scoped(lab)\ap T\]
+Lifetime labels range through \texttt{free}, \texttt{local} and polymorphic lifetime variables.
+\texttt{free} lifetime label is used to type non-tracked values.
+We assume it by default for every type.
+\texttt{local} present in tracked types, and a type system treats \texttt{local} specially to prevent escaping (for instance, a function cannot return a value of a tracked type).
+For example, the \texttt{map} function can explicitly declare that it do not leak an argument function (so it is safe to pass it a closure with capabilities):
+\begin{minted}{swift}
+    func map(xs: List<a>, f: scoped(local) (a) -> b): List<b>
+\end{minted}
+
+If a function returns a value that captures some of the arguments, it can use polymorphic lifetime variables to explicitly specify its dataflow.
+For example, a lazy \texttt{map} function instead of eagerly computing a result, immediately returns a collection that remembers required processing inside.
+We specify it by assigning the same lifetime variable \texttt{l} to both argument \texttt{f} and a result type.
+Such a function still supports contextual polymorphism since it can leak \texttt{f} only with a result and a call site is aware that this result should not escape as well:
+\begin{minted}{swift}
+    func lazyMap(xs: LazyList<a>, f: scoped(l) (a) -> b): scoped(l) LazyList<b>
+
+    context(io: IO) // io: scoped(local) IO
+    func printPlusOne(xs: LazyList<Int>) {
+        let ys = lazyMap(xs, (x) => io.print(x)) // ys: scoped(local) LazyList<Int>
+        ys.collect()
+    }
+\end{minted}
+
+%We establish subtyping in a way that non-tracked values can be used in positions where tracked values are expected.
+
+
+
+
+
+% todo польза от эскейп анализа
+
 
 
 
@@ -422,14 +498,16 @@ Moreover, implicit parameters are enough as an evidence-passing technique to imp
 
 % todo higher-rank polymorphism is required for lambdas, иначе ничего не будет работать с абстракцией по хендлерам. Хотя можно просто всё сделать локалом в контексте по умолчанию, но тогда могут быть траблы с кепчурингом. Нужно исследовать, можно ли это как-то попроще добавить.
 
-kek\cite{hannan1998type, boruch2023capturing} % todo papers about regions?
+%kek\cite{hannan1998type, boruch2023capturing} % todo papers about regions?
 
 \subsection{The idea summary} \label{subsec:idea-summary}
 
 TODO % todo
 
 
-\section{System with implicits} \label{sec:implicits}
+\section{Design of implicit parameters} \label{sec:implicits}
+
+\clearpage
 
 In this section we provide an accurate design of implicit parameters.
 Firstly, we develop a call-by-value $Core$ calculus with an algorithmic type system.
@@ -480,7 +558,7 @@ In this section we present an algorithmic core type system for a language with
 TODO % todo
 
 
-\section{System with type-based escape analysis} \label{sec:escape}
+\section{Design of type-based escape analysis} \label{sec:escape}
 
 TODO % todo
 
