@@ -281,7 +281,7 @@ At the same time we think that it is useful for language designers to see the wh
 
 In this paper we argue that effect systems can be understood as a combination of two more simple and grounded language features: implicit parameters and type-based escape analysis.
 This understanding from one hand places axis on the effect system design space: different points in it can be chosen by varying designs of these two features.
-And from another hand, it can help to seamlessly incorporate an effect system into existing mainstream languages, since many of them have at least one of these features, which are quite useful by themselves.
+And from another hand, it can help to smoothly incorporate an effect system into existing mainstream languages, since many of them have at least one of these features, which are quite useful by themselves.
 
 The general idea we present is not new.
 For example, recent work in the Scala programming language bases on similar observations~\cite{odersky2021safer, boruch2023capturing}.
@@ -495,21 +495,12 @@ Lifetimes of components themselves on destructuring are approximated with a life
 % todo bounded polymorphism
 
 
-
-
-
-
 %We establish subtyping in a way that non-tracked values can be used in positions where tracked values are expected.
 %It increases the number of safe well-typed programs and helps for smooth migration for languages with untyped effects to the effect system.
 %In fact all function arguments could have \texttt{local} lifetime label by default
 %
 %Most of the polymorphic lifetime variables can be omitted having a lifetime elision mechanism (see~\ref{subsec:lifetime-elision}).
 %\texttt{scoped} keyword
-
-
-
-
-
 
 % todo польза от эскейп анализа
 
@@ -528,12 +519,14 @@ Lifetimes of components themselves on destructuring are approximated with a life
 \subsection{Summary} \label{subsec:idea-summary}
 
 In fact our previous discussion anyway was centered around free variables.
-Indeed, a term depends on a context with its free variables: in different contexts it obtains different semantics through them.
+Indeed, a term naturally depends on a context with its free variables: in different contexts it obtains different semantics through them.
 So an effect system as a type system extension for managing free variables.
 
 Free variables can be dynamically or lexically scoped.
 It is convenient to use them one way or another depending on the situation.
 We summarize their role in an effect system construction in the table~\ref{fig:free-vars}.
+
+TODO % todo something about capabilities
 
 \begin{figure}
     \centering
@@ -550,53 +543,95 @@ We summarize their role in an effect system construction in the table~\ref{fig:f
     \label{fig:free-vars}
 \end{figure}
 
-TODO % todo
+\clearpage
 
 
 \section{Design of implicit parameters} \label{sec:implicits}
 
-\clearpage
+In this section we discuss design decisions for implicit parameters feature that make it more suitable as a component of an effect system.
+Along the discussion we introduce a formal calculi as an illustrative example.
 
-In this section we provide an accurate design of implicit parameters.
-Firstly, we develop a call-by-value $Core$ calculus with an algorithmic type system.
-Secondly, we introduce surface calculus with constructs allowing to omit implicit parameters and declarative typing rules for it.
-Thirdly, we develop algorithmic type-directed translation rules from surface calculus to the core.
+\subsection{Explicit $F^{ex}$} \label{subsec:core-lang}
 
-In past decades several approaches to defining custom effects and execution contexts were discovered~\cite{plotkin2003algebraic, plotkin2013handling, moggi1988computational, liang1995monad, schrijvers2019monad}.
-In this paper we will use
+For the start, let us introduce a typed $F^{ex}$ language with explicit parameter passing.
+We will use it later as a target language for implicit parameters inference translation.
 
-% todo Barendregt’s ‘variable convention for simplicity?
 
-\subsection{Syntax of $Core$} \label{subsec:core-syntax}
+
 
 \begin{figure}
-    \centering
-    \begin{multicols}{2}
-        \begin{align*}
-            &\text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t \vor K
-            \\
-            &\text{Terms} &t, u &\Coloneqq \\
-            &&&\vor v \\
-            &&&\vor t\ap\overline{\tau} \\
-            &&&\vor t \ap \overline{v} \ap \overline{t} \\
-            &&&\vor let ~ x = t ~ in ~ u \\
-            &&&\vor match ~ t ~ with ~\{\overline{K \ap \overline{x} \to t}\} \\
-            &&&\vor perform ~ f \ap x \ap \overline{\tau} \ap \overline{t} \\
-            &&&\vor handle ~ x : T \ap \overline{\tau} ~with ~h~in ~t \\
-            &&&\vor \graybox{handler_m ~ h ~ in ~ t}
-            \\
-            &\text{Handlers} &h &\Coloneqq \{return = t\} \uplus \{ \overline{f = t} \}
-            \\
-            &\text{Programs} &prog &\Coloneqq \epsilon \vor x : s = t, prog
-        \end{align*}
-        \columnbreak
-        \begin{align*}
-            &\text{Rigid variables}
-        \end{align*}
-    \end{multicols}
+    \[
+        \begin{array}{lrll}
+              \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
+              \\
+              \text{Terms} &t, u &\Coloneqq \\
+              &&\vor v \\
+              &&\vor t\ap\overline{\tau} \\
+              &&\vor t \ap \overline{v} \ap \overline{t} \\
+              &&\vor perform ~ f \ap x \ap \overline{\tau} \ap \overline{t} \\
+              &&\vor handle ~ x : T \ap \overline{\tau} ~with ~h~in ~t \\
+              &&\vor \graybox{handler_m ~ h ~ in ~ t}
+              \\
+              \text{Handlers} &h &\Coloneqq \{ \overline{f = t} \}
+              \\
+              \text{Programs} &prog &\Coloneqq \epsilon \vor x : s = t, prog
+        \end{array}
+    \]
     \caption{Syntax of $Core$.}
     \label{fig:core-syntax}
 \end{figure}
+
+
+
+
+%\begin{figure}
+%    \[
+%        \begin{array}{lrll}
+%            \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t \vor K\ap\overline{\tau}\ap\overline{v}
+%            \\
+%            \text{Terms} &t, u &\Coloneqq \\
+%            &&\vor v \\
+%            &&\vor t\ap\overline{\tau} \\
+%            &&\vor t \ap \overline{v} \ap \overline{t} \\
+%            &&\vor match ~ t ~ with ~\{\overline{K \ap \overline{x} \to t}\} \\
+%            &&\vor perform ~ f \ap x \ap \overline{\tau} \ap \overline{t} \\
+%            &&\vor handle ~ x : T \ap \overline{\tau} ~with ~h~in ~t \\
+%            &&\vor \graybox{handler_m ~ h ~ in ~ t}
+%            \\
+%            \text{Handlers} &h &\Coloneqq \{ \overline{f = t} \}
+%            \\
+%            \text{Programs} &prog &\Coloneqq \epsilon \vor x : s = t, prog
+%        \end{array}
+%    \]
+%    \caption{Syntax of $Core$.}
+%    \label{fig:core-syntax}
+%\end{figure}
+
+
+%as well as type-directed translation to calculi with explicit parameter-passing as an example of system that meets our requirements.
+
+
+% todo https://cgswords.github.io/latex-semantics/
+
+%In this section we provide an accurate design of implicit parameters.
+%Firstly, we develop a call-by-value $Core$ calculus with an algorithmic type system.
+%Secondly, we introduce surface calculus with constructs allowing to omit implicit parameters and declarative typing rules for it.
+%Thirdly, we develop algorithmic type-directed translation rules from surface calculus to the core.
+%
+%In past decades several approaches to defining custom effects and execution contexts were discovered~\cite{plotkin2003algebraic, plotkin2013handling, moggi1988computational, liang1995monad, schrijvers2019monad}.
+%In this paper we will use
+
+% todo functions are never functionally applied to evidences
+
+% todo store evidences in handler implementation (do we need to store them separately)?
+
+% todo Barendregt’s ‘variable convention for simplicity?
+
+% todo what if generate application (like for dictionaries) to reorder effect rows (do inhabitation of some form)?
+
+\subsection{Syntax of $Core$} \label{subsec:core-syntax}
+
+
 
 
 
@@ -611,9 +646,12 @@ TODO % todo
 TODO % todo
 
 
-\section{Semantics} \label{sec:semantics}
+%\section{Semantics} \label{sec:semantics}
+%
+%TODO % todo or make it a part of a regular discussion
 
-TODO % todo
+% todo ensure that the innermost handlers receives the operation
+% todo refer to a paper that proposed to instantiate a handle_m frame
 
 
 \section{Adoption in mainstream languages} \label{sec:mainstream}
