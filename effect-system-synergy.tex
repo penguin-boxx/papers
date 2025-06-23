@@ -270,7 +270,7 @@ An execution context can be distinguished by at least one of the following prope
 
 An effect system reflects effects of a computation on the type level.
 It serves two main purposes.
-Firstly, it makes effects visible in a type signature, so functional abstraction boundaries become to be more precise: implementation details will not leak unnoticed as context interactions.
+Firstly, it makes effects visible in a type signature, so functional abstraction boundaries become more precise: implementation details will not leak unnoticed as context interactions.
 Secondly, an effect system statically controls \textit{effect safety} of a computation use: it should be executed in an appropriate context (as we discussed before, contexts may have limited activity scopes).
 For instance, it is a responsibility of an effect system to check whether all functionality requested by the inversion of control will be provided, and all exceptions will be handled.
 Note that effect systems may track more information of interest, for example, about divergence.
@@ -284,7 +284,7 @@ This understanding from one hand places axis on the effect system design space: 
 And from another hand, it can help to seamlessly incorporate an effect system into existing mainstream languages, since many of them have at least one of these features, which are quite useful by themselves.
 
 The general idea we present is not new.
-For example, recent work in the Scala programming language~\cite{boruch2023capturing} bases on similar observations.
+For example, recent work in the Scala programming language bases on similar observations~\cite{odersky2021safer, boruch2023capturing}.
 However, we phrase the idea explicitly, investigate its consequences and use its inspiration to build a novel practical though minimalistic effect system.
 
 % рассматриваем сразу и модели и системы эффектов, потому что делается type-based translation
@@ -321,7 +321,7 @@ However, this simple approach has a cost of an additional syntactic noise on the
 It may sound insignificant, but imagine passing four such parameters everywhere through the call stack, whereas good practices should be at least as approachable as suboptimal ones.
 
 To reduce the boilerplate, in the third version we replace ordinary parameters with dynamically scoped free variables, which obtain their meaning by lookup in the dynamic scope of a function call.
-At the same time we have lost other benefits: static typing and explicitness of context dependence.
+At the same time we loose other benefits: static typing and explicitness of context dependence.
 
 \begin{figure}
     \begin{tabular}{p{0.3\textwidth} rrr}
@@ -364,9 +364,9 @@ At the same time we have lost other benefits: static typing and explicitness of 
     \label{fig:db}
 \end{figure}
 
-To reclaim the static type safety, we approximate dynamically scoped free variables with implicit function parameters.
+To reclaim the static type safety, we approximate dynamically scoped free variables with implicit function parameters~\cite{lewis2000implicit}.
 On the declaration site we use \texttt{context} keyword to declare a group of implicit parameters, which will be passed on the call site automatically by a compiler (fig.\ \ref{fig:implicits}).
-To make a value participate in the implicit parameter resolution, we use \texttt{context let} declaration syntax.
+To make a value participate in the resolution of implicit parameters, we use \texttt{context let} declaration syntax.
 
 \begin{figure}[h]
     \begin{tabular}{p{0.5\textwidth} rl}
@@ -398,7 +398,7 @@ To be able to call such a function, context should prove its validity by passing
 We call these values \textit{capabilities}, and logically they serve as witnesses of context validity.
 Nevertheless, note that for now we rely only on the notion of bindings and understanding the abstract concept of effects is not strongly required.
 
-Exceptions and other algebraic operations can be tracked in the same manner. % todo cite CanThrow
+Exceptions and other algebraic operations can be tracked in the same manner~\cite{odersky2021safer}.
 For example, a \texttt{throw SomeException()} construct can be recognized as an invocation of a function requiring an implicit parameter of \texttt{Handler<SomeException>} type.
 At the same time, handling constructs should provide such witness values.
 \begin{minted}{swift}
@@ -409,8 +409,8 @@ At the same time, handling constructs should provide such witness values.
     }
 \end{minted}
 
-Nowadays, some widespread languages have a feature of implicit parameters and their inference is well-understood. % todo papers and links (Kotlin, Scala, Haskell)
-Moreover, implicit parameters are enough as an evidence-passing technique to implement tail-resumptive algebraic operations. % todo link
+Nowadays, some widespread languages have a feature of implicit parameters and their inference is well-understood~\cite{KEEP-context-parameters, oliveira2010type, lewis2000implicit}.
+Moreover, implicit parameters are enough as an evidence-passing technique to implement tail-resumptive algebraic operations~\cite{xie2020effect}.
 
 \subsection{Retain effect safety with escape analysis} \label{subsec:escape}
 
@@ -428,7 +428,7 @@ For example, if a \texttt{Handler} value can escape a corresponding \texttt{try-
 \end{minted}
 
 Note that for the lambda function in the example, the \texttt{Handler<SomeException>} capability is the lexically scoped free variable.
-An opportunity to close over capabilities support a technique called \textit{contextual polymorphism}, which allows higher-order functions to be transparent regarding effects without additional polymorphic type variables ranging over effects. % todo citations (contextual polymorphism, OOP and higher-order)
+An opportunity to close over capabilities support a technique called \textit{contextual polymorphism}~\cite{brachthauser2020effects, brachthauser2022effects}, which allows higher-order functions to be transparent regarding effects without additional polymorphic type variables ranging over effects.
 Namely, a \texttt{map} function type should not bother about effects (we will cover \texttt{scoped} syntax later)\footnote{We use Haskell naming convention, where type names starting with a lowercase letter stand for type variables, which are implicitly universally quantified by default.}:
 \begin{minted}{swift}
     func map(xs: List<a>, f: #\color{gray}\texttt{scoped}# (a) -> b): List<b>
@@ -447,7 +447,7 @@ Compare with a similar function type from the Koka language, featuring row-polym
 To control escaping of capabilities, we need some form of escape analysis. % todo citations
 Since effect systems operate the type-level, it is natural to use types for escape analysis as well.
 Moreover, we need this analysis to be cross-procedural, so it should affect function signatures.
-Let us five an informal brief introduction of the type-based escape analysis technique that we feature in this paper.
+Let us give an informal brief introduction of the type-based escape analysis technique that we feature in this paper.
 
 We call values that should not escape some scope \textit{tracked} (as well as their types).
 For instance, capabilities are tracked.
@@ -469,7 +469,7 @@ Such a function still supports contextual polymorphism since it can leak \texttt
     func lazyMap(xs: LazyList<a>, f: scoped(l) (a) -> b): scoped(l) LazyList<b>
 
     context(io: IO) // io: scoped(local) IO
-    func printPlusOne(xs: LazyList<Int>) {
+    func printAll(xs: LazyList<Int>) {
         let ys = lazyMap(xs, (x) => io.print(x)) // ys: scoped(local) LazyList<Int>
         ys.collect()
     }
@@ -481,10 +481,10 @@ We use intersection of lifetimes to express capturing two or more lifetime-polym
         = (x) => f(g(x))
 \end{minted}
 
-For simplicity, we get rid of lifetime polymorphism for compound datatypes by computing their lifetimes as an intersection of component's lifetimes.
+For the sake of simplicity, we get rid of lifetime polymorphism for compound datatypes by computing their lifetimes as an intersection of component's lifetimes.
 Lifetimes of components themselves on destructuring are approximated with a lifetime of a compound datatype.
 \begin{minted}{swift}
-    func compound(x: scoped(l1) Int, y: scoped(l2) Int): scoped(l1&l2) Int {
+    func first(x: scoped(l1) Int, y: scoped(l2) Int): scoped(l1&l2) Int {
         let intPair: scoped(l1&l2) IntPair = IntPair(x, y)
         return intPair.fst
     }
