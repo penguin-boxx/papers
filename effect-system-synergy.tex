@@ -115,6 +115,7 @@
 \newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
 \newcommand{\vor}{~|~}
 \newcommand{\ap}{~}
+\newcommand{\ctx}[1]{ctx(#1)~}
 
 %%
 %% end of the preamble, start of the body of the document source.
@@ -194,9 +195,9 @@
 
     In this paper, we propose a perspective on effect system design as a combination of two properly-designed language features: implicit parameters and type-based escape analysis.
     We believe that both of them are naturally achievable in mainstream languages, familiar to practitioners and useful by themselves.
-    We motivate our approach by considering effect systems as systems for tracking free variables. % todo
+    We motivate our approach by considering effect systems as systems for tracking free variables.
     We discuss requirements on an implicit parameters design and provide a formal example.
-    We also present a novel type-based escape analysis technique that only requires straight-forward dataflow descriptions from a programmer.
+    We also present a novel type-based escape analysis technique that only requires straight-forward dataflow descriptions from a programmer. % todo is it correct to talk about dataflow here?
     Finally, we provide a formal calculus with an effect system built upon these two pieces.
 \end{abstract}
 
@@ -461,7 +462,8 @@ For example, the \texttt{map} function can explicitly declare that it do not lea
     func map(xs: List<a>, f: scoped(local) (a) -> b): List<b>
 \end{minted}
 
-If a function returns a value that captures some of the arguments, we can use polymorphic lifetime variables to explicitly specify its dataflow.
+To allow a function to leak arguments through a result, a polymorphism over lifetimes can be used.
+In fact, it is an explicit function's dataflow specification in a signature.
 For example, a lazy \texttt{map} function instead of eagerly computing a result, immediately returns a collection that remembers required processing inside.
 We specify it by assigning the same lifetime variable \texttt{l} to both argument \texttt{f} and a result type.
 Such a function still supports contextual polymorphism since it can leak \texttt{f} only with a result and a call site is aware that this result should not escape:
@@ -549,26 +551,30 @@ We summarize the correspondence on the fig.\ \ref{fig:free-vars} and discuss the
 
 \section{Design of implicit parameters} \label{sec:implicits}
 
-In this section we discuss design decisions for implicit parameters feature that make it more suitable as a component of an effect system.
-Along the discussion we introduce a formal calculi as an illustrative example.
+In this section we discuss design decisions for implicit parameters feature that make it more suitable as a component of a practical effect system.
+Along the discussion we use a formal calculi as an illustrative example.
 
-\subsection{Explicit $F^{ex}$} \label{subsec:core-lang}
+\subsection{System $F^{ex}$} \label{subsec:core-lang}
 
 For the start, let us introduce a typed $F^{ex}$ language with explicit parameter passing.
 We will use it later as a target language for implicit parameters inference translation.
 
-
+Let us discuss the syntax of $F^{ex}$ (fig.~\ref{fig:core-syntax}).
+Values consist of variables, type abstractions, data constructor applications and lambda abstractions.
 
 
 \begin{figure}
+    \centering
     \[
-        \begin{array}{lrll}
-              \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
+        \begin{array}{lrlll}
+              \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \vor K\ap \overline{\tau} \ap \overline{t} \\
+              &&\vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
               \\
               \text{Terms} &t, u &\Coloneqq \\
               &&\vor v \\
               &&\vor t\ap\overline{\tau} \\
               &&\vor t \ap \overline{v} \ap \overline{t} \\
+              &&\vor match ~ t ~ with ~\{\overline{K \ap \overline{x} \to t}\} \\
               &&\vor perform ~ f \ap x \ap \overline{\tau} \ap \overline{t} \\
               &&\vor handle ~ x : T \ap \overline{\tau} ~with ~h~in ~t \\
               &&\vor \graybox{handler_m ~ h ~ in ~ t}
@@ -577,36 +583,19 @@ We will use it later as a target language for implicit parameters inference tran
               \\
               \text{Programs} &prog &\Coloneqq \epsilon \vor x : s = t, prog
         \end{array}
+        \begin{array}{lrl}
+            \text{Type variables} && \alpha, \beta \\
+            \text{Monotypes} & \tau, \sigma &\Coloneqq \alpha \vor T \ap \overline{\tau} \vor \ctx{e} \tau \to \sigma \\
+            \text{Type schemas} & s &\Coloneqq \forall\overline{\alpha}\ldotp \tau \\
+            \text{Effect contexts} & e &\Coloneqq \epsilon\vor \tau, e \\
+            \text{Typing contexts} & \Gamma &\Coloneqq \epsilon \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
+            \text{Data constructors} & & K : \forall\overline{\alpha}\ldotp \overline{s}\to T\ap \overline{\alpha} \\
+            \text{Free type variables} && ftv(\cdot)
+        \end{array}
     \]
-    \caption{Syntax of $Core$.}
+    \caption{Syntax of $F^{ex}$.}
     \label{fig:core-syntax}
 \end{figure}
-
-
-
-
-%\begin{figure}
-%    \[
-%        \begin{array}{lrll}
-%            \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t \vor K\ap\overline{\tau}\ap\overline{v}
-%            \\
-%            \text{Terms} &t, u &\Coloneqq \\
-%            &&\vor v \\
-%            &&\vor t\ap\overline{\tau} \\
-%            &&\vor t \ap \overline{v} \ap \overline{t} \\
-%            &&\vor match ~ t ~ with ~\{\overline{K \ap \overline{x} \to t}\} \\
-%            &&\vor perform ~ f \ap x \ap \overline{\tau} \ap \overline{t} \\
-%            &&\vor handle ~ x : T \ap \overline{\tau} ~with ~h~in ~t \\
-%            &&\vor \graybox{handler_m ~ h ~ in ~ t}
-%            \\
-%            \text{Handlers} &h &\Coloneqq \{ \overline{f = t} \}
-%            \\
-%            \text{Programs} &prog &\Coloneqq \epsilon \vor x : s = t, prog
-%        \end{array}
-%    \]
-%    \caption{Syntax of $Core$.}
-%    \label{fig:core-syntax}
-%\end{figure}
 
 
 %as well as type-directed translation to calculi with explicit parameter-passing as an example of system that meets our requirements.
@@ -630,14 +619,8 @@ We will use it later as a target language for implicit parameters inference tran
 
 % todo what if generate application (like for dictionaries) to reorder effect rows (do inhabitation of some form)?
 
-\subsection{Syntax of $Core$} \label{subsec:core-syntax}
+%\subsection{Syntax of $Core$} \label{subsec:core-syntax}
 
-
-
-
-
-
-In this section we present an algorithmic core type system for a language with
 
 TODO % todo
 
