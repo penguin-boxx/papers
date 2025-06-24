@@ -490,6 +490,8 @@ Lifetimes of components themselves on destructuring are approximated with a life
     }
 \end{minted}
 
+TODO % todo
+
 % todo subtyping
 % todo tuneling
 % todo bounded polymorphism
@@ -518,32 +520,31 @@ Lifetimes of components themselves on destructuring are approximated with a life
 
 \subsection{Summary} \label{subsec:idea-summary}
 
-In fact our previous discussion anyway was centered around free variables.
+An effect system can be seen as a combination of implicit parameters and type-based escape analysis features.
+Hence, the design of an effect system naturally splits into two parts and can be approached step-by-step.
+
+In fact, our previous discussion anyway was centered around free variables.
 Indeed, a term naturally depends on a context with its free variables: in different contexts it obtains different semantics through them.
-So an effect system as a type system extension for managing free variables.
+So, they are the target for an effect system, while bound once are controlled by canonical type systems.
 
-Free variables can be dynamically or lexically scoped.
-It is convenient to use them one way or another depending on the situation.
-We summarize their role in an effect system construction in the table~\ref{fig:free-vars}.
+Two parts of our perspective on effect systems originate from the fact that there are two ways of defining the semantics for free variables: dynamic and lexical scoping.
+It is convenient to do it one way or another depending on the situation.
+We summarize the correspondence on the fig.\ \ref{fig:free-vars} and discuss the connection with other works on effect system design in Section\ \ref{sec:related}.
 
-TODO % todo something about capabilities
-
-\begin{figure}
+\begin{figure}[h]
     \centering
     \begin{tabular}{|l|l|l|}
         \hline
-        Free variables & dynamically scoped & statically scoped \\
+        Free variables & dynamically scoped & lexically scoped \\
         \hline
-        Dealt by & implicit parameters & type-based escape analysis \\
         Represent & unfulfilled context requirements & fulfilled context requirements \\
+        Dealt by & implicit parameters & type-based escape analysis \\
         User specifies & more function parameters & a function’s dataflow \\
         \hline
     \end{tabular}
     \caption{Effect systems are for managing free variables.}
     \label{fig:free-vars}
 \end{figure}
-
-\clearpage
 
 
 \section{Design of implicit parameters} \label{sec:implicits}
