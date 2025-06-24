@@ -582,7 +582,14 @@ We will use it later as a target language for implicit parameters inference tran
 
 Let us discuss the syntax of $F^{ex}$ (fig.~\ref{fig:core-syntax}).
 By the over-line we denote a bunch of corresponding entries.
-We use uncurried abstraction and application for simplicity to make implicit parameters inference local in a sense that typing information available to an application rule is enough.
+%Values are variables, type abstraction, data constructor application and lambda abstraction.
+We use uncurried abstraction and application for simplicity to make implicit parameters inference local in a sense that typing information available to an application rule is enough (no deferred constraint solving is required). % todo link Haskell
+Functions have two blocks of arguments, first of which is for future implicit inference.
+We use lexical handlers with explicit user-defined names.
+The \texttt{handler} construct is only needed as a reduction step for operational semantics.
+Also for brevity, we do not include \texttt{return} block in handlers, because it does not add any expressiveness.
+
+
 
 
 
@@ -594,17 +601,15 @@ We use uncurried abstraction and application for simplicity to make implicit par
     \centering
     \[
         \begin{array}{lrlll}
+              \text{Variables} & & x, y, z, f, g \\
               \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \vor K\ap \overline{\tau} \ap \overline{t} \\
               &&\vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
               \\
-              \text{Terms} &t, u &\Coloneqq \\
-              &&\vor v \\
-              &&\vor t\ap\overline{\tau} \\
-              &&\vor t \ap \overline{v} \ap \overline{t} \\
+              \text{Terms} &t, u &\Coloneqq \vor v \vor t\ap\overline{\tau} \vor t \ap \overline{t} \ap \overline{t} \\
               &&\vor match ~ t ~ with ~\{\overline{K \ap \overline{x} \to t}\} \\
               &&\vor perform ~ op \ap x \ap \overline{\tau} \ap \overline{t} \\
               &&\vor handle ~ x : T \ap \overline{\tau} ~with ~h~in ~t \\
-              &&\vor \graybox{handler_m ~ h ~ in ~ t}
+              &&\vor \graybox{handler_m ~ t}
               \\
               \text{Handlers} &h &\Coloneqq \{ \overline{op = t} \}
               \\
@@ -617,7 +622,10 @@ We use uncurried abstraction and application for simplicity to make implicit par
             \text{Effect contexts} & e &\Coloneqq \epsilon\vor \tau, e \\
             \text{Typing contexts} & \Gamma &\Coloneqq \epsilon \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
             \text{Data constructors} & & K : \forall\overline{\alpha}\ldotp \overline{s}\to T\ap \overline{\alpha} \\
-            \text{Free type variables} & & ftv(\cdot)
+            \text{Free type variables} & & ftv(\cdot) \\
+            \text{Evaluation context} &E &\Coloneqq \vor \square \vor E \ap \overline{\tau} \vor E \ap \overline{v}\ap \overline{t} \\
+            &&\vor v \ap (\overline{v}, E, \overline{t}) \ap \overline{t} \vor v \ap \overline{v} \ap (\overline{v}, E, \overline{t}) \\
+            &&\vor handler_m ~ E
         \end{array}
     \]
     \caption{Syntax of $F^{ex}$.}
@@ -643,11 +651,9 @@ We use uncurried abstraction and application for simplicity to make implicit par
             \\
             &&&\text{where } m \text{ fresh}, \{\overline{f_i = t_i}\} \subset h
             \\
-            \text{(return)} &handler_m ~h ~ in ~v &\longrightarrow &t \ap v
+            \text{(return)} &handler_m ~h ~ in ~v &\longrightarrow & v
             \\
-            &&&\text{where } \{return = t\} \subset h
-            \\
-            \text{(perform)} &handler_m~h~in~E[perform \ap f_j\ap (K \ap m \ap \overline{t_i})\ap\overline{\tau}\ap\overline{v}] &\longrightarrow &t_j \ap \overline{\tau}\ap \overline{v}\ap k
+            \text{(perform)} &handler_m~h~in~E[perform \ap op_j\ap (K \ap m \ap \overline{t_i})\ap\overline{\tau}\ap\overline{v}] &\longrightarrow &t_j \ap \overline{\tau}\ap \overline{v}\ap k
             \\
             &&&\text{where } k = \lambda x\ldotp handler_m~h~in~E[x]
         \end{array}
@@ -655,6 +661,17 @@ We use uncurried abstraction and application for simplicity to make implicit par
     \caption{Operational semantics of $F^{ex}$.} % todo add step rule
     \label{fig:fex-operational}
 \end{figure}
+
+\subsection{System $F^{im}$ with implicit parameters}
+
+TODO % todo
+
+\subsection{Algorithmic implicit parameters inference}
+
+TODO % todo
+
+
+% todo effect encapsulation be default
 
 
 %as well as type-directed translation to calculi with explicit parameter-passing as an example of system that meets our requirements.
@@ -677,11 +694,6 @@ We use uncurried abstraction and application for simplicity to make implicit par
 % todo Barendregt’s ‘variable convention for simplicity?
 
 % todo what if generate application (like for dictionaries) to reorder effect rows (do inhabitation of some form)?
-
-%\subsection{Syntax of $Core$} \label{subsec:core-syntax}
-
-
-TODO % todo
 
 
 \section{Design of type-based escape analysis} \label{sec:escape}
