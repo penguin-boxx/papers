@@ -554,13 +554,40 @@ We summarize the correspondence on the fig.\ \ref{fig:free-vars} and discuss the
 In this section we discuss design decisions for implicit parameters feature that make it more suitable as a component of a practical effect system.
 Along the discussion we use a formal calculi as an illustrative example.
 
+\subsection{Effect handlers} \label{subsec:handlers}
+
+In our formal elaborations we are going to use effect handlers as a universal mechanism for defining effects~\cite{plotkin2003algebraic, plotkin2013handling}, because it is powerful enough to express all effects of interest, so we do not need to consider them one by one.
+At the same time, unlike monad transformers~\cite{liang1995monad, schrijvers2019monad}, dynamic semantics of effect handlers can be defined on its own without any type-directed translation, hence it do not impose any restrictions on the effect system design.
+
+Let us give a brief introduction to effect handlers and show how to use them to implement effects, discussed in the previous section~\ref{sec:idea}.
+
+The \texttt{handle} construct allows to define an execution context for a particular scope by defining a set of operations.
+The \texttt{perform} construct can be used by the code in the scope to call operations defined by a handler as an act of context interaction.
+An implementation of each operation has access to a continuation of a call site as a ``return address'', which can be used to return a result.
+
+% todo named handlers and lexical algebraic effects
+
+% todo context let translation to handlers
+
+% todo exceptions using effect handlers
+
+% todo state using effect handlers
+
+TODO % todo
+
 \subsection{System $F^{ex}$} \label{subsec:core-lang}
 
-For the start, let us introduce a typed $F^{ex}$ language with explicit parameter passing.
+For the start, let us introduce a typed call-by-value $F^{ex}$ calculi with explicit parameter passing.
 We will use it later as a target language for implicit parameters inference translation.
 
 Let us discuss the syntax of $F^{ex}$ (fig.~\ref{fig:core-syntax}).
-Values consist of variables, type abstractions, data constructor applications and lambda abstractions.
+By the over-line we denote a bunch of corresponding entries.
+We use uncurried abstraction and application for simplicity to make implicit parameters inference local in a sense that typing information available to an application rule is enough.
+
+
+
+
+
 
 
 \begin{figure}
@@ -575,26 +602,58 @@ Values consist of variables, type abstractions, data constructor applications an
               &&\vor t\ap\overline{\tau} \\
               &&\vor t \ap \overline{v} \ap \overline{t} \\
               &&\vor match ~ t ~ with ~\{\overline{K \ap \overline{x} \to t}\} \\
-              &&\vor perform ~ f \ap x \ap \overline{\tau} \ap \overline{t} \\
+              &&\vor perform ~ op \ap x \ap \overline{\tau} \ap \overline{t} \\
               &&\vor handle ~ x : T \ap \overline{\tau} ~with ~h~in ~t \\
               &&\vor \graybox{handler_m ~ h ~ in ~ t}
               \\
-              \text{Handlers} &h &\Coloneqq \{ \overline{f = t} \}
+              \text{Handlers} &h &\Coloneqq \{ \overline{op = t} \}
               \\
               \text{Programs} &prog &\Coloneqq \epsilon \vor x : s = t, prog
         \end{array}
         \begin{array}{lrl}
             \text{Type variables} && \alpha, \beta \\
-            \text{Monotypes} & \tau, \sigma &\Coloneqq \alpha \vor T \ap \overline{\tau} \vor \ctx{e} \tau \to \sigma \\
+            \text{Monotypes} & \tau, \sigma &\Coloneqq \alpha \vor T \ap \overline{\tau} \vor \ctx{e} \overline{\tau} \to \sigma \\
             \text{Type schemas} & s &\Coloneqq \forall\overline{\alpha}\ldotp \tau \\
             \text{Effect contexts} & e &\Coloneqq \epsilon\vor \tau, e \\
             \text{Typing contexts} & \Gamma &\Coloneqq \epsilon \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
             \text{Data constructors} & & K : \forall\overline{\alpha}\ldotp \overline{s}\to T\ap \overline{\alpha} \\
-            \text{Free type variables} && ftv(\cdot)
+            \text{Free type variables} & & ftv(\cdot)
         \end{array}
     \]
     \caption{Syntax of $F^{ex}$.}
+    % todo beautify
+    % todo syntax of execution contexts
     \label{fig:core-syntax}
+\end{figure}
+
+\begin{figure}
+    \[
+        \begin{array}{llll}
+            \text{(tapp)} &(\Lambda \overline{\alpha}\ldotp t) \ap \overline{\tau} &\longrightarrow &[\overline{\alpha\to\tau}]\ap t
+            \\
+            \text{(app)} &(\lambda \overline{x}~\overline{y}\ldotp t) \ap \overline{u} \ap \overline{u'} &\longrightarrow &[\overline{x\to u}]\ap[\overline{y\to u'}]\ap t
+            \\
+            \text{(let)} &let ~x = t ~in~u &\longrightarrow &[x \to t]\ap u
+            \\
+            \text{(match)} &match ~K \ap \overline{t}~ with ~ \{ \overline{K_i \ap \overline{x} \to u_i}\} &\longrightarrow &[\overline{x\to t}]\ap u_k
+            \\
+            &&&\text{where } K = K_k
+            \\
+            \text{(handle)} &handle ~ x : T \ap \overline{\tau} ~with~h~in~t &\longrightarrow & handler_m ~h ~ in~ [x \to K \ap m \ap \overline{t_i}] \ap u
+            \\
+            &&&\text{where } m \text{ fresh}, \{\overline{f_i = t_i}\} \subset h
+            \\
+            \text{(return)} &handler_m ~h ~ in ~v &\longrightarrow &t \ap v
+            \\
+            &&&\text{where } \{return = t\} \subset h
+            \\
+            \text{(perform)} &handler_m~h~in~E[perform \ap f_j\ap (K \ap m \ap \overline{t_i})\ap\overline{\tau}\ap\overline{v}] &\longrightarrow &t_j \ap \overline{\tau}\ap \overline{v}\ap k
+            \\
+            &&&\text{where } k = \lambda x\ldotp handler_m~h~in~E[x]
+        \end{array}
+    \]
+    \caption{Operational semantics of $F^{ex}$.} % todo add step rule
+    \label{fig:fex-operational}
 \end{figure}
 
 
