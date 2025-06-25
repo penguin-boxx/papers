@@ -563,7 +563,7 @@ Let us give a brief introduction to effect handlers and show how to use them to 
 
 The \texttt{handle} construct allows to define an execution context for a particular scope by defining a set of operations.
 The \texttt{perform} construct can be used by the code in the scope to call operations defined by a handler as an act of context interaction.
-An implementation of each operation has access to a continuation of a call site as a ``return address'', which can be used to return a result.
+An implementation of each operation has access to a continuation of a call site as a ``return address'', which can be used to return a result. % todo
 
 % todo named handlers and lexical algebraic effects
 
@@ -578,42 +578,25 @@ TODO % todo
 \subsection{System $F^{ex}$} \label{subsec:core-lang}
 
 For the start, let us introduce a typed call-by-value $F^{ex}$ calculi with explicit parameter passing.
-We will use it later as a target language for implicit parameters inference translation.
-
-Let us discuss the syntax of $F^{ex}$ (fig.~\ref{fig:core-syntax}).
-By the over-line we denote a bunch of corresponding entries.
-%Values are variables, type abstraction, data constructor application and lambda abstraction.
-We use uncurried abstraction and application for simplicity to make implicit parameters inference local in a sense that typing information available to an application rule is enough (no deferred constraint solving is required). % todo link Haskell
-Functions have two blocks of arguments, first of which is for future implicit inference.
-We use lexical handlers with explicit user-defined names.
-The \texttt{handler} construct is only needed as a reduction step for operational semantics.
-Also for brevity, we do not include \texttt{return} block in handlers, because it does not add any expressiveness.
-
-
-
-
-
-
-
-
+We will use it later (see\ \ref{subsec:inference}) as a target language for implicit parameters inference translation.
 
 \begin{figure}
     \centering
     \[
         \begin{array}{lrlll}
-              \text{Variables} & & x, y, z, f, g \\
-              \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \vor K\ap \overline{\tau} \ap \overline{t} \\
-              &&\vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
-              \\
-              \text{Terms} &t, u &\Coloneqq \vor v \vor t\ap\overline{\tau} \vor t \ap \overline{t} \ap \overline{t} \\
-              &&\vor match ~ t ~ with ~\{\overline{K \ap \overline{x} \to t}\} \\
-              &&\vor perform ~ op \ap x \ap \overline{\tau} \ap \overline{t} \\
-              &&\vor handle ~ x : T \ap \overline{\tau} ~with ~h~in ~t \\
-              &&\vor \graybox{handler_m ~ t}
-              \\
-              \text{Handlers} &h &\Coloneqq \{ \overline{op = t} \}
-              \\
-              \text{Programs} &prog &\Coloneqq \epsilon \vor x : s = t, prog
+            \text{Variables} & & x, y, z, f, g, op \\
+            \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \vor K\ap \overline{\tau} \ap \overline{t} \\
+            &&\vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
+            \\
+            \text{Terms} &t, u &\Coloneqq \vor v \vor t\ap\overline{\tau} \vor t \ap \overline{t} \ap \overline{t} \\
+            &&\vor match ~ t ~ with ~\{\overline{K \ap \overline{x} \to t}\} \\
+            &&\vor perform ~ op \ap x \ap \overline{\tau} \ap \overline{t} \\
+            &&\vor handle ~ x : T \ap \overline{\tau} ~with ~h~in ~t \\
+            &&\vor \graybox{handler_m ~ t}
+            \\
+            \text{Handlers} &h &\Coloneqq \{ \overline{op = t} \}
+            \\
+            \text{Programs} &prog &\Coloneqq \epsilon \vor x : s = t, prog
         \end{array}
         \begin{array}{lrl}
             \text{Type variables} && \alpha, \beta \\
@@ -630,9 +613,29 @@ Also for brevity, we do not include \texttt{return} block in handlers, because i
     \]
     \caption{Syntax of $F^{ex}$.}
     % todo beautify
-    % todo syntax of execution contexts
     \label{fig:core-syntax}
 \end{figure}
+
+Let us discuss the syntax of $F^{ex}$ (fig.~\ref{fig:core-syntax}).
+By the over-line we denote a bunch of corresponding entries.
+Our considerations that lead to this syntax are the following:
+\begin{itemize}
+    \item We use uncurried abstraction and application for simplicity to make implicit parameters inference local in a sense that typing information available to an application rule is enough (no deferred constraint solving is required). % todo link something
+    \item We couple the first block with implicit parameters and the second block with ordinary ones to make sure that functions are never partially applied to implicit arguments to avoid accidental capturing. % todo example, investigate Kotlin
+    Accordingly, we delay inference of implicits until implication, in contrast to Haskell, for instance, which instantiates implicits immediately as type arguments~\cite{lewis2000implicit}.
+    \item % todo lexical handlers stuff
+    \item We need the \texttt{handler} construct as a reduction step for operational semantics.
+    \item For brevity, we do not include \texttt{return} block in handlers, because it does not add any expressiveness.
+    \item Implicit parameters are a part of a function type to support the abstraction over execution contexts:
+    \begin{minted}{swift}
+        func withSomeException(f: context(Handler<SomeException>) () -> r): r =
+            try { f() } catch (e: SomeException) { ... }
+    \end{minted}
+    \item Typing contexts distinguish between regular bindings and implicit bindings.
+    Implicit ones are assigned with monotypes, implicits resolution based on schemas appears to be more complicated.
+\end{itemize}
+
+Operational semantics of $F^{ex}$ is quite ordinary (fig.\ \ref{fig:fex-operational}), except that we use first-class data constructors for capabilities: we store a fresh continuation delimiter marker and handler operations~\cite{xie2020effect}.
 
 \begin{figure}
     \[
@@ -641,15 +644,13 @@ Also for brevity, we do not include \texttt{return} block in handlers, because i
             \\
             \text{(app)} &(\lambda \overline{x}~\overline{y}\ldotp t) \ap \overline{u} \ap \overline{u'} &\longrightarrow &[\overline{x\to u}]\ap[\overline{y\to u'}]\ap t
             \\
-            \text{(let)} &let ~x = t ~in~u &\longrightarrow &[x \to t]\ap u
-            \\
             \text{(match)} &match ~K \ap \overline{t}~ with ~ \{ \overline{K_i \ap \overline{x} \to u_i}\} &\longrightarrow &[\overline{x\to t}]\ap u_k
             \\
             &&&\text{where } K = K_k
             \\
-            \text{(handle)} &handle ~ x : T \ap \overline{\tau} ~with~h~in~t &\longrightarrow & handler_m ~h ~ in~ [x \to K \ap m \ap \overline{t_i}] \ap u
+            \text{(handle)} &handle ~ x : T \ap \overline{\tau} ~with~h~in~t &\longrightarrow & handler_m ~[x \to K \ap m \ap \overline{t_i}] \ap u
             \\
-            &&&\text{where } m \text{ fresh}, \{\overline{f_i = t_i}\} \subset h
+            &&&\text{where } m \text{ fresh}, h = \{\overline{op_i = t_i}\}
             \\
             \text{(return)} &handler_m ~h ~ in ~v &\longrightarrow & v
             \\
@@ -662,11 +663,13 @@ Also for brevity, we do not include \texttt{return} block in handlers, because i
     \label{fig:fex-operational}
 \end{figure}
 
+% todo typing rules
+
 \subsection{System $F^{im}$ with implicit parameters}
 
 TODO % todo
 
-\subsection{Algorithmic implicit parameters inference}
+\subsection{Algorithmic implicit parameters inference} \label{subsec:inference}
 
 TODO % todo
 
@@ -687,7 +690,7 @@ TODO % todo
 %In past decades several approaches to defining custom effects and execution contexts were discovered~\cite{plotkin2003algebraic, plotkin2013handling, moggi1988computational, liang1995monad, schrijvers2019monad}.
 %In this paper we will use
 
-% todo functions are never functionally applied to evidences
+
 
 % todo store evidences in handler implementation (do we need to store them separately)?
 
