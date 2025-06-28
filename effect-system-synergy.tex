@@ -451,8 +451,8 @@ Moreover, we need this analysis to be cross-procedural, so it should affect func
 Let us give an informal brief introduction of the type-based escape analysis technique that we feature in this paper.
 
 We call values that should not escape some scope \textit{tracked} (as well as their types).
-For instance, capabilities are tracked.
-We augment each type $T$ with a special lifetime label $lab$ using a syntax: \[scoped(lab)\ap T\]
+For instance, capabilities are tracked, so are types of implicit parameters by default.
+To distinguish between tracked and non-tracked types, we augment each type $T$ with a special lifetime label $lab$ using a syntax: \[scoped(lab)\ap T\]
 Lifetime labels range over \texttt{free}, \texttt{local} and polymorphic lifetime variables.
 \texttt{free} lifetime label is used to type non-tracked values.
 We assume it by default for every type.
@@ -463,7 +463,7 @@ For example, the \texttt{map} function can explicitly declare that it do not lea
 \end{minted}
 
 To allow a function to leak arguments through a result, a polymorphism over lifetimes can be used.
-In fact, it is an explicit function's dataflow specification in a signature.
+In fact, it is an explicit function's dataflow specification in a signature. % todo dataflow term and citation
 For example, a lazy \texttt{map} function instead of eagerly computing a result, immediately returns a collection that remembers required processing inside.
 We specify it by assigning the same lifetime variable \texttt{l} to both argument \texttt{f} and a result type.
 Such a function still supports contextual polymorphism since it can leak \texttt{f} only with a result and a call site is aware that this result should not escape:
@@ -492,33 +492,23 @@ Lifetimes of components themselves on destructuring are approximated with a life
     }
 \end{minted}
 
-TODO % todo
+We establish subtyping in a way that non-tracked values can be used in positions where tracked values are expected.
+It increases the number of safe well-typed programs and helps in smooth migration for languages with untyped effects to the effect system.
 
-% todo subtyping
-% todo tuneling
-% todo bounded polymorphism
+We allow tracked types to instantiate polymorphic type parameters to make them first-class citizens in a language.
+To control, whether tracked types can instantiate a type parameter, we use bounded polymorphism.
+For example, the \texttt{lazyMap} function do not leak values of polymorphic types, for instance, through global state, but only returns \texttt{b} back to the caller, so they can be instantiated with tracked types\footnote{We assume that \texttt{Any} is a top of types lattice.}\footnote{To preserve backward compatibility, \texttt{scoped(free) Any} type can be used as a default bound.}:
+\begin{minted}{swift}
+    func lazyMap(xs: LazyList<a>, f: scoped(l) (a) -> b): scoped(l) LazyList<b>
+        where a <: scoped(local) Any, b <: scoped(local) Any
+\end{minted}
 
+Various techniques can be used to reduce boilerplate related to the lifetime polymorphism and specification of bounds.
+For example, the lifetime elision from the Rust language~\cite{matsakis2014rust} uses heuristics to automatically place lifetime variables in a reasonable in most situations way (we use \texttt{scoped} keyword without a particular lifetime to trigger an elision mechanism).
+We will discuss this and other methods in Section~\ref{subsec:lifetime-elision}.
 
-%We establish subtyping in a way that non-tracked values can be used in positions where tracked values are expected.
-%It increases the number of safe well-typed programs and helps for smooth migration for languages with untyped effects to the effect system.
-%In fact all function arguments could have \texttt{local} lifetime label by default
-%
-%Most of the polymorphic lifetime variables can be omitted having a lifetime elision mechanism (see~\ref{subsec:lifetime-elision}).
-%\texttt{scoped} keyword
-
-% todo польза от эскейп анализа
-
-% todo link to first class names for effect handlers
-
-% todo every method is a higher-order functin (see citatioon in Capturing types)
-
-% todo design space
-
-% todo a dataflow term
-
-% todo higher-rank polymorphism is required for lambdas, иначе ничего не будет работать с абстракцией по хендлерам. Хотя можно просто всё сделать локалом в контексте по умолчанию, но тогда могут быть траблы с кепчурингом. Нужно исследовать, можно ли это как-то попроще добавить.
-
-%kek\cite{hannan1998type, boruch2023capturing} % todo papers about regions?
+The type-based escape analysis feature is useful beyond its application to effect system construction.
+Namely, it can be used to reduce a number of heap allocations~\cite{lorenzen2024oxidizing}, implement borrowing for an ownership-based resource management~\cite{matsakis2014rust, lorenzen2024oxidizing}, ensure safety of non-local return~\cite{akhin2021kotlin}.
 
 \subsection{Summary} \label{subsec:idea-summary}
 
@@ -533,7 +523,7 @@ Two parts of our perspective on effect systems originate from the fact that ther
 It is convenient to do it one way or another depending on the situation.
 We summarize the correspondence on the fig.\ \ref{fig:free-vars} and discuss the connection with other works on effect system design in Section\ \ref{sec:related}.
 
-\begin{figure}[h]
+\begin{figure}
     \centering
     \begin{tabular}{|l|l|l|}
         \hline
@@ -566,6 +556,7 @@ The \texttt{perform} construct can be used by the code in the scope to call oper
 An implementation of each operation has access to a continuation of a call site as a ``return address'', which can be used to return a result. % todo
 
 % todo named handlers and lexical algebraic effects
+% todo link to first class names for effect handlers
 
 % todo context let translation to handlers
 
@@ -701,6 +692,10 @@ TODO % todo
 
 \section{Design of type-based escape analysis} \label{sec:escape}
 
+% todo higher-rank polymorphism is required for lambdas, иначе ничего не будет работать с абстракцией по хендлерам. Хотя можно просто всё сделать локалом в контексте по умолчанию, но тогда могут быть траблы с кепчурингом. Нужно исследовать, можно ли это как-то попроще добавить.
+
+%kek\cite{hannan1998type, boruch2023capturing} % todo papers about regions?
+
 TODO % todo
 
 
@@ -711,8 +706,13 @@ TODO % todo
 % todo ensure that the innermost handlers receives the operation
 % todo refer to a paper that proposed to instantiate a handle_m frame
 
+% todo bounds instead of boxing (from capturing types)
+% todo lifetimes in the middle instead of `here` mode (to allow handlers consume tracked things)
+
 
 \section{Adoption in mainstream languages} \label{sec:mainstream}
+
+% todo every method is a higher-order function (see citatioon in Capturing types)
 
 \subsection{Lifetime elision} \label{subsec:lifetime-elision}
 
@@ -759,6 +759,7 @@ TODO % todo
 %%
 %% The next two lines define the bibliography style to be used, and
 %% the bibliography file.
+% todo add links where possible for convenience of readers
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib}
 
