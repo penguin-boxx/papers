@@ -111,6 +111,7 @@
 \usepackage{multicol}
 \usepackage{minted}
 \setminted{xleftmargin=\parindent, autogobble, escapeinside=\#\#, numberblanklines=false, fontsize=\small}
+\usepackage{proof}
 
 \newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
 \newcommand{\vor}{~|~}
@@ -586,7 +587,7 @@ Our considerations that lead to this syntax are the following:
     It embodies a continuation delimiter with a unique marker $m$.
     \item For brevity, we do not include $return$ block in handlers, because it does not add any expressiveness.
     \item In a function type $\ctx{e} \overline{\tau} \to \sigma$, over-line means a tuple of arguments, where the empty tuple is a unit value.
-    So, only an explicit application can cause effects, it cannot happen accidentally with a variable mention.
+    So, only an explicit application can cause effects, they cannot happen accidentally with a variable mention.
     \item Typing context distinguishes between regular bindings and implicit bindings.
     Implicit once are allowed to have monotypes only to simplify their resolution.
 \end{itemize}
@@ -635,19 +636,19 @@ For example, this function establishes en execution context with a handler of \t
         try { f() } catch (e: SomeException) { ... }
 \end{minted}
 
-
 \subsubsection{Operational semantics of $F^{ex}$}
 
-Operational semantics of $F^{ex}$ is quite ordinary (fig.\ \ref{fig:fex-operational}), except that we use first-class data constructors for capabilities: we store a fresh continuation delimiter marker and handler operations~\cite{xie2020effect}.
+Operational semantics of $F^{ex}$ (fig.\ \ref{fig:fex-operational}) reuses ordinary data constructors $K$ for capability construction.
+Namely, the (handle) rule generates a fresh marker and creates a capability as a product of a marker and handler's operations. % todo citations
 
 \begin{figure}
     \[
         \begin{array}{llll}
             \text{(tapp)} &(\Lambda \overline{\alpha}\ldotp t) \ap \overline{\tau} &\longrightarrow &[\overline{\alpha\to\tau}]\ap t
             \\
-            \text{(app)} &(\lambda \overline{x}~\overline{y}\ldotp t) \ap \overline{u} \ap \overline{u'} &\longrightarrow &[\overline{x\to u}]\ap[\overline{y\to u'}]\ap t
+            \text{(app)} &(\lambda \overline{x}~\overline{y}\ldotp t) \ap \overline{v} \ap \overline{v'} &\longrightarrow &[\overline{x\to v}, \overline{y\to v'}]\ap t
             \\
-            \text{(match)} &match ~K \ap \overline{t}~ with ~ \{ \overline{K_i \ap \overline{x} \to u_i}\} &\longrightarrow &[\overline{x\to t}]\ap u_k
+            \text{(match)} &match ~K \ap \overline{v}~ with ~ \{ \overline{K_i \ap \overline{x} \to u_i}\} &\longrightarrow &[\overline{x\to v}]\ap u_k
             \\
             &&&\text{where } K = K_k
             \\
@@ -655,21 +656,25 @@ Operational semantics of $F^{ex}$ is quite ordinary (fig.\ \ref{fig:fex-operatio
             \\
             &&&\text{where } m \text{ fresh}, h = \{\overline{op_i = t_i}\}
             \\
-            \text{(return)} &handler_m ~h ~ in ~v &\longrightarrow & v
+            \text{(return)} &handler_m ~v &\longrightarrow & v
             \\
-            \text{(perform)} &handler_m~h~in~E[perform \ap op_j\ap (K \ap m \ap \overline{t_i})\ap\overline{\tau}\ap\overline{v}] &\longrightarrow &t_j \ap \overline{\tau}\ap \overline{v}\ap k
+            \text{(perform)} &handler_m~E[perform \ap op_j\ap (K \ap m \ap \overline{t_i})\ap\overline{\tau}\ap\overline{v}] &\longrightarrow &t_j \ap \overline{\tau}\ap \overline{v}\ap k
             \\
-            &&&\text{where } k = \lambda x\ldotp handler_m~h~in~E[x]
+            &&&\text{where } t_i : \forall \overline{\alpha}\ldotp \tau'\to (\sigma \to \sigma')\to\sigma',
+            \\
+            &&& k = \lambda x : [\overline{\alpha\to\tau}]\ap\sigma \ldotp handler_m~h~in~E[x]
+            \\
+            & \infer[step]{E[t]\longrightarrow E[t']}{t\longrightarrow t'} &&
         \end{array}
     \]
     \caption{Operational semantics of $F^{ex}$.} % todo add step rule
     \label{fig:fex-operational}
 \end{figure}
 
-% todo effect encapsulation
-% todo optimizations
+Note that every $perform$ addresses a particular handler, so there is no effect encapsulation problem~\cite{lindley2018encapsulating}: an effect cannot be accidentally handled. % todo more citations
+Moreover, if an operation is tail-resumptive, we can easily replace its invocation with a virtual call, having implementations available in the capability~\cite{xie2020effect}.
 
-TODO % todo
+% todo theorem about determinism (and mb others)
 
 \subsubsection{Typing rules for $F^{ex}$}
 
