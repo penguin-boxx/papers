@@ -472,8 +472,8 @@ Such a function still supports contextual polymorphism since it can leak \texttt
 
     context(io: IO) // io: scoped(local) IO
     func printAll(xs: LazyList<Int>) {
-        let ys = lazyMap(xs, (x) => io.print(x)) // ys: scoped(local) LazyList<Int>
-        ys.collect()
+        let ys: scoped(local) LazyList<Int> = lazyMap(xs, (x) => io.print(x))
+        ys.collect() // force execution
     }
 \end{minted}
 
@@ -504,7 +504,7 @@ For example, the \texttt{lazyMap} function do not leak values of polymorphic typ
 \end{minted}
 
 Various techniques can be used to reduce boilerplate related to the lifetime polymorphism and specification of bounds.
-For example, the lifetime elision from the Rust language~\cite{matsakis2014rust} uses heuristics to automatically place lifetime variables in a reasonable in most situations way (we use \texttt{scoped} keyword without a particular lifetime to trigger an elision mechanism).
+For example, the lifetime elision from the Rust language~\cite{matsakis2014rust} uses heuristics to automatically place lifetime variables (we use \texttt{scoped} keyword without a particular lifetime to trigger an elision mechanism).
 We will discuss this and other methods in Section~\ref{subsec:lifetime-elision}.
 
 The type-based escape analysis feature is useful beyond its application to effect system construction.
@@ -571,15 +571,35 @@ TODO % todo
 For the start, let us introduce a typed call-by-value $F^{ex}$ calculi with explicit parameter passing.
 We will use it later (see\ \ref{subsec:inference}) as a target language for implicit parameters inference translation.
 
+\subsubsection{Syntax of $F^{ex}$}
+
+Let us discuss the syntax of $F^{ex}$ (fig.~\ref{fig:core-syntax}).
+By the over-line we denote a bunch of corresponding entries.
+Our considerations that lead to this syntax are the following:
+\begin{itemize}
+    \item We use uncurried abstraction and application to make implicit parameters inference local in a sense that typing information available to an application rule is enough~\cite{pierce2000local}.
+    \item For the same purpose we couple the first block with implicit parameters and the second block with ordinary ones.
+    \item $handle$ construct creates a capability associated with a corresponding handler and binds it with a name, so we use so-called lexical handlers~\cite{biernacki2019binders}. % todo more citations
+    At the same time $perform$ construct requires a capability to perform an effect.
+    This approach helps us to naturally build an effect system from the point of view we discussed before (Section~\ref{sec:idea}).
+    \item We need the highlighted $handler_m$ construct only as a reduction step for an operational semantics.
+    It embodies a continuation delimiter with a unique marker $m$.
+    \item For brevity, we do not include $return$ block in handlers, because it does not add any expressiveness.
+    \item In a function type $\ctx{e} \overline{\tau} \to \sigma$, over-line means a tuple of arguments, where the empty tuple is a unit value.
+    So, only an explicit application can cause effects, it cannot happen accidentally with a variable mention.
+    \item Typing context distinguishes between regular bindings and implicit bindings.
+    Implicit once are allowed to have monotypes only to simplify their resolution.
+\end{itemize}
+
 \begin{figure}
     \centering
     \[
-        \begin{array}{lrlll}
+        \begin{array}{lrll}
             \text{Variables} & & x, y, z, f, g, op \\
             \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \vor K\ap \overline{\tau} \ap \overline{t} \\
             &&\vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
             \\
-            \text{Terms} &t, u &\Coloneqq \vor v \vor t\ap\overline{\tau} \vor t \ap \overline{t} \ap \overline{t} \\
+            \text{Terms} &t, u &\Coloneqq v \vor t\ap\overline{\tau} \vor t \ap \overline{t} \ap \overline{t} \\
             &&\vor match ~ t ~ with ~\{\overline{K \ap \overline{x} \to t}\} \\
             &&\vor perform ~ op \ap x \ap \overline{\tau} \ap \overline{t} \\
             &&\vor handle ~ x : T \ap \overline{\tau} ~with ~h~in ~t \\
@@ -597,7 +617,7 @@ We will use it later (see\ \ref{subsec:inference}) as a target language for impl
             \text{Typing contexts} & \Gamma &\Coloneqq \epsilon \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
             \text{Data constructors} & & K : \forall\overline{\alpha}\ldotp \overline{s}\to T\ap \overline{\alpha} \\
             \text{Free type variables} & & ftv(\cdot) \\
-            \text{Evaluation context} &E &\Coloneqq \vor \square \vor E \ap \overline{\tau} \vor E \ap \overline{v}\ap \overline{t} \\
+            \text{Evaluation context} &E &\Coloneqq \square \vor E \ap \overline{\tau} \vor E \ap \overline{t}\ap \overline{t} \\
             &&\vor v \ap (\overline{v}, E, \overline{t}) \ap \overline{t} \vor v \ap \overline{v} \ap (\overline{v}, E, \overline{t}) \\
             &&\vor handler_m ~ E
         \end{array}
@@ -607,24 +627,16 @@ We will use it later (see\ \ref{subsec:inference}) as a target language for impl
     \label{fig:core-syntax}
 \end{figure}
 
-Let us discuss the syntax of $F^{ex}$ (fig.~\ref{fig:core-syntax}).
-By the over-line we denote a bunch of corresponding entries.
-Our considerations that lead to this syntax are the following:
-\begin{itemize}
-    \item We use uncurried abstraction and application for simplicity to make implicit parameters inference local in a sense that typing information available to an application rule is enough (no deferred constraint solving is required). % todo link something
-    \item We couple the first block with implicit parameters and the second block with ordinary ones to make sure that functions are never partially applied to implicit arguments to avoid accidental capturing. % todo example, investigate Kotlin
-    Accordingly, we delay inference of implicits until implication, in contrast to Haskell, for instance, which instantiates implicits immediately as type arguments~\cite{lewis2000implicit}.
-    \item % todo lexical handlers stuff
-    \item We need the \texttt{handler} construct as a reduction step for operational semantics.
-    \item For brevity, we do not include \texttt{return} block in handlers, because it does not add any expressiveness.
-    \item Implicit parameters are a part of a function type to support the abstraction over execution contexts:
-    \begin{minted}{swift}
-        func withSomeException(f: context(Handler<SomeException>) () -> r): r =
-            try { f() } catch (e: SomeException) { ... }
-    \end{minted}
-    \item Typing contexts distinguish between regular bindings and implicit bindings.
-    Implicit ones are assigned with monotypes, implicits resolution based on schemas appears to be more complicated.
-\end{itemize}
+Note that the type of first-class functions contains a list of implicit parameters.
+It allows to type the abstraction over execution contexts.
+For example, this function establishes en execution context with a handler of \texttt{SomeException} available:
+\begin{minted}{swift}
+    func withSomeException(f: context(Handler<SomeException>) () -> r): r =
+        try { f() } catch (e: SomeException) { ... }
+\end{minted}
+
+
+\subsubsection{Operational semantics of $F^{ex}$}
 
 Operational semantics of $F^{ex}$ is quite ordinary (fig.\ \ref{fig:fex-operational}), except that we use first-class data constructors for capabilities: we store a fresh continuation delimiter marker and handler operations~\cite{xie2020effect}.
 
@@ -654,7 +666,14 @@ Operational semantics of $F^{ex}$ is quite ordinary (fig.\ \ref{fig:fex-operatio
     \label{fig:fex-operational}
 \end{figure}
 
-% todo typing rules
+% todo effect encapsulation
+% todo optimizations
+
+TODO % todo
+
+\subsubsection{Typing rules for $F^{ex}$}
+
+TODO % todo typing rules
 
 \subsection{System $F^{im}$ with implicit parameters}
 
@@ -663,6 +682,11 @@ TODO % todo
 \subsection{Algorithmic implicit parameters inference} \label{subsec:inference}
 
 TODO % todo
+
+% todo about partial application to
+
+%\item We  to make sure that functions are never partially applied to implicit arguments to avoid accidental capturing. % todo example, investigate Kotlin
+%Accordingly, we delay inference of implicits until implication, in contrast to Haskell, for instance, which instantiates implicits immediately as type arguments~\cite{lewis2000implicit}.
 
 
 % todo effect encapsulation be default
