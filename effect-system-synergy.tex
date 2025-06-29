@@ -112,8 +112,10 @@
 \usepackage{minted}
 \setminted{xleftmargin=\parindent, autogobble, escapeinside=\#\#, numberblanklines=false, fontsize=\small}
 \usepackage{proof}
+\usepackage[inference]{semantic}
 
 \newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
+\newcommand{\mathframebox}[1]{\framebox{$\displaystyle #1$}}
 \newcommand{\vor}{~|~}
 \newcommand{\ap}{~}
 \newcommand{\ctx}[1]{ctx(#1)~}
@@ -612,7 +614,7 @@ Our considerations that lead to this syntax are the following:
         \end{array}
         \begin{array}{lrl}
             \text{Type variables} && \alpha, \beta \\
-            \text{Monotypes} & \tau, \sigma &\Coloneqq \alpha \vor T \ap \overline{\tau} \vor \ctx{e} \overline{\tau} \to \sigma \\
+            \text{Monotypes} & \tau, \sigma, \eta &\Coloneqq \alpha \vor T \ap \overline{\tau} \vor \ctx{e} \overline{\tau} \to \sigma \\
             \text{Type schemas} & s &\Coloneqq \forall\overline{\alpha}\ldotp \tau \\
             \text{Effect contexts} & e &\Coloneqq \epsilon\vor \tau, e \\
             \text{Typing contexts} & \Gamma &\Coloneqq \epsilon \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
@@ -639,7 +641,8 @@ For example, this function establishes en execution context with a handler of \t
 \subsubsection{Operational semantics of $F^{ex}$}
 
 Operational semantics of $F^{ex}$ (fig.\ \ref{fig:fex-operational}) reuses ordinary data constructors $K$ for capability construction.
-Namely, the (handle) rule generates a fresh marker and creates a capability as a product of a marker and handler's operations. % todo citations
+Namely, the (handle) rule generates a fresh marker and creates a capability as a product of the marker and handler's operations. % todo citations
+(perform) rule reinstalls a handler in a continuation, thus we use deep handlers~\cite{hillerstrom2018shallow}.
 
 \begin{figure}
     \[
@@ -660,9 +663,9 @@ Namely, the (handle) rule generates a fresh marker and creates a capability as a
             \\
             \text{(perform)} &handler_m~E[perform \ap op_j\ap (K \ap m \ap \overline{t_i})\ap\overline{\tau}\ap\overline{v}] &\longrightarrow &t_j \ap \overline{\tau}\ap \overline{v}\ap k
             \\
-            &&&\text{where } t_i : \forall \overline{\alpha}\ldotp \tau'\to (\sigma \to \sigma')\to\sigma',
+            &&&\text{where } t_j : \forall \overline{\alpha}\ldotp \tau'\to (\sigma \to \sigma')\to\sigma',
             \\
-            &&& k = \lambda x : [\overline{\alpha\to\tau}]\ap\sigma \ldotp handler_m~h~in~E[x]
+            &&& k = \lambda x : [\overline{\alpha\to\tau}]\ap\sigma \ldotp handler_m~E[x]
             \\
             & \infer[step]{E[t]\longrightarrow E[t']}{t\longrightarrow t'} &&
         \end{array}
@@ -677,6 +680,65 @@ Moreover, if an operation is tail-resumptive, we can easily replace its invocati
 % todo theorem about determinism (and mb others)
 
 \subsubsection{Typing rules for $F^{ex}$}
+
+\begin{figure}
+    \begin{align*}
+        \mathframebox{\Gamma\vdash t : \tau}
+    \end{align*}
+    \begin{align*}
+        \infer[Var]{\Gamma\vdash x\ap\overline{\tau} : [\overline{\alpha\to\tau}]\ap\sigma}{x : \forall\overline{\alpha}\ldotp \sigma \in_{first} \Gamma}
+        \text{\hspace{2em}}
+        \infer[CVar]{\Gamma\vdash t : \tau}{x :_c \tau \in_{first} \Gamma}
+    \end{align*}
+    \begin{align*}
+        \infer[Lam]{
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) ~ \overline{\tau_2} \to \sigma
+        }{
+            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma
+        }
+        \text{\hspace{2em}}
+        \infer[App]{
+            \Gamma\vdash t \ap \overline{u_1} \ap \overline{u_2} : \sigma
+        } {
+            \Gamma\vdash t : ctx(\overline{\tau_1})~\overline{\tau_2}\to\sigma
+            &
+            \overline{\Gamma\vdash u_1 : \tau_1}
+            &
+            \overline{\Gamma\vdash u_2 : \tau_2}
+        }
+    \end{align*}
+    \begin{align*}
+        \infer[Match]{
+            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_j} \to u_i }\}  : \sigma
+        }{
+            K_i : \forall \overline{\alpha}\ldotp \overline{s_j} \to T\ap\overline{\alpha} &
+            \Gamma\vdash t : T \ap\overline{\tau} &
+            \overline{x_j : [\overline{\alpha\to\tau}]\ap s_j}, \Gamma \vdash u_i : \sigma
+        }
+    \end{align*}
+%    \begin{equation}
+%        \inference[Handle]{kek}{lol}
+%    \end{equation}
+%    \begin{align*}
+    \[
+        %! suppress = EscapeAmpersand
+        \infer[Handle]{
+            \Gamma \vdash handle ~ x : T\ap\overline{\tau}~ with ~ \{op_i = t_i\} ~in~u : \eta
+        }{
+            \begin{gathered}
+                x :_c T\ap\overline{\tau}, \Gamma\vdash u : \eta
+            \end{gathered}
+            &
+            \begin{array}{ll}
+                \overline{\beta}\not\subset ftv(\eta) &K : \forall\overline{\alpha}\ldotp(\overline{\forall\overline{\beta}\ldotp\overline{\sigma}_i\to(\sigma'_i\to\eta)\to\eta})\to T\ap\overline{\alpha} \\
+                \theta = [\overline{\alpha\to\tau}] &\Gamma\vdash\theta\ap t_i : \forall \overline{\beta}\ldotp \overline{\theta\ap\sigma_i}\to(\theta\ap\sigma_i'\to\eta)\to\eta
+            \end{array}
+        }
+    \]
+%    \end{align*}
+    \caption{Typing rules for $F^{ex}$}
+    \label{fig:fex-typing}
+\end{figure}
 
 TODO % todo typing rules
 
@@ -750,6 +812,8 @@ TODO % todo
 
 TODO % todo
 
+% todo escape paths
+
 
 \section{Related work} \label{sec:related}
 
@@ -762,13 +826,8 @@ TODO % todo
 
 TODO % todo
 
-
-\section{Discussion and future work} \label{sec:discussion}
-
 % todo type inference and symilarity with first-class polymorphism
 % todo
-
-TODO % todo
 
 
 \section{Conclusion} \label{sec:conclusion}
