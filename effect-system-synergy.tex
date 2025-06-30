@@ -110,7 +110,7 @@
 
 \usepackage{multicol}
 \usepackage{minted}
-\setminted{xleftmargin=\parindent, autogobble, escapeinside=\#\#, numberblanklines=false, fontsize=\small}
+\setminted{xleftmargin=\parindent, autogobble, escapeinside=\#\#, numberblanklines=false, fontsize=\small} % todo use lstlisting instead with custom keywords
 \usepackage{proof}
 \usepackage[inference]{semantic}
 
@@ -578,16 +578,17 @@ We will use it later (see\ \ref{subsec:inference}) as a target language for impl
 
 Let us discuss the syntax of $F^{ex}$ (fig.~\ref{fig:core-syntax}).
 By the over-line we denote a bunch of corresponding entries.
+Constructs highlighted with gray are used only for an operational semantics.
 Our considerations that lead to this syntax are the following:
 \begin{itemize}
     \item We use uncurried abstraction and application to make implicit parameters inference local in a sense that typing information available to an application rule is enough~\cite{pierce2000local}.
     \item For the same purpose we couple the first block with implicit parameters and the second block with ordinary ones.
+    \item $K_{cap}$ is used in an operational semantics as a representation of a capability. % todo cite generalized evidence passing?
     \item $handle$ construct creates a capability associated with a corresponding handler and binds it with a name, so we use so-called lexical handlers~\cite{biernacki2019binders}. % todo more citations
     At the same time $perform$ construct requires a capability to perform an effect.
     This approach helps us to naturally build an effect system from the point of view we discussed before (Section~\ref{sec:idea}).
-    \item We need the highlighted $handler_m$ construct only as a reduction step for an operational semantics.
-    It embodies a continuation delimiter with a unique marker $m$.
     \item For brevity, we do not include $return$ block in handlers, because it does not add any expressiveness.
+    \item $handler_m$ construct serves as a continuation delimiter with a unique marker $m$ for an operational semantics.
     \item In a function type $\ctx{e} \overline{\tau} \to \sigma$, over-line means a tuple of arguments, where the empty tuple is a unit value.
     So, only an explicit application can cause effects, they cannot happen accidentally with a variable mention.
     \item Typing context distinguishes between regular bindings and implicit bindings.
@@ -596,10 +597,11 @@ Our considerations that lead to this syntax are the following:
 
 \begin{figure}
     \centering
-    \[
+    \begin{gather*}
         \begin{array}{lrll}
             \text{Variables} & & x, y, z, f, g, op \\
-            \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \vor K\ap \overline{\tau} \ap \overline{t} \\
+            \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \\
+            &&\vor K\ap \overline{\tau} \ap \overline{t} \vor \graybox{K_{cap}\ap\overline{\tau}\ap m\ap h} \\
             &&\vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
             \\
             \text{Terms} &t, u &\Coloneqq v \vor t\ap\overline{\tau} \vor t \ap \overline{t} \ap \overline{t} \\
@@ -610,21 +612,24 @@ Our considerations that lead to this syntax are the following:
             \\
             \text{Handlers} &h &\Coloneqq \{ \overline{op = t} \}
             \\
-            \text{Programs} &prog &\Coloneqq \epsilon \vor x : s = t, prog
+            \text{Programs} &p &\Coloneqq \epsilon \vor x : s = t, p
         \end{array}
         \begin{array}{lrl}
             \text{Type variables} && \alpha, \beta \\
+            \text{Type constructors} && T \\
             \text{Monotypes} & \tau, \sigma, \eta &\Coloneqq \alpha \vor T \ap \overline{\tau} \vor \ctx{e} \overline{\tau} \to \sigma \\
             \text{Type schemas} & s &\Coloneqq \forall\overline{\alpha}\ldotp \tau \\
-            \text{Effect contexts} & e &\Coloneqq \epsilon\vor \tau, e \\
+            \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
             \text{Typing contexts} & \Gamma &\Coloneqq \epsilon \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
-            \text{Data constructors} & & K : \forall\overline{\alpha}\ldotp \overline{s}\to T\ap \overline{\alpha} \\
+            \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}}\} \\
+            \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{\alpha}\ldotp\overline{\tau}\to\sigma}\} \\
+            \text{Data constructors} & & K : \forall\overline{\alpha}\ldotp \overline{\tau}\to T\ap \overline{\alpha} \\
             \text{Free type variables} & & ftv(\cdot) \\
-            \text{Evaluation context} &E &\Coloneqq \square \vor E \ap \overline{\tau} \vor E \ap \overline{t}\ap \overline{t} \\
-            &&\vor v \ap (\overline{v}, E, \overline{t}) \ap \overline{t} \vor v \ap \overline{v} \ap (\overline{v}, E, \overline{t}) \\
-            &&\vor handler_m ~ E
-        \end{array}
-    \]
+        \end{array}\\
+        \begin{aligned}
+            \text{Evaluation context } E \Coloneqq \square \vor E \ap \overline{\tau} \vor E \ap \overline{t}\ap \overline{t} \vor v \ap (\overline{v}, E, \overline{t}) \ap \overline{t} \vor v \ap \overline{v} \ap (\overline{v}, E, \overline{t}) \vor handler_m ~ E
+        \end{aligned}\\
+    \end{gather*}
     \caption{Syntax of $F^{ex}$.}
     % todo beautify
     \label{fig:core-syntax}
@@ -638,11 +643,28 @@ For example, this function establishes en execution context with a handler of \t
         try { f() } catch (e: SomeException) { ... }
 \end{minted}
 
+We assume that an effect context $\Sigma$ is populated by user's \texttt{effect} declarations like ones in Koka. % todo citation
+Namely, for a program with the following declaration, $\Sigma = \{EffK : \forall\alpha\ldotp\{id : \forall\beta\ldotp b\to b, yield : a \to Unit\} \to Eff\ap a\}$ (there is a bijection between capability constructors and effect types):
+\begin{minted}{swift}
+    effect Eff<a> {
+        op id(x: b): b
+        op yield(x: a): Unit
+    }
+\end{minted}
+
 \subsubsection{Operational semantics of $F^{ex}$}
 
-Operational semantics of $F^{ex}$ (fig.\ \ref{fig:fex-operational}) reuses ordinary data constructors $K$ for capability construction.
-Namely, the (handle) rule generates a fresh marker and creates a capability as a product of the marker and handler's operations. % todo citations
-(perform) rule reinstalls a handler in a continuation, thus we use deep handlers~\cite{hillerstrom2018shallow}.
+Operational semantics we give for $F^{ex}$ (fig.\ \ref{fig:fex-operational}) is quite ordinary except that we
+
+% todo context as a function
+
+%Operational semantics of $F^{ex}$ (fig.\ \ref{fig:fex-operational})
+
+
+
+%Operational semantics of $F^{ex}$ (fig.\ \ref{fig:fex-operational}) reuses ordinary data constructors $K$ for capability construction.
+%Namely, the (handle) rule generates a fresh marker and creates a capability as a product of the marker and handler's operations. % todo citations
+%(perform) rule reinstalls a handler in a continuation, thus we use deep handlers~\cite{hillerstrom2018shallow}.
 
 \begin{figure}
     \[
@@ -653,21 +675,21 @@ Namely, the (handle) rule generates a fresh marker and creates a capability as a
             \\
             \text{(match)} &match ~K \ap \overline{v}~ with ~ \{ \overline{K_i \ap \overline{x} \to u_i}\} &\longrightarrow &[\overline{x\to v}]\ap u_k
             \\
-            &&&\text{where } K = K_k
+            &&\text{where} & K = K_k
             \\
-            \text{(handle)} &handle ~ x : T \ap \overline{\tau} ~with~h~in~t &\longrightarrow & handler_m ~[x \to K \ap m \ap \overline{t_i}] \ap u
+            \text{(handle)} &handle ~ x : T \ap \overline{\tau} ~with~h~in~t &\longrightarrow & handler_m ~[x \to K_{cap} \ap\overline{\tau}\ap m \ap h] \ap u
             \\
-            &&&\text{where } m \text{ fresh}, h = \{\overline{op_i = t_i}\}
+            &&\text{where} & m \text{ fresh}, K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma
             \\
             \text{(return)} &handler_m ~v &\longrightarrow & v
             \\
-            \text{(perform)} &handler_m~E[perform \ap op_j\ap (K \ap m \ap \overline{t_i})\ap\overline{\tau}\ap\overline{v}] &\longrightarrow &t_j \ap \overline{\tau}\ap \overline{v}\ap k
+            \text{(perform)} &handler_m~E[perform \ap op \ap (K_{cap}\ap\overline{\tau_1}\ap m \ap h)\ap\overline{\tau_2}\ap\overline{v}] &\longrightarrow &t \ap \overline{\tau_2}\ap \overline{v}\ap k
             \\
-            &&&\text{where } t_j : \forall \overline{\alpha}\ldotp \tau'\to (\sigma \to \sigma')\to\sigma',
-            \\
-            &&& k = \lambda x : [\overline{\alpha\to\tau}]\ap\sigma \ldotp handler_m~E[x]
-            \\
-            & \infer[step]{E[t]\longrightarrow E[t']}{t\longrightarrow t'} &&
+            &&\text{where} & (op = t) \in h, \theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}], \\
+            &&& K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma, \\
+            &&& (op : \forall\overline{\beta}\ldotp\overline{\sigma}\to\sigma') \in sig, \\
+            &&& k = \lambda x : \theta\ap\sigma' \ldotp handler_m~E[x] \\
+            & \infer[\text{(step)}]{E[t]\longrightarrow E[t']}{t\longrightarrow t'} &&
         \end{array}
     \]
     \caption{Operational semantics of $F^{ex}$.} % todo add step rule
@@ -681,6 +703,9 @@ Moreover, if an operation is tail-resumptive, we can easily replace its invocati
 
 \subsubsection{Typing rules for $F^{ex}$}
 
+% todo rules are algorithmic
+
+%! suppress = EscapeAmpersand
 \begin{figure}
     \begin{align*}
         \mathframebox{\Gamma\vdash t : \tau}
@@ -716,29 +741,49 @@ Moreover, if an operation is tail-resumptive, we can easily replace its invocati
             \overline{x_j : [\overline{\alpha\to\tau}]\ap s_j}, \Gamma \vdash u_i : \sigma
         }
     \end{align*}
-%    \begin{equation}
-%        \inference[Handle]{kek}{lol}
-%    \end{equation}
-%    \begin{align*}
-    \[
-        %! suppress = EscapeAmpersand
+    \begin{gather*}
+        \infer[Perform]{
+            \Gamma\vdash perform \ap op\ap \overline{\tau_2}\ap x\ap \overline{t} : \theta\ap\eta
+        }{
+            \Gamma\vdash x : T\ap \overline{\tau_1} &
+            \Sigma(T) = \forall\overline{\alpha}\ldotp sig &
+            op : \forall\overline{\beta}\ldotp \overline{\sigma}\to\eta \in sig &
+            \theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}] &
+            \overline{\Gamma\vdash t : \theta\ap\sigma}
+        }\\
         \infer[Handle]{
-            \Gamma \vdash handle ~ x : T\ap\overline{\tau}~ with ~ \{op_i = t_i\} ~in~u : \eta
+            \Gamma \vdash handle ~ x : T\ap\overline{\tau}~ with ~ \{\overline{op_i = t_i}\} ~in~u : \eta
         }{
             \begin{gathered}
                 x :_c T\ap\overline{\tau}, \Gamma\vdash u : \eta
             \end{gathered}
             &
             \begin{array}{ll}
-                \overline{\beta}\not\subset ftv(\eta) &K : \forall\overline{\alpha}\ldotp(\overline{\forall\overline{\beta}\ldotp\overline{\sigma}_i\to(\sigma'_i\to\eta)\to\eta})\to T\ap\overline{\alpha} \\
-                \theta = [\overline{\alpha\to\tau}] &\Gamma\vdash\theta\ap t_i : \forall \overline{\beta}\ldotp \overline{\theta\ap\sigma_i}\to(\theta\ap\sigma_i'\to\eta)\to\eta
+                \overline{\beta}\not\subset ftv(\eta) &
+                \Sigma(T) = \forall\overline{\alpha}\ldotp sig, \hspace{0.5em} op_i : \forall\overline{\beta}\ldotp \overline{\sigma}_i\to\sigma'_i \in sig
+                \\
+                \theta = [\overline{\alpha\to\tau}] &
+                \Gamma\vdash\theta\ap t_i : \forall \overline{\beta}\ldotp \overline{\theta\ap\sigma_i}\to(\theta\ap\sigma_i'\to\eta)\to\eta
             \end{array}
+        }\\
+        \infer[Cap]{
+            \Gamma\vdash K_{cap}\ap\overline{\tau}\ap m\ap h : T\ap\overline{\tau}
+        }{
+            K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma
+        } % todo looks like a bull shit
+        \hspace{2em}
+        \infer[Handler]{
+            \Gamma\vdash handler_m ~t : \tau
+        }{
+            \Gamma\vdash t : \tau
         }
-    \]
+    \end{gather*}
 %    \end{align*}
     \caption{Typing rules for $F^{ex}$}
     \label{fig:fex-typing}
 \end{figure}
+
+% todo невозможно апплицировать типовый конструктор ни к чему полиморфному, потому что мы всё всегда типизируем монотипами
 
 TODO % todo typing rules
 
@@ -800,6 +845,8 @@ TODO % todo
 % todo bounds instead of boxing (from capturing types)
 % todo lifetimes in the middle instead of `here` mode (to allow handlers consume tracked things)
 
+% todo невозможность отсылать локальные вещи операциям это слишком жестко, нужно ослабить, иначе даже в массив сложит трекаемые вещи в одном скоупе не получится
+
 
 \section{Adoption in mainstream languages} \label{sec:mainstream}
 
@@ -812,7 +859,11 @@ TODO % todo
 
 TODO % todo
 
-% todo escape paths
+% todo unsafe escape hatches
+
+% todo bidirectional semantics and higher-order effects
+
+
 
 
 \section{Related work} \label{sec:related}
