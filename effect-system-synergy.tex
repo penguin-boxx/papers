@@ -572,7 +572,7 @@ TODO % todo
 \subsection{System $F^{ex}$} \label{subsec:core-lang}
 
 For the start, let us introduce a typed call-by-value $F^{ex}$ calculi with explicit parameter passing.
-We will use it later (see\ \ref{subsec:inference}) as a target language for implicit parameters inference translation.
+We will use it later (see\ \ref{subsubsec:inference}) as a target language for implicit parameters inference translation.
 
 \subsubsection{Syntax of $F^{ex}$ (fig.\ \ref{fig:core-syntax})}
 
@@ -709,20 +709,17 @@ TODO theorems % todo theorem about determinism (and mb others)
     \item Typing rules for $F^{ex}$ are algorithmic.
     \item We skip type well-formedness conditions for brevity.
     \item An entry in an effect context $\Sigma$ and be uniquely identified by a capability type, so we use $\Sigma$ as a function: $\Sigma(T) = \forall\overline{\alpha}\ldotp sig \iff K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}\in\Sigma$.
-    \item
+    \item The typing context is an ordered list.
+    $\in_{first}$ relation is only satisfied when the latest entry in a typing context has given name and binding type ($:$ or $:_c$). % todo clarify
 \end{itemize}
 
 %! suppress = EscapeAmpersand
 \begin{figure}
-    \begin{align*}
-        \mathframebox{\Gamma\vdash t : \tau}
-    \end{align*}
-    \begin{align*}
+    \mathframebox{\Gamma\vdash t : \tau} \\
+    \begin{gather*}
         \infer[Var]{\Gamma\vdash x\ap\overline{\tau} : [\overline{\alpha\to\tau}]\ap\sigma}{x : \forall\overline{\alpha}\ldotp \sigma \in_{first} \Gamma}
         \text{\hspace{2em}}
-        \infer[CVar]{\Gamma\vdash t : \tau}{x :_c \tau \in_{first} \Gamma}
-    \end{align*}
-    \begin{align*}
+        \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in_{first} \Gamma} \\
         \infer[Lam]{
             \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) ~ \overline{\tau_2} \to \sigma
         }{
@@ -738,18 +735,14 @@ TODO theorems % todo theorem about determinism (and mb others)
             \overline{\Gamma\vdash u_1 : \tau_1}
             &
             \overline{\Gamma\vdash u_2 : \tau_2}
-        }
-    \end{align*}
-    \begin{align*}
+        }\\
         \infer[Match]{
             \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_j} \to u_i }\}  : \sigma
         }{
             K_i : \forall \overline{\alpha}\ldotp \overline{s_j} \to T\ap\overline{\alpha} &
             \Gamma\vdash t : T \ap\overline{\tau} &
             \overline{x_j : [\overline{\alpha\to\tau}]\ap s_j}, \Gamma \vdash u_i : \sigma
-        }
-    \end{align*}
-    \begin{gather*}
+        }\\
         \infer[Perform]{
             \Gamma\vdash perform \ap op\ap \overline{\tau_2}\ap x\ap \overline{t} : \theta\ap\eta
         }{
@@ -801,15 +794,57 @@ TODO theorems % todo theorem about determinism (and mb others)
     \label{fig:fex-typing}
 \end{figure}
 
-\subsection{System $F^{im}$ with implicit parameters}
+\subsection{System $F^{im}$ with implicit parameters} \label{subsec:fim}
+
+In this section we introduce a language $F^{im}$ with implicit parameters and give an algorithmic translation to $F^{ex}$.
+
+\subsubsection{Syntax of $F^{im}$}
+
+We extend syntax of $F^{ex}$ with an omitting application, which do not specify the first block of parameters:
+\[
+    \begin{array}{lcc}
+        \text{Terms} & t, u &\Coloneqq \ldots \vor t\ap\overline{t} \vor \ldots
+    \end{array}
+\]
+
+\subsubsection{Typing rules for $F_{im}$ (fig.\ \ref{fig:fim-typing})}
+
+Typing rule for an omitting application needs to check if all implicits can be satisfied
+
+\begin{figure}
+    %! suppress = EscapeAmpersand
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash t : \tau} \\
+        \infer[CtxApp]{
+            \Gamma\vdash t\ap\overline{u} : \sigma
+        }{
+            \Gamma\vdash t : \ctx{e} \overline{\tau} \to \sigma &
+            e\subset_c\Gamma &
+            \overline{\Gamma\vdash u : \tau}
+        }
+%        \mathframebox{\sigma <: \tau} \\
+%        \infer[Sub]{\ctx{e} \tau\to\sigma <: \ctx{e'}\tau\to\sigma}{e' <: e}
+    \end{gather*}
+    \caption{Additional typing rules for $F_{im}$.}
+    \label{fig:fim-typing}
+\end{figure}
+
+\subsubsection{Inference of implicit parameters} \label{subsubsec:inference}
+
+We give a type-directed translation from $F^{im}$ to $F^{ex}$ (fig.\ \ref{fig:fim-fex-inference}).
+
+\begin{figure}
+    \begin{gather*}
+        kek
+    \end{gather*}
+    \label{fig:fim-fex-inference}
+\end{figure}
+
+TODO % todo
+
+% todo similar to first-class polymorphism
 
 % todo troubles with resolve
-
-TODO % todo
-
-\subsection{Algorithmic implicit parameters inference} \label{subsec:inference}
-
-TODO % todo
 
 % todo about partial application to
 
@@ -840,6 +875,10 @@ TODO % todo
 % todo Barendregt’s ‘variable convention for simplicity?
 
 % todo what if generate application (like for dictionaries) to reorder effect rows (do inhabitation of some form)?
+
+\subsection{System $F^{im}_{<:}$ with implicit parameters and subtyping} \label{subsec:im-sub}
+
+TODO % todo
 
 
 \section{Design of type-based escape analysis} \label{sec:escape}
