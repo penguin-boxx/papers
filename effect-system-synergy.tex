@@ -574,16 +574,15 @@ TODO % todo
 For the start, let us introduce a typed call-by-value $F^{ex}$ calculi with explicit parameter passing.
 We will use it later (see\ \ref{subsec:inference}) as a target language for implicit parameters inference translation.
 
-\subsubsection{Syntax of $F^{ex}$}
+\subsubsection{Syntax of $F^{ex}$ (fig.\ \ref{fig:core-syntax})}
 
-Let us discuss the syntax of $F^{ex}$ (fig.~\ref{fig:core-syntax}).
 By the over-line we denote a bunch of corresponding entries.
 Constructs highlighted with gray are used only for an operational semantics.
 Our considerations that lead to this syntax are the following:
 \begin{itemize}
     \item We use uncurried abstraction and application to make implicit parameters inference local in a sense that typing information available to an application rule is enough~\cite{pierce2000local}.
     \item For the same purpose we couple the first block with implicit parameters and the second block with ordinary ones.
-    \item $K_{cap}$ is used in an operational semantics as a representation of a capability. % todo cite generalized evidence passing?
+    \item Capability constructors $K_{cap}$ are used in an operational semantics as a representation of a capability. % todo cite generalized evidence passing?
     \item $handle$ construct creates a capability associated with a corresponding handler and binds it with a name, so we use so-called lexical handlers~\cite{biernacki2019binders}. % todo more citations
     At the same time $perform$ construct requires a capability to perform an effect.
     This approach helps us to naturally build an effect system from the point of view we discussed before (Section~\ref{sec:idea}).
@@ -637,10 +636,10 @@ Our considerations that lead to this syntax are the following:
 
 Note that the type of first-class functions contains a list of implicit parameters.
 It allows to type the abstraction over execution contexts.
-For example, this function establishes en execution context with a handler of \texttt{SomeException} available:
+For example, this function establishes en execution context with a handler of \texttt{E} exception available:
 \begin{minted}{swift}
-    func withSomeException(f: context(Handler<SomeException>) () -> r): r =
-        try { f() } catch (e: SomeException) { ... }
+    func withE(f: context(Handler<E>) () -> r): r =
+        try { f() } catch (e: E) { ... }
 \end{minted}
 
 We assume that an effect context $\Sigma$ is populated by user's \texttt{effect} declarations like ones in Koka. % todo citation
@@ -652,19 +651,15 @@ Namely, for a program with the following declaration, $\Sigma = \{EffK : \forall
     }
 \end{minted}
 
-\subsubsection{Operational semantics of $F^{ex}$}
+\subsubsection{Operational semantics of $F^{ex}$ (fig.\ \ref{fig:fex-operational})}
 
-Operational semantics we give for $F^{ex}$ (fig.\ \ref{fig:fex-operational}) is quite ordinary except that we
-
-% todo context as a function
-
-%Operational semantics of $F^{ex}$ (fig.\ \ref{fig:fex-operational})
-
-
-
-%Operational semantics of $F^{ex}$ (fig.\ \ref{fig:fex-operational}) reuses ordinary data constructors $K$ for capability construction.
-%Namely, the (handle) rule generates a fresh marker and creates a capability as a product of the marker and handler's operations. % todo citations
-%(perform) rule reinstalls a handler in a continuation, thus we use deep handlers~\cite{hillerstrom2018shallow}.
+%Let us get through the most interesting parts of our semantics:
+\begin{itemize}
+    \item (handle) selects a capability constructor corresponding to a provided effect types $T$ and uses it to create a capability.
+    Also, it allocates a fresh marker $m$ and installs it with $handler$ construct.
+    \item (perform) destructs a capability, selects an operation and executes it with a current continuation delimited by a corresponding marker.
+    We use deep handlers~\cite{hillerstrom2018shallow}, so handler is reinstalled in a continuation.
+\end{itemize}
 
 \begin{figure}
     \[
@@ -679,15 +674,15 @@ Operational semantics we give for $F^{ex}$ (fig.\ \ref{fig:fex-operational}) is 
             \\
             \text{(handle)} &handle ~ x : T \ap \overline{\tau} ~with~h~in~t &\longrightarrow & handler_m ~[x \to K_{cap} \ap\overline{\tau}\ap m \ap h] \ap u
             \\
-            &&\text{where} & m \text{ fresh}, K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma
+            &&\text{where} & m \text{ fresh}, {\color{gray}K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma}
             \\
             \text{(return)} &handler_m ~v &\longrightarrow & v
             \\
             \text{(perform)} &handler_m~E[perform \ap op \ap (K_{cap}\ap\overline{\tau_1}\ap m \ap h)\ap\overline{\tau_2}\ap\overline{v}] &\longrightarrow &t \ap \overline{\tau_2}\ap \overline{v}\ap k
             \\
-            &&\text{where} & (op = t) \in h, \theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}], \\
-            &&& K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma, \\
-            &&& (op : \forall\overline{\beta}\ldotp\overline{\sigma}\to\sigma') \in sig, \\
+            &&\text{where} & (op = t) \in h, {\color{gray}\theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}],} \\
+            &&& {\color{gray}K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma,} \\
+            &&& {\color{gray}(op : \forall\overline{\beta}\ldotp\overline{\sigma}\to\sigma') \in sig,} \\
             &&& k = \lambda x : \theta\ap\sigma' \ldotp handler_m~E[x] \\
             & \infer[\text{(step)}]{E[t]\longrightarrow E[t']}{t\longrightarrow t'} &&
         \end{array}
@@ -697,13 +692,25 @@ Operational semantics we give for $F^{ex}$ (fig.\ \ref{fig:fex-operational}) is 
 \end{figure}
 
 Note that every $perform$ addresses a particular handler, so there is no effect encapsulation problem~\cite{lindley2018encapsulating}: an effect cannot be accidentally handled. % todo more citations
-Moreover, if an operation is tail-resumptive, we can easily replace its invocation with a virtual call, having implementations available in the capability~\cite{xie2020effect}.
+For example, the following function will not be able to intercept \texttt{E2} exception potentially thrown in \texttt{f}, because \texttt{withE1} do not explicitly provide \texttt{f} a corresponding capability:
+\begin{minted}{swift}
+    func withE1(f: context(Handler<E1>) () -> r): r =
+        try { f() } catch (e: E1) { ... } catch (e: E2) { /* unreachable */ }
+\end{minted}
 
-% todo theorem about determinism (and mb others)
+Since we propagate a handler to an operation call site, we can avoid handler lookup and collection of a continuation if a callee operation is tail-resumptive~\cite{xie2020effect}.
+In a low-level implementation such $perform$ can be replaced with a virtual call. % todo citation
 
-\subsubsection{Typing rules for $F^{ex}$}
+TODO theorems % todo theorem about determinism (and mb others)
 
-% todo rules are algorithmic
+\subsubsection{Typing rules for $F^{ex}$ (fig.\ \ref{fig:fex-typing})}
+
+\begin{itemize}
+    \item Typing rules for $F^{ex}$ are algorithmic.
+    \item We skip type well-formedness conditions for brevity.
+    \item An entry in an effect context $\Sigma$ and be uniquely identified by a capability type, so we use $\Sigma$ as a function: $\Sigma(T) = \forall\overline{\alpha}\ldotp sig \iff K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}\in\Sigma$.
+    \item
+\end{itemize}
 
 %! suppress = EscapeAmpersand
 \begin{figure}
@@ -719,7 +726,8 @@ Moreover, if an operation is tail-resumptive, we can easily replace its invocati
         \infer[Lam]{
             \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) ~ \overline{\tau_2} \to \sigma
         }{
-            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma
+            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma &
+            \overline{\tau_1} \text{ distinct}
         }
         \text{\hspace{2em}}
         \infer[App]{
@@ -759,7 +767,7 @@ Moreover, if an operation is tail-resumptive, we can easily replace its invocati
             \end{gathered}
             &
             \begin{array}{ll}
-                \overline{\beta}\not\subset ftv(\eta) &
+                \overline{\beta}\not\cap ftv(\eta) & % todo beautify intersection
                 \Sigma(T) = \forall\overline{\alpha}\ldotp sig, \hspace{0.5em} op_i : \forall\overline{\beta}\ldotp \overline{\sigma}_i\to\sigma'_i \in sig
                 \\
                 \theta = [\overline{\alpha\to\tau}] &
@@ -776,18 +784,26 @@ Moreover, if an operation is tail-resumptive, we can easily replace its invocati
             \Gamma\vdash handler_m ~t : \tau
         }{
             \Gamma\vdash t : \tau
-        }
+        }\\
+        \begin{array}{ccccc}
+            \mathframebox{\Gamma\vdash t : s} &
+            \infer[TLam]{
+                \Gamma\vdash\Lambda\overline{\alpha}\ldotp v : \forall\overline{\alpha}\ldotp\tau
+            }{
+                \Gamma\vdash v : \tau & ftv(\tau) = \overline{\alpha}
+            } &
+            \mathframebox{\Gamma\vdash p} &
+            \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
+            \infer[Prog]{\Gamma\vdash x : s = t, p}{\Gamma\vdash t : s & \Gamma\vdash p}
+        \end{array}
     \end{gather*}
-%    \end{align*}
     \caption{Typing rules for $F^{ex}$}
     \label{fig:fex-typing}
 \end{figure}
 
-% todo невозможно апплицировать типовый конструктор ни к чему полиморфному, потому что мы всё всегда типизируем монотипами
-
-TODO % todo typing rules
-
 \subsection{System $F^{im}$ with implicit parameters}
+
+% todo troubles with resolve
 
 TODO % todo
 
