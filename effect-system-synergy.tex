@@ -519,7 +519,7 @@ Namely, it can be used to reduce a number of heap allocations~\cite{lorenzen2024
 An effect system can be seen as a combination of implicit parameters and type-based escape analysis features.
 Hence, the design of an effect system naturally splits into two parts and can be approached step-by-step.
 
-In fact, our previous discussion anyway was centered around free variables.
+In fact, our previous discussion was centered around free variables.
 Indeed, a term naturally depends on a context with its free variables: in different contexts it obtains different semantics through them.
 So, they are the target for an effect system, while bound once are controlled by canonical type systems.
 
@@ -620,7 +620,7 @@ Our considerations that lead to this syntax are the following:
             \text{Monotypes} & \tau, \sigma, \eta &\Coloneqq \alpha \vor T \ap \overline{\tau} \vor \ctx{e} \overline{\tau} \to \sigma \\
             \text{Type schemas} & s &\Coloneqq \forall\overline{\alpha}\ldotp \tau \\
             \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
-            \text{Typing contexts} & \Gamma &\Coloneqq \epsilon \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
+            \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
             \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}}\} \\
             \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{\alpha}\ldotp\overline{\tau}\to\sigma}\} \\
             \text{Data constructors} & & K : \forall\overline{\alpha}\ldotp \overline{\tau}\to T\ap \overline{\alpha} \\
@@ -636,7 +636,7 @@ Our considerations that lead to this syntax are the following:
 \end{figure}
 
 Note that the type of first-class functions contains a list of implicit parameters.
-It allows to type the abstraction over execution contexts.
+It allows to type the abstraction over execution contexts. % todo rephrase
 For example, this function establishes en execution context with a handler of \texttt{E} exception available:
 \begin{minted}{swift}
     func withE(f: context(Handler<E>) () -> r): r =
@@ -651,6 +651,8 @@ Namely, for a program with the following declaration, $\Sigma = \{EffK : \forall
         op yield(x: a): Unit
     }
 \end{minted}
+
+% TODO one typing context vs two
 
 \subsubsection{Operational semantics of $F^{ex}$ (fig.\ \ref{fig:fex-operational})}
 
@@ -669,9 +671,7 @@ Namely, for a program with the following declaration, $\Sigma = \{EffK : \forall
             \\
             \text{(app)} &(\lambda \overline{x}~\overline{y}\ldotp t) \ap \overline{v} \ap \overline{v'} &\longrightarrow &[\overline{x\to v}, \overline{y\to v'}]\ap t
             \\
-            \text{(match)} &match ~K \ap \overline{v}~ with ~ \{ \overline{K_i \ap \overline{x} \to u_i}\} &\longrightarrow &[\overline{x\to v}]\ap u_k
-            \\
-            &&\text{where} & K = K_k
+            \text{(match)} &match ~K \ap \overline{v}~ with ~ \{ \overline{K_i \ap \overline{x} \to u_i}\} &\longrightarrow &[\overline{x\to v}]\ap u_k, \text{ where } K = K_k
             \\
             \text{(handle)} &handle ~ x : T \ap \overline{\tau} ~with~h~in~t &\longrightarrow & handler_m ~[x \to K_{cap} \ap\overline{\tau}\ap m \ap h] \ap u
             \\
@@ -684,11 +684,14 @@ Namely, for a program with the following declaration, $\Sigma = \{EffK : \forall
             &&\text{where} & (op = t) \in h, {\color{gray}\theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}],} \\
             &&& {\color{gray}K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma,} \\
             &&& {\color{gray}(op : \forall\overline{\beta}\ldotp\overline{\sigma}\to\sigma') \in sig,} \\
-            &&& k = \lambda x : \theta\ap\sigma' \ldotp handler_m~E[x] \\
-            & \infer[\text{(step)}]{E[t]\longrightarrow E[t']}{t\longrightarrow t'} &&
+            &&& k = \lambda x : \theta\ap\sigma' \ldotp handler_m~E[x]
         \end{array}
     \]
-    \caption{Operational semantics of $F^{ex}$.} % todo add step rule
+    \vspace{-3em}
+    \[
+        \hspace{-15em}\infer[\text{(step)}]{E[t]\longrightarrow E[t']}{t\longrightarrow t'}
+    \]
+    \caption{Operational semantics of $F^{ex}$.}
     \label{fig:fex-operational}
 \end{figure}
 
@@ -715,8 +718,8 @@ TODO theorems % todo theorem about determinism (and mb others)
 
 %! suppress = EscapeAmpersand
 \begin{figure}
-    \mathframebox{\Gamma\vdash t : \tau} \\
     \begin{gather*}
+        \mathframebox{\Gamma\vdash t : \tau} \\
         \infer[Var]{\Gamma\vdash x\ap\overline{\tau} : [\overline{\alpha\to\tau}]\ap\sigma}{x : \forall\overline{\alpha}\ldotp \sigma \in \Gamma}
         \text{\hspace{2em}}
         \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma} \\
@@ -838,25 +841,26 @@ This issue can be solved, for instance, by making typing context a list with dup
 \end{figure}
 
 There is a design decision to be made, whether inference should rely only on types, or on variable names as well.
+The second option is a bit more complicated than the first one, since it requires to store variables names in the effect rows.
+Moreover, it excludes renaming of implicit parameters from $\alpha$-equivalence, making a program more fragile regarding renaming.
+On the other hand, it allows to use simultaneously multiple effects of the same type.
+This problem attracts many attention from researchers. % todo citations
+However, we use the first option and argue that in practical programming using multiple effects of the same type is mostly undesired.
+We believe that users should provide many domain-specific effects instead of using basic ones directly.
+For example, some \texttt{UserRepository} effect is preferable to general \texttt{Database} effect, since it provides higher-level of abstraction.
 
-The first option allows us not to store variable names in the effect context, while the second one support work with multiple effect of the same type.
-We argue that
-
-
-The second option allows to operate with multiple effects of the same type.
-
-
-% todo resolve by name and by type
-
-TODO % todo
-
-% todo similar to first-class polymorphism
-
-% todo about partial application to todo example, investigate Kotlin
-
-
+Another decision is when to substitute implicit parameters, on mentioning or, deferred, on application.
+It is a similar question to the type instantiation with first-class polymorphism (type inference infers type parameters)~\cite{emrich2020freezeml}. % todo verify citation
+Both ways are useful: the first is convenient with contextually-polymorphic functions \texttt{map(xs, f)}, the second helps with effect abstraction \texttt{withSomeException(f)}. % todo introduce effect abstraction somewhere % todo citations to kotlin, haskell and something
+Actually, the decision is about the default, since one behaviour can be changed to another by $\eta$-expansion. % todo explain better, examples
 
 \subsection{System $F^{im}_{<:}$ with implicit parameters and subtyping} \label{subsec:im-sub}
+
+If is convenient to introduce some form of subtyping on effect rows, since a function
+
+
+since a function with less context requirements can definitely be passed to a function providing more capabilities.
+
 
 % todo what if generate application (like for dictionaries) to reorder effect rows (do inhabitation of some form)?
 
@@ -902,7 +906,7 @@ TODO % todo
 
 % todo unsafe escape hatches
 
-% todo bidirectional semantics and higher-order effects
+
 
 TODO % todo
 
@@ -913,6 +917,10 @@ TODO % todo
 \subsection{Working with OOP}
 
 TODO % todo
+
+
+% todo abstraction inference
+% todo bidirectional semantics and higher-order effects
 
 
 \section{Related work} \label{sec:related}
