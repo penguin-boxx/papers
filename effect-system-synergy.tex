@@ -852,7 +852,7 @@ For example, some \texttt{UserRepository} effect is preferable to general \textt
 Another decision is when to substitute implicit parameters, on mentioning or, deferred, on application.
 It is a similar question to the type instantiation with first-class polymorphism (type inference infers type parameters)~\cite{emrich2020freezeml}. % todo verify citation
 Both ways are useful: the first is convenient with contextually-polymorphic functions \texttt{map(xs, f)}, the second helps with effect abstraction \texttt{withSomeException(f)}. % todo introduce effect abstraction somewhere % todo citations to kotlin, haskell and something
-Actually, the decision is about the default, since one behaviour can be changed to another by $\eta$-expansion. % todo explain better, examples
+Actually, the decision is about choosing the default, since one behaviour can be changed to another by $\eta$-expansion. % todo explain better, examples
 
 \subsection{System $F^{im}_{<:}$ with implicit parameters and subtyping} \label{subsec:im-sub}
 
@@ -863,6 +863,8 @@ We should be able to pass a function that uses only some of them:
     func withStd(f: context(IO, Allocator, Random) () -> r): r
     withStd(g) // g : context(IO) () -> Unit
 \end{minted}
+
+
 
 Probably the most straight-forward way to achieve such subtyping would be to represent context as a structural record type with natural subtyping including
 
@@ -887,11 +889,11 @@ Probably the most straight-forward way to achieve such subtyping would be to rep
         }
         \text{\hspace{1em}}
         \infer[AppArgCtx]{
-            \Gamma \vdash t \Leftarrow ctx(\overline{\tau}) ~\overline{\sigma}\to\eta\step \lambda \overline{x}~\overline{y}\ldotp t_c\ap \overline{x'}\ap\overline{y}
+            \Gamma \vdash t \Leftarrow ctx(\overline{\tau}) ~\overline{\sigma}\to\eta\step \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t_c\ap \overline{x'}\ap\overline{y}
         }{
-            \Gamma \vdash t : ctx(\overline{\sigma}) ~\overline{\sigma}\to\eta \step t_c
+            \Gamma \vdash t : ctx(\overline{\tau'}) ~\overline{\sigma}\to\eta \step t_c
             &
-            \overline{x :_c \tau} \vdash_{\overline{\sigma}} \overline{x'}
+            \overline{x :_c \tau} \vdash_{\overline{\tau'}} \overline{x'}
             &
             \overline{x~y \text{ fresh}}
         }
@@ -899,6 +901,8 @@ Probably the most straight-forward way to achieve such subtyping would be to rep
     \caption{Application rule for $F^{im}_{<:}$.}
     \label{sig:fim-sub-app}
 \end{figure}
+
+% todo link to bidirectional typing
 
 % todo big lambda inference
 
