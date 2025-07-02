@@ -856,18 +856,63 @@ Actually, the decision is about the default, since one behaviour can be changed 
 
 \subsection{System $F^{im}_{<:}$ with implicit parameters and subtyping} \label{subsec:im-sub}
 
-If is convenient to introduce some form of subtyping on effect rows, since a function
+If is convenient to introduce some form of subtyping on effect rows, since a function with less context requirements can be used in more permissive contexts.
+For example, \texttt{withStd} is a convenient function that provides default implementation for many effects.
+We should be able to pass a function that uses only some of them:
+\begin{minted}{swift}
+    func withStd(f: context(IO, Allocator, Random) () -> r): r
+    withStd(g) // g : context(IO) () -> Unit
+\end{minted}
 
+Probably the most straight-forward way to achieve such subtyping would be to represent context as a structural record type with natural subtyping including
 
-since a function with less context requirements can definitely be passed to a function providing more capabilities.
+\begin{figure}
+    %! suppress = EscapeAmpersand
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash t : \tau \step t_c} \\
+        \infer[App]{
+            \Gamma\vdash t\ap\overline{u} : \eta \step t_c \ap \overline{x} \ap \overline{u_c}
+        }{
+            \Gamma\vdash t : ctx(\overline{\tau})~\overline{\sigma}\to \eta \step t_c
+            &
+            \Gamma \vdash_{\overline{\tau}} \overline{x}
+            &
+            \overline{\Gamma\vdash u \Leftarrow \sigma \step u_c}
+        } \\
+        \mathframebox{\Gamma\vdash t \Leftarrow \tau \step t_c} \\
+        \infer[AppArg]{
+            \Gamma\vdash t \Leftarrow \tau \step t_c
+        }{
+            \Gamma\vdash t : \tau \step t_c
+        }
+        \text{\hspace{1em}}
+        \infer[AppArgCtx]{
+            \Gamma \vdash t \Leftarrow ctx(\overline{\tau}) ~\overline{\sigma}\to\eta\step \lambda \overline{x}~\overline{y}\ldotp t_c\ap \overline{x'}\ap\overline{y}
+        }{
+            \Gamma \vdash t : ctx(\overline{\sigma}) ~\overline{\sigma}\to\eta \step t_c
+            &
+            \overline{x :_c \tau} \vdash_{\overline{\sigma}} \overline{x'}
+            &
+            \overline{x~y \text{ fresh}}
+        }
+    \end{gather*}
+    \caption{Application rule for $F^{im}_{<:}$.}
+    \label{sig:fim-sub-app}
+\end{figure}
 
+% todo big lambda inference
+
+% todo will subtyping break inference?
 
 % todo what if generate application (like for dictionaries) to reorder effect rows (do inhabitation of some form)?
+% todo cite papers about row types
 
 TODO % todo
 
 
 \section{Design of type-based escape analysis} \label{sec:escape}
+
+
 
 % todo higher-rank polymorphism is required for lambdas, иначе ничего не будет работать с абстракцией по хендлерам. Хотя можно просто всё сделать локалом в контексте по умолчанию, но тогда могут быть траблы с кепчурингом. Нужно исследовать, можно ли это как-то попроще добавить.
 
@@ -930,13 +975,12 @@ TODO % todo
 % todo row-types
 % todo capability-based, Scala
 % todo modal effect types
-% todo coeffects
+% todo coeffects, coeffect style vs effect style
 % todo papers about regions?
 
 TODO % todo
 
 % todo type inference and symilarity with first-class polymorphism
-% todo
 
 
 \section{Conclusion} \label{sec:conclusion}
