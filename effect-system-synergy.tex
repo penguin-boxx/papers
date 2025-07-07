@@ -120,6 +120,8 @@
 \newcommand{\ap}{~}
 \newcommand{\ctx}[1]{ctx(#1)~}
 \newcommand{\step}{\rightsquigarrow}
+\newcommand{\local}{\top}
+\newcommand{\free}{\bot}
 
 %%
 %% end of the preamble, start of the body of the document source.
@@ -455,7 +457,7 @@ Moreover, we need this analysis to be cross-procedural, so it should affect func
 Let us give an informal brief introduction of the type-based escape analysis technique that we feature in this paper.
 
 We call values that should not escape some scope \textit{tracked} (as well as their types).
-For instance, capabilities are tracked, so are types of implicit parameters by default.
+For instance, capabilities are tracked by default, so are types of implicit parameters.
 To distinguish between tracked and non-tracked types, we augment each type $T$ with a special lifetime label $lab$ using a syntax: \[scoped(lab)\ap T\]
 Lifetime labels range over \texttt{free}, \texttt{local} and polymorphic lifetime variables.
 \texttt{free} lifetime label is used to type non-tracked values.
@@ -546,7 +548,7 @@ We summarize the correspondence on the fig.\ \ref{fig:free-vars} and discuss the
 \section{Design of implicit parameters} \label{sec:implicits}
 
 In this section we discuss design decisions for implicit parameters feature that make it more suitable as a component of a practical effect system.
-Along the discussion we use a formal calculi as an illustrative example.
+Along the discussion we introduce a formal calculi as an illustrative example.
 
 \subsection{Effect handlers} \label{subsec:handlers}
 
@@ -576,6 +578,8 @@ For the start, let us introduce a typed call-by-value $F^{ex}$ calculi with expl
 We will use it later (see\ \ref{subsubsec:inference}) as a target language for implicit parameters inference translation.
 
 \subsubsection{Syntax of $F^{ex}$ (fig.\ \ref{fig:core-syntax})}
+
+% todo extract core calculus to the separate section
 
 By the over-line we denote a bunch of corresponding entries.
 Constructs highlighted with gray are used only for an operational semantics.
@@ -916,7 +920,179 @@ TODO % todo
 
 \section{Design of type-based escape analysis} \label{sec:escape}
 
+\begin{figure}
+    \centering
+    \begin{gather*}
+        \begin{array}{lrll}
+            \text{Variables} & & x, y, z \\
+            \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha^k} \ldotp v \\
+            &&\vor K\ap \overline{\tau} \ap \overline{t} \vor K_{cap}\ap\overline{\tau}\ap m\ap h \\
+            &&\vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
+            \\
+            \text{Terms} &t, u &\Coloneqq v \vor t\ap\overline{\tau} \vor t \ap \overline{t} \ap \overline{t} \\
+            &&\vor match ~ t ~ with ~\{\overline{K \ap \overline{x} \to t}\} \\
+            &&\vor perform ~ op \ap x \ap \overline{\tau} \ap \overline{t} \\
+            &&\vor handle ~ x : T \ap \overline{\tau} ~with ~h~in ~t \\
+            &&\vor handler_m ~ t
+            \\
+            \text{Handlers} &h &\Coloneqq \{ \overline{op = t} \}
+            \\
+            \text{Programs} &p &\Coloneqq \epsilon \vor x : s = t, p
+        \end{array}\\
+        \begin{aligned}
+            \text{Evaluation context } E \Coloneqq \square \vor E \ap \overline{\tau} \vor E \ap \overline{t}\ap \overline{t} \vor v \ap (\overline{v}, E, \overline{t}) \ap \overline{t} \vor v \ap \overline{v} \ap (\overline{v}, E, \overline{t}) \vor handler_m ~ E
+        \end{aligned}\\
+    \end{gather*}
+    \caption{Syntax of $F^{ex}$.}
+    % todo beautify
+    \label{fig:kek}
+\end{figure}
 
+%! suppress = MissingLabel
+\begin{figure}
+    \[
+        \begin{array}{lrl}
+            \text{Type variables} && \alpha, \beta \\
+            \text{Type constructors} && T \\
+            \text{Lifetimes} & \Delta &\Coloneqq \alpha \vor \local \vor \free \vor \&\overline{\Delta} \\
+            \text{Monotypes} & \tau, \sigma, \eta &\Coloneqq \alpha \vor T \ap \Delta \ap \overline{\tau} \\
+            &&\vor \ctx{e} \Delta~\overline{\tau} \to \sigma \\
+            \text{Type schemas} & s &\Coloneqq \forall(\overline{\alpha^k <: \tau})\ldotp \sigma \\
+            \text{Kinds} & k &\Coloneqq * \vor lab \\
+            \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
+            \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
+            \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha^*}\ldotp sig\to T\ap \local \ap\overline{\alpha}}\} \\
+            \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall(\overline{\alpha^k <: \eta})\ldotp\overline{\tau}\to\sigma}\} \\
+            \text{Data constructors} & & K : \forall\overline{\alpha^k}\ldotp \overline{\tau}\to T \ap(\&\overline{lt_+(\tau)}\cap\overline{\alpha}|_{lab})\ap \overline{\alpha}|_* \\
+            \text{Free type variables} & & ftv(\cdot) \\
+            \text{Positive lifetimes} & & lt_+(\cdot)
+        \end{array}
+    \]
+\end{figure}
+
+%! suppress = EscapeAmpersand
+\begin{figure}
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash t : \tau} \\
+        \infer[Var]{
+            \Gamma\vdash x\ap\overline{\tau} : [\overline{\alpha\to\tau}]\ap\sigma
+        }{
+            x : \forall(\overline{\alpha^k <: \tau'})\ldotp \sigma \in \Gamma &
+            \tau <: \tau'
+        }
+        \text{\hspace{2em}}
+        \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma} \\
+        \infer[Lam]{
+            \Gamma\vdash \lambda \overline{x : \tau} ~ \overline{y : \sigma} \ldotp t : ctx(\overline{\tau}) \left(\&{\overline{lt_+(\sigma')}}\right)~ \overline{\sigma} \to \eta
+        }{
+            \overline{x :_c \tau}, \overline{y : \sigma}, \Gamma\vdash t : \eta &
+            \overline{\tau} \text{ distinct} &
+            \Gamma\vdash_{fv(t)}\overline{\sigma'} &
+            local\not\in lt_+(\eta)
+        } \\
+        \infer[App]{
+            \Gamma\vdash t \ap \overline{u_1} \ap \overline{u_2} : \eta
+        } {
+            \Gamma\vdash t : ctx(\overline{\tau})~\overline{\sigma}\to\eta
+            &
+            \begin{array}{c}
+                \overline{\Gamma\vdash u_1 : \tau'} \\
+                \overline{\tau' <: \tau}
+            \end{array}
+            &
+            \begin{array}{c}
+                \overline{\Gamma\vdash u_2 : \sigma'} \\
+                \overline{\sigma' <: \sigma}
+            \end{array}
+        }\\
+        \infer[Match]{
+            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_j} \to u_i }\}  : \eta
+        }{
+            K_i : \forall \overline{\alpha^k}\ldotp \overline{\sigma_j} \to T\ap(\&\overline{lt_+(\sigma)\cap\overline{\alpha}})\ap\overline{\alpha} &
+            \Gamma\vdash t : T\ap\Delta \ap\overline{\tau} &
+            \overline{x_j : [\overline{\alpha\to\tau}, \overline{flt_+(\sigma_j)\to\Delta}, \overline{flt_{-}(\sigma_j)\to free}]\ap \sigma_j}, \Gamma \vdash u_i : \eta
+        }\\
+        \infer[Perform]{
+            \Gamma\vdash perform \ap op\ap \overline{\tau_2}\ap x\ap \overline{t} : \theta\ap\eta
+        }{
+            \Gamma\vdash x : T\ap \overline{\tau_1} &
+            \Sigma(T) = \forall\overline{\alpha}\ldotp sig &
+            op : \forall\overline{\beta}\ldotp \overline{\sigma}\to\eta \in sig &
+            \theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}] &
+            \overline{\Gamma\vdash t : \theta\ap\sigma}
+        }\\
+%        \infer[Handle]{
+%            \Gamma \vdash handle ~ x : T\ap\overline{\tau}~ with ~ \{\overline{op_i = t_i}\} ~in~u : \eta
+%        }{
+%            \begin{gathered}
+%                x :_c T\ap\overline{\tau}, \Gamma\vdash u : \eta
+%            \end{gathered}
+%            &
+%            \begin{array}{ll}
+%                \overline{\beta}\not\cap ftv(\eta) & % todo beautify intersection
+%                \Sigma(T) = \forall\overline{\alpha}\ldotp sig, \hspace{0.5em} op_i : \forall\overline{\beta}\ldotp \overline{\sigma}_i\to\sigma'_i \in sig
+%                \\
+%                \theta = [\overline{\alpha\to\tau}] &
+%                \Gamma\vdash\theta\ap t_i : \forall \overline{\beta}\ldotp \overline{\theta\ap\sigma_i}\to(\theta\ap\sigma_i'\to\eta)\to\eta
+%            \end{array}
+%        }\\
+%        \infer[Cap]{
+%            \Gamma\vdash K_{cap}\ap\overline{\tau}\ap m\ap h : T\ap\overline{\tau}
+%        }{
+%            K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma
+%        } % todo looks like a bull shit
+%        \hspace{2em}
+%        \infer[Handler]{
+%            \Gamma\vdash handler_m ~t : \tau
+%        }{
+%            \Gamma\vdash t : \tau
+%        }\\
+%        \begin{array}{ccccc}
+%            \mathframebox{\Gamma\vdash t : s} &
+%            \infer[TLam]{
+%                \Gamma\vdash\Lambda\overline{\alpha}\ldotp v : \forall\overline{\alpha}\ldotp\tau
+%            }{
+%                \Gamma\vdash v : \tau & ftv(\tau) = \overline{\alpha}
+%            } &
+%            \mathframebox{\Gamma\vdash p} &
+%            \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
+%            \infer[Prog]{\Gamma\vdash x : s = t, p}{\Gamma\vdash t : s & \Gamma\vdash p}
+%        \end{array}
+    \end{gather*}
+    \caption{Typing rules for $F^{ex}$}
+    \label{fig:lol}
+\end{figure}
+
+%\begin{figure}
+%    \[
+%        \begin{array}{llll}
+%            \text{(tapp)} &(\Lambda \overline{\alpha}\ldotp t) \ap \overline{\tau} &\longrightarrow &[\overline{\alpha\to\tau}]\ap t
+%            \\
+%            \text{(app)} &(\lambda \overline{x}~\overline{y}\ldotp t) \ap \overline{v} \ap \overline{v'} &\longrightarrow &[\overline{x\to v}, \overline{y\to v'}]\ap t
+%            \\
+%            \text{(match)} &match ~K \ap \overline{v}~ with ~ \{ \overline{K_i \ap \overline{x} \to u_i}\} &\longrightarrow &[\overline{x\to v}]\ap u_k, \text{ where } K = K_k
+%            \\
+%            \text{(handle)} &handle ~ x : T \ap \overline{\tau} ~with~h~in~t &\longrightarrow & handler_m ~[x \to K_{cap} \ap\overline{\tau}\ap m \ap h] \ap u
+%            \\
+%            &&\text{where} & m \text{ fresh}, {\color{gray}K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma}
+%            \\
+%            \text{(return)} &handler_m ~v &\longrightarrow & v
+%            \\
+%            \text{(perform)} &handler_m~E[perform \ap op \ap (K_{cap}\ap\overline{\tau_1}\ap m \ap h)\ap\overline{\tau_2}\ap\overline{v}] &\longrightarrow &t \ap \overline{\tau_2}\ap \overline{v}\ap k
+%            \\
+%            &&\text{where} & (op = t) \in h, {\color{gray}\theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}],} \\
+%            &&& {\color{gray}K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma,} \\
+%            &&& {\color{gray}(op : \forall\overline{\beta}\ldotp\overline{\sigma}\to\sigma') \in sig,} \\
+%            &&& k = \lambda x : \theta\ap\sigma' \ldotp handler_m~E[x]
+%        \end{array}
+%    \]
+%    \vspace{-3em}
+%    \[
+%        \hspace{-15em}\infer[\text{(step)}]{E[t]\longrightarrow E[t']}{t\longrightarrow t'}
+%    \]
+%    \caption{Operational semantics of $F^{ex}$.}
+%    \label{fig:fex-operational}
+%\end{figure}
 
 % todo higher-rank polymorphism is required for lambdas, иначе ничего не будет работать с абстракцией по хендлерам. Хотя можно просто всё сделать локалом в контексте по умолчанию, но тогда могут быть траблы с кепчурингом. Нужно исследовать, можно ли это как-то попроще добавить.
 
@@ -938,6 +1114,10 @@ TODO % todo
 % todo lifetimes in the middle instead of `here` mode (to allow handlers consume tracked things)
 
 % todo невозможность отсылать локальные вещи операциям это слишком жестко, нужно ослабить, иначе даже в массив сложит трекаемые вещи в одном скоупе не получится
+
+% todo update on inference
+
+% todo why tunelling (otherwise too much code duplication on polymorphic code)Ah,
 
 
 \section{Adoption in mainstream languages} \label{sec:mainstream}
