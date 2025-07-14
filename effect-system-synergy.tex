@@ -875,22 +875,46 @@ Another decision is when to substitute implicit parameters, on mentioning or, de
 It is a similar question to the type instantiation with first-class polymorphism (type inference infers type parameters)~\cite{emrich2020freezeml}. % todo verify citation
 Both ways are useful: the first is convenient with contextually-polymorphic functions \texttt{map(xs, f)}, the second helps with effect abstraction \texttt{withSomeException(f)}. % todo introduce effect abstraction somewhere % todo citations to kotlin, haskell and something
 Actually, the decision is about choosing the default, since one behaviour can be changed to another by the $\eta$-expansion. % todo explain better, examples
+Namely, assume that the substitution occurs on application:
+\begin{minted}{swift}
+    f : context(IO) () -> Unit; g : (() -> Unit) -> Unit
+    g(() => f())
+\end{minted}
+Or, assume that substitution occurs on mentioning:
+\begin{minted}{swift}
+    f : context(IO) () -> Unit; g : (context(IO) () -> Unit) -> Unit
+    g(context(_: Eff) () => f())
+\end{minted}
+% todo special syntax for explicitly passed implicits
+% todo have i introduced surface implicit abstraction somewhere
+% todo have i introduced the surface syntax anywhere
 
 TODO properties % todo
 
 \subsection{System $Core^{im+<:}$ with implicit parameters and subtyping} \label{subsec:im-sub}
 
-If is convenient to introduce some form of subtyping on effect rows, since a function with less context requirements can be used in more permissive contexts.
-For example, \texttt{withStd} is a convenient function that provides default implementation for many effects.
+It is convenient to have some form of subtyping on effect rows, since a function with less context requirements can naturally be used in more permissive contexts.
+For example, \texttt{withStd} is a function that provides default implementation for many effects.
 We should be able to pass a function that uses only some of them:
 \begin{minted}{swift}
     func withStd(f: context(IO, Allocator, Random) () -> r): r
     withStd(g) // g : context(IO) () -> Unit
 \end{minted}
 
+% todo find literature
+% todo row polymorphism can help somehow?
+% todo cite papers about row types
+Contexts can be seen as structural record types with width and permutation subtyping.
+However, the naive implementation of such records as dictionaries is not very efficient in time and space.
 
+To achieve an efficient implementation of subtyping, we restrict it to be shallow.
+Namely, one functional type subtypes another only if one effect row subtypes another, while arguments and return types should be the same:
+\[
+    \infer{\ctx{e} \tau \to \sigma <: \ctx{e'} \tau\to\sigma}{e' <: e}
+\]
 
-Probably the most straight-forward way to achieve such subtyping would be to represent context as a structural record type with natural subtyping including
+Now we can implement such shallow subtyping by $\eta$-expansion (fig.\ \ref{sig:fim-sub-app}).
+Relation $\Gamma\vdash t\Rightarrow \step t_c$ performs $\eta$-expansion if a functional type is expected.
 
 \begin{figure}
     %! suppress = EscapeAmpersand
@@ -922,7 +946,7 @@ Probably the most straight-forward way to achieve such subtyping would be to rep
             \overline{x~y \text{ fresh}}
         }
     \end{gather*}
-    \caption{Application rule for $F^{im}_{<:}$.}
+    \caption{Application rule for $Core^{im + <:}$.}
     \label{sig:fim-sub-app}
 \end{figure}
 
@@ -933,10 +957,6 @@ Probably the most straight-forward way to achieve such subtyping would be to rep
 % todo will subtyping break inference?
 
 % todo what if generate application (like for dictionaries) to reorder effect rows (do inhabitation of some form)?
-% todo cite papers about row types
-
-TODO % todo
-
 
 \section{Design of type-based escape analysis} \label{sec:escape}
 
