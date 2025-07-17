@@ -207,7 +207,7 @@
     We motivate our approach by considering effect systems as systems for tracking free variables.
     We discuss requirements on an implicit parameters design and provide a formal example.
     We also present a novel type-based escape analysis technique that only requires straight-forward dataflow descriptions from a programmer. % todo is it correct to talk about dataflow here?
-    Finally, we provide a formal calculus with an effect system built upon these two pieces.
+    Finally, we provide a formal calculus with an effect system built upon these two pieces. % todo adapt
 \end{abstract}
 
 %%
@@ -322,7 +322,7 @@ Consider our running example (fig.\ \ref{fig:db}), where a business logic functi
 
 The first version opens a database connection by itself and sends it a query.
 Note that this code is not convenient for testing, because there is no simple way to substitute some mock database, for instance, to check the logic.
-Another drawback is that this function produces observable side effects, which are definitely a part of its public contract, but it does not mention that fact in its signature.
+Another drawback is that this function produces observable side effects, which are definitely a part of its public contract, but they are not mentioned in its signature.
 
 The second version is much better.
 A business logic function is abstracted over a database connection, so a call site is able to choose an appropriate semantics for it.
@@ -660,7 +660,7 @@ Our considerations that lead to this syntax are the following:
 
 Note that the type of first-class functions contains a list of implicit parameters.
 It allows to type the abstraction over handlers.
-For example, the following function establishes en execution context with a handler for an exception type \texttt{E}:
+For example, the following function establishes en execution context with a handler for an exception type \texttt{E}\footnote{We use informally defined surface syntax for explanations. Its correspondence to our formal definitions is straight-forward.}:
 \begin{minted}{swift}
     func withE(f: context(Handler<E>) () -> r): r =
         try { f() } catch (e: E) { ... }
@@ -883,7 +883,7 @@ Namely, assume that the substitution occurs on application:
 Or, assume that substitution occurs on mentioning:
 \begin{minted}{swift}
     f : context(IO) () -> Unit; g : (context(IO) () -> Unit) -> Unit
-    g(context(_: Eff) () => f())
+    g(context(_: Eff) () => f()) // abstracts over contextual parameters
 \end{minted}
 % todo special syntax for explicitly passed implicits
 % todo have i introduced surface implicit abstraction somewhere
@@ -913,7 +913,7 @@ To achieve an efficient implementation of subtyping, we restrict it to be shallo
 \]
 
 Now we can implement such shallow subtyping by $\eta$-expansion (fig.\ \ref{sig:fim-sub-app}).
-Relation $\Gamma\vdash t\Rightarrow \step t_c$ performs $\eta$-expansion if a functional type is expected.
+Relation $\Gamma\vdash t\Leftarrow \tau \step t_c$ performs $\eta$-expansion if a functional type is expected.
 
 \begin{figure}
     %! suppress = EscapeAmpersand
@@ -969,13 +969,12 @@ In this section we develop an extension to the previously discussed systems, whi
 
 Let us introduce a $Core_\Delta$, that extends $Core$ with lifetimes, lifetime polymorphism and bounded polymorphism.
 Changes in the syntax of types (fig.\ \ref{fig:core-delta-syntax}) are highlighted with gray.
-Syntax of terms follows the changes in the syntax of types:
-\[
-    \begin{array}{lll}
-        \text{Values} & v & \Coloneqq \ldots \vor \Lambda \graybox{\overline{l}}\ap\overline{\alpha}\ldotp v \vor K\ap\graybox{\overline{\Delta}}\ap\overline{\tau}\ap\overline{t} \vor \ldots \\
-        \text{Terms} & t, u &\Coloneqq \ldots \vor t\ap\graybox{\overline{\Delta}}\ap\overline{\tau} \vor handle ~ x : T \ap\graybox{local}\ap \overline{\tau} ~with ~h~in ~t \vor \ldots
-    \end{array}
-\]
+\begin{itemize}
+    \item Monotypes are now augmented with a lifetime parameter.
+    \item Type schemas support abstraction over lifetimes and bounds.
+\end{itemize}
+
+% todo tracked term
 
 %! suppress = MissingLabel
 \begin{figure}
@@ -988,7 +987,7 @@ Syntax of terms follows the changes in the syntax of types:
             \text{Monotypes} & \tau, \sigma, \eta &\Coloneqq \alpha \vor T \ap \graybox{\Delta} \ap \overline{\tau} \vor \ctx{e} \graybox{\Delta}~\overline{\tau} \to \sigma \\
             \text{Type schemas} & s &\Coloneqq \forall \graybox{\overline{l}}~\overline{(\alpha \graybox{<: \tau})}\ldotp \sigma \\
             \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
-            \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
+            \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \vor \graybox{\alpha <: \tau, \Gamma} \\
             \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap \graybox{local} \ap\overline{\alpha}}\} \\
             \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{(\alpha \graybox{<: \eta})}\ldotp\overline{\tau}\to\sigma}\} \\
             \text{Data constructors} & & K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{(\&\overline{lt_+(\tau)}\cup\overline{l})}\ap \overline{\alpha} \\
@@ -1000,6 +999,14 @@ Syntax of terms follows the changes in the syntax of types:
     \caption{Syntax of types for $Core_\Delta$.}
     \label{fig:core-delta-syntax}
 \end{figure}
+
+Syntax of terms follows the changes in the syntax of types:
+\[
+    \begin{array}{lll}
+        \text{Values} & v & \Coloneqq \ldots \vor \Lambda \graybox{\overline{l}}\ap\overline{\alpha}\ldotp v \vor K\ap\graybox{\overline{\Delta}}\ap\overline{\tau}\ap\overline{t} \vor \ldots \\
+        \text{Terms} & t, u &\Coloneqq \ldots \vor t\ap\graybox{\overline{\Delta}}\ap\overline{\tau} \vor handle ~ x : T \ap\graybox{local}\ap \overline{\tau} ~with ~h~in ~t \vor \ldots
+    \end{array}
+\]
 
 \subsection{Typing rules for $Core_\Delta$}
 
@@ -1017,7 +1024,7 @@ There are three
             \Gamma\vdash x\ap\overline{\Delta}\ap\overline{\tau} : [\overline{l\to\Delta}]\ap[\overline{\alpha\to\tau}]\ap\sigma
         }{
             x : \forall\overline{l}\ap(\overline{\alpha <: \tau'})\ldotp \sigma \in \Gamma &
-            \tau <: [\overline{l\to\Delta}]\ap\tau'
+            \Gamma\vdash\tau <: [\overline{l\to\Delta}]\ap\tau'
         }
         \text{\hspace{2em}}
         \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma} \\
@@ -1036,12 +1043,12 @@ There are three
             &
             \begin{array}{c}
                 \overline{\Gamma\vdash u_1 : \tau'} \\
-                \overline{\tau' <: \tau}
+                \overline{\Gamma\vdash\tau' <: \tau}
             \end{array}
             &
             \begin{array}{c}
                 \overline{\Gamma\vdash u_2 : \sigma'} \\
-                \overline{\sigma' <: \sigma}
+                \overline{\Gamma\vdash\sigma' <: \sigma}
             \end{array}
         }\\
         \infer[Match]{
@@ -1058,22 +1065,21 @@ There are three
         \infer[Perform]{
             \Gamma\vdash perform \ap op\ap \overline{\tau_2}\ap x\ap \overline{t} : \theta\ap\eta
         }{
-            \Gamma\vdash x : T\ap \Delta \ap \overline{\tau_1} &
-            \begin{array}{cc}
-                \Sigma(T) = \forall\overline{\alpha}\ldotp sig
-                &
-                \theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}]
+            \begin{array}{ccc}
+                \Sigma(T) = \forall\overline{\alpha}\ldotp sig &
+                \Gamma\vdash x : T\ap \Delta \ap \overline{\tau_1} &
+                \overline{\Gamma\vdash t : \sigma'}
                 \\
-                op : \forall\overline{\beta}\ldotp \overline{\sigma}\to\eta \in sig
-                &
-                \overline{\Gamma\vdash t : \theta\ap\sigma}
+                op : \forall\overline{\beta}\ldotp \overline{\sigma}\to\eta \in sig &
+                \theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}] &
+                \overline{\Gamma\vdash\sigma' <: \theta\ap\sigma}
             \end{array}
         }\\
         \infer[Handle]{
             \Gamma \vdash handle ~ x : T\ap\overline{\tau}~ with ~ \{\overline{op_i = t_i}\} ~in~u : \eta
         }{
             \begin{array}{cll}
-                x :_c T\ap\overline{\tau}, \Gamma\vdash u : \eta & \overline{\beta}\not\cap ftv(\eta) & % todo beautify intersection
+                x :_c T\ap local\ap\overline{\tau}, \Gamma\vdash u : \eta & \overline{\beta}\not\cap ftv(\eta) & % todo beautify intersection
                 \Sigma(T) = \forall\overline{\alpha}\ldotp sig \hspace{1em} op_i : \forall\overline{\beta}\ldotp \overline{\sigma}_i\to\sigma'_i \in sig
                 \\
                 local \not\in lt_+(\eta)\cup\overline{lt_+(\sigma)} & \theta = [\overline{\alpha\to\tau}] &
@@ -1107,18 +1113,21 @@ There are three
             \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
             \infer[Prog]{\Gamma\vdash x : s = t, p}{\Gamma\vdash t : s & \Gamma\vdash p}
         \end{array}\\
-        \begin{array}{ccc}
-            \mathframebox{\sigma <: \tau} &
-            \infer[SubAny]{\sigma <: Any\ap local}{} &
-            \infer[SubT]{T\ap\Delta' <: T\ap\Delta}{\Delta' <: \Delta}
+        \begin{array}{cccc}
+            \mathframebox{\Gamma\vdash \sigma <: \tau} &
+            \infer[SubAny]{\Gamma\vdash \sigma <: Any\ap local}{} &
+            \infer[SubT]{\Gamma\vdash T\ap\Delta' <: T\ap\Delta}{\Delta' <: \Delta} &
+            \infer[SubBound]{\Gamma\vdash \alpha <: \tau}{\alpha <: \tau \in \Gamma}
         \end{array} \\
-        \begin{array}{ccc}
+        \begin{array}{cccc}
             \mathframebox{\Delta' <: \Delta} &
             \infer[SubFree]{free <: \Delta}{} &
-            \infer[SubLocal]{\Delta <: local}{}
+            \infer[SubLocal]{\Delta <: local}{} &
+            \infer[Sub\&]{\Delta' <: \&\overline{\Delta}}{local\in\overline{\Delta}}
         \end{array}
     \end{gather*}
-    \caption{Typing rules for $Core^{\Delta}$}
+    % todo где нужна информация про баунд дженерика?
+    \caption{Typing rules for $Core_{\Delta}$}
     \label{fig:core-delta-typing}
 \end{figure}
 
