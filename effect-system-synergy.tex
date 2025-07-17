@@ -556,7 +556,7 @@ We summarize the correspondence between these two disciplines in Figure~\ref{fig
 \end{figure}
 
 
-\section{Core calculus} \label{sec:core}
+\section{Core calculus} \label{sec:core} % todo perplexityfy
 
 In this section we introduce a convenient for us explicitly typed call-by-value core calculus $Core$ that we will extend later with omitting application and type-based escape analysis.
 
@@ -967,22 +967,19 @@ Relation $\Gamma\vdash t\Leftarrow \tau \step t_c$ performs $\eta$-expansion if 
 
 \section{Design of type-based escape analysis} \label{sec:escape}
 
-In this section we develop an extension to the previously discussed systems, which statically ensure that no capabilities escape from corresponding handlers.
-
-% todo a bit about general idea like in the introduction mb
-% todo existential types and ST-trick
-% todo mb brief lit overview
+In this section we develop an extension to the previously discussed systems that statically guarantees that no capabilities escape their corresponding handlers.
+The core aspects of this design have already been introduced in Section~\ref{subsec:escape}.
 
 \subsection{Syntax of $Core_\Delta$}
 
-Let us introduce a $Core_\Delta$, that extends $Core$ with lifetimes, lifetime polymorphism and bounded polymorphism.
-Changes in the syntax of types (fig.\ \ref{fig:core-delta-syntax}) are highlighted with gray.
+Let us introduce $Core_\Delta$, an extension of $Core$ that incorporates lifetimes, lifetime polymorphism, and bounded polymorphism.
+Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syntax}, with changes highlighted in gray.
 \begin{itemize}
-    \item Monotypes are now augmented with a lifetime parameter.
-    \item Type schemas support abstraction over lifetimes and bounds.
+    \item Monotypes are now annotated with explicit lifetime labels.
+    \item Type schemas support abstraction over lifetime variables and permit the specification of polymorphic bounds.
+    \item We introduce utility operations that, given a type, return the set of lifetimes appearing in specified positions, positive and negative. % todo cite positions
+    \item The resulting lifetime associated with data constructors is computed as the intersection of all lifetimes corresponding to those values that may later be extracted~--- that is, lifetimes encountered in positive positions.
 \end{itemize}
-
-% todo tracked term
 
 %! suppress = MissingLabel
 \begin{figure}
@@ -998,7 +995,7 @@ Changes in the syntax of types (fig.\ \ref{fig:core-delta-syntax}) are highlight
             \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \vor \graybox{\alpha <: \tau, \Gamma} \\
             \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap \graybox{local} \ap\overline{\alpha}}\} \\
             \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{(\alpha \graybox{<: \eta})}\ldotp\overline{\tau}\to\sigma}\} \\
-            \text{Data constructors} & & K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{(\&\overline{lt_+(\tau)}\cup\overline{l})}\ap \overline{\alpha} \\
+            \text{Data constructors} & & K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{(\&\overline{lt_+(\tau)})}\ap \overline{\alpha} \\
             \text{Free type variables} & & ftv(\cdot) \\
             \text{Positive lifetimes} & & \graybox{lt_+(\cdot)} \\
             \text{Free lifetime variables} & & \graybox{flt_+(\cdot)}, \graybox{flt_-(\cdot)}
@@ -1018,8 +1015,6 @@ Syntax of terms follows the changes in the syntax of types:
 
 \subsection{Typing rules for $Core_\Delta$}
 
-There are three
-
 \begin{itemize}
     \item % todo
 \end{itemize}
@@ -1028,14 +1023,17 @@ There are three
 \begin{figure}
     \begin{gather*}
         \mathframebox{\Gamma\vdash t : \tau} \\
-        \infer[Var]{
-            \Gamma\vdash x\ap\overline{\Delta}\ap\overline{\tau} : [\overline{l\to\Delta}]\ap[\overline{\alpha\to\tau}]\ap\sigma
-        }{
-            x : \forall\overline{l}\ap(\overline{\alpha <: \tau'})\ldotp \sigma \in \Gamma &
-            \Gamma\vdash\tau <: [\overline{l\to\Delta}]\ap\tau'
-        }
-        \text{\hspace{2em}}
-        \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma} \\
+        \begin{array}{cc}
+            \infer[Var]{
+                \Gamma\vdash x\ap\overline{\Delta}\ap\overline{\tau} : [\overline{l\to\Delta}]\ap[\overline{\alpha\to\tau}]\ap\sigma
+            }{
+                x : \forall\overline{l}\ap(\overline{\alpha <: \tau'})\ldotp \sigma \in \Gamma &
+                \Gamma\vdash\tau <: [\overline{l\to\Delta}]\ap\tau'
+            }
+            &
+            \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma}
+        \end{array}
+        \\
         \infer[Lam]{
             \Gamma\vdash \lambda \overline{x : \sigma} ~ \overline{y : \sigma'} \ldotp t : ctx(\overline{\sigma}) \left(\&{\overline{lt_+(\tau)}}\right)~ \overline{\sigma'} \to \eta
         }{
@@ -1063,7 +1061,7 @@ There are three
             \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_j} \to u_i }\}  : \eta
         }{
             \begin{array}{c}
-                K_i : \forall \overline{l}~\overline{\alpha}\ldotp \overline{\sigma_j} \to T\ap(\&\overline{lt_+(\sigma)}\cup\overline{l})\ap\overline{\alpha}
+                K_i : \forall \overline{l}~\overline{\alpha}\ldotp \overline{\sigma_j} \to T\ap(\&\overline{lt_+(\sigma)})\ap\overline{\alpha}
                 \text{\hspace{1em}}
                 \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
                 \\
@@ -1110,7 +1108,7 @@ There are three
             \infer[TLam]{
                 \Gamma\vdash\Lambda\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp v : \forall\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp\tau
             }{
-                \Gamma\vdash v : \tau & flt(\tau) = \overline{l} & ftv(\tau) = \overline{\alpha}
+                \overline{\alpha <: \sigma}, \Gamma\vdash v : \tau & flt(\tau) = \overline{l} & ftv(\tau) = \overline{\alpha}
             } &
             \mathframebox{\Gamma\vdash_{\overline{x}}\overline{\tau}}
             &
