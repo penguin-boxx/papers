@@ -312,25 +312,29 @@ Contributions of this paper are summarized as follows:
 
 \section{Two pieces of an effect system design} \label{sec:idea}
 
-In this section we introduce the main idea of this paper using practical examples.
-We also demonstrate that the pragmatics of effect systems arise naturally from everyday programming concerns.
+In this section we introduce the central idea of this paper through practical examples.
+We further illustrate that the pragmatic motivations for effect systems emerge organically from common programming scenarios.
 
 \subsection{The road to implicit parameters} \label{subsec:implicits}
 
-Consider our running example (fig.\ \ref{fig:db}), where a business logic function updates a database storage.
+In our running example (see fig.\ \ref{fig:db}), where the business logic function performs an update to the database storage.
 
-The first version opens a database connection by itself and sends it a query.
-Note that this code is not convenient for testing, because there is no simple way to substitute some mock database, for instance, to check the logic.
-Another drawback is that this function produces observable side effects, which are definitely a part of its public contract, but they are not mentioned in its signature.
+The first version establishes its own database connection and executes a query.
+However, this approach has several notable drawbacks.
+Firstly, it hinders testability, as it is not straightforward to replace the database connection with a mock or alternative implementation; consequently, verifying the business logic in isolation becomes challenging.
+Secondly, this function produces observable side effects --- such as performing database operations --- which are an integral part of its external contract.
+Nevertheless, these effects are not reflected in the function’s type signature.
 
-The second version is much better.
-A business logic function is abstracted over a database connection, so a call site is able to choose an appropriate semantics for it.
-Moreover, note that observable effects become explicit through \texttt{db} parameter!
-However, this simple approach has a cost of an additional syntactic noise on the call site caused by administrative parameter passing.
-It may sound insignificant, but imagine passing four such parameters everywhere through the call stack, whereas good practices should be at least as approachable as suboptimal ones.
+The second version provides a notable improvement.
+Here, the business logic function is parameterized over the database connection, enabling the call site to supply a concrete implementation with the desired semantics.
+Furthermore, the observable effects are now made explicit through the \texttt{db} parameter.
+However, this approach incurs the overhead of additional syntactic complexity at the call site, as the administrative effort of explicitly passing parameters increases.
+While this may appear trivial for a single argument, the burden becomes significant if, for example, four such parameters must be threaded through multiple layers of the call stack.
+For best practices to be widely adopted, they should remain at least as accessible and convenient as less optimal alternatives.
 
-To reduce the boilerplate, in the third version we replace ordinary parameters with dynamically scoped free variables, which obtain their meaning by lookup in the dynamic scope of a function call.
-At the same time we loose other benefits: static typing and explicitness of context dependence.
+To reduce boilerplate, the third version replaces ordinary parameters with dynamically scoped free variables.
+These variables acquire their values through lookup within the dynamic scope of the function call.
+However, this approach comes at the expense of other benefits: specifically, it sacrifices static typing and the explicit representation of context dependencies.
 
 \begin{figure}
     \begin{tabular}{p{0.3\textwidth} rrr}
@@ -373,9 +377,9 @@ At the same time we loose other benefits: static typing and explicitness of cont
     \label{fig:db}
 \end{figure}
 
-To reclaim the static type safety, we approximate dynamically scoped free variables with implicit function parameters~\cite{lewis2000implicit}.
-On the declaration site we use \texttt{context} keyword to declare a group of implicit parameters, which will be passed on the call site automatically by a compiler (fig.\ \ref{fig:implicits}).
-To make a value participate in the resolution of implicit parameters, we use \texttt{context let} declaration syntax.
+To regain static type safety, we approximate dynamically scoped free variables using implicit function parameters~\cite{lewis2000implicit}.
+At the declaration site, we introduce a \texttt{context} keyword to define a group of implicit parameters, which are automatically supplied by the compiler at the call site (see fig.\ \ref{fig:implicits}).
+To make a value available for implicit parameter resolution, we employ the \texttt{context let} declaration syntax.
 
 \begin{figure}[h]
     \begin{tabular}{p{0.5\textwidth} rl}
@@ -401,15 +405,15 @@ To make a value participate in the resolution of implicit parameters, we use \te
     \label{fig:implicits}
 \end{figure}
 
-In terms of effects and contexts, \texttt{context let} creates an execution context limited with the corresponding lexical scope, providing a functionality of a database storage.
-Implicit parameters represent the function's requirements for a context.
-To be able to call such a function, context should prove its validity by passing some values to these implicit parameters.
-We call these values \textit{capabilities}, and logically they serve as witnesses of context validity.
-Nevertheless, note that for now we rely only on the notion of bindings and understanding the abstract concept of effects is not strongly required.
+In terms of effects and contexts, \texttt{context let} introduces an execution context, whose scope is restricted to the corresponding lexical region, and provides functionality of access to a database storage.
+Implicit parameters express a function's requirements for its context.
+In order to invoke such a function, the context must establish its validity by supplying concrete values for these implicit parameters.
+We refer to these values as \textit{capabilities}, and logically they serve as witnesses of context validity.
+It is important to note, that until this point our discussion was based solely on the mechanism of bindings, and did not require any deep understanding of the abstract notion of effects.
 
-Exceptions and other algebraic operations can be tracked in the same manner~\cite{odersky2021safer}.
-For example, a \texttt{throw SomeException()} construct can be recognized as an invocation of a function requiring an implicit parameter of \texttt{Handler<SomeException>} type.
-At the same time, handling constructs should provide such witness values.
+Exceptions and other algebraic operations can be tracked in an analogous manner~\cite{odersky2021safer}.
+For example, a \texttt{throw SomeException()} construct can be interpreted as calling a function that requires an implicit parameter of type \texttt{Handler<SomeException>}.
+Correspondingly, constructs that handle exceptions must supply appropriate witness values for these implicit parameters.
 \begin{minted}{swift}
     func checkingExceptions() {
         try { // provides a capability of type Handler<SomeException>
@@ -418,15 +422,15 @@ At the same time, handling constructs should provide such witness values.
     }
 \end{minted}
 
-Nowadays, some widespread languages have a feature of implicit parameters and their inference is well-understood~\cite{KEEP-context-parameters, oliveira2010type, lewis2000implicit}.
-Moreover, implicit parameters are enough as an evidence-passing technique to implement tail-resumptive algebraic operations~\cite{xie2020effect}.
+Nowadays, several widely used programming languages provide support for implicit parameters, and the inference mechanisms associated with these parameters is well understood~\cite{KEEP-context-parameters, oliveira2010type, lewis2000implicit}.
+Moreover, implicit parameters alone are sufficient as the evidence-passing technique to implement tail-resumptive algebraic operations~\cite{xie2020effect}.
 
 \subsection{Retain effect safety with escape analysis} \label{subsec:escape}
 
-An effect system should ensure that all computations are executed in appropriate contexts (we call this property \textit{effect safety}).
-In our case, context should provide capabilities to proof its validity.
-Hence, capabilities should not escape corresponding contexts.
-For example, if a \texttt{Handler} value can escape a corresponding \texttt{try-catch} block, we loose a guarantee of handling an exception and the effect safety as well:
+An effect system should ensure that all computations are executed within appropriate contexts --- a property we refer to as \textit{effect safety}.
+In our setting, the context must supply capabilities as evidence of its validity.
+Consequently, these capabilities must not be allowed to escape their corresponding contexts.
+For example, if a \texttt{Handler} value were to escape a corresponding \texttt{try-catch} block, we would lose the guarantee that all exceptions are handled and, thereby, the effect safety itself:
 \begin{minted}{swift}
     func unsafe() {
         let f = try {
@@ -436,9 +440,10 @@ For example, if a \texttt{Handler} value can escape a corresponding \texttt{try-
     }
 \end{minted}
 
-Note that for the lambda function in the example, the \texttt{Handler<SomeException>} capability is the lexically scoped free variable.
-An opportunity to close over capabilities support a technique called \textit{contextual polymorphism}~\cite{brachthauser2020effects, brachthauser2022effects}, which allows higher-order functions to be transparent regarding effects without additional polymorphic type variables ranging over effects.
-Namely, a \texttt{map} function type should not bother about effects (we will cover \texttt{scoped} syntax later)\footnote{We use Haskell naming convention, where type names starting with a lowercase letter stand for type variables, which are implicitly universally quantified by default.}:
+Note that, in the example, the \texttt{Handler<SomeException>} capability acts as a lexically scoped free variable for the lambda function.
+The ability to close over such capabilities enables the technique known as \textit{contextual polymorphism}~\cite{brachthauser2020effects, brachthauser2022effects}.
+This approach allows higher-order functions to remain fully transparent with respect to effects, without introducing explicit polymorphic type variables that range over effect sets.
+Specifically, the type of a \texttt{map} function need not be entangled with effect-related parameters (we will discuss the \texttt{scoped} syntax in detail later)\footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}:
 \begin{minted}{swift}
     func map(xs: List<a>, f: #\color{gray}\texttt{scoped}# (a) -> b): List<b>
 
@@ -448,33 +453,35 @@ Namely, a \texttt{map} function type should not bother about effects (we will co
     }
 \end{minted}
 
-Compare with a similar function type from the Koka language, featuring row-polymorphic types~\cite{leijen2014koka}:
+Compare this with the corresponding function type in the Koka language, which features row-polymorphic types~\cite{leijen2014koka}:
 \begin{minted}{kotlin}
     fun map(xs: list<a>, f: (a) -> e b): e list<b>
 \end{minted}
 
-To control escaping of capabilities, we need some form of escape analysis. % todo citations
-Since effect systems operate the type-level, it is natural to use types for escape analysis as well.
-Moreover, we need this analysis to be cross-procedural, so it should affect function signatures.
-Let us give an informal brief introduction of the type-based escape analysis technique that we feature in this paper.
+To control the escaping of capabilities, some form of escape analysis is required. % todo citations
+Given that effect systems operate at the type level, it is natural to employ type-based techniques for escape analysis as well.
+Furthermore, since this analysis must account for the flow of capabilities across function boundaries, it should be cross-procedural and directly reflected in function signatures.
+In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
 
-We call values that should not escape some scope \textit{tracked} (as well as their types).
-For instance, capabilities are tracked by default, so are types of implicit parameters.
-To distinguish between tracked and non-tracked types, we augment each type $T$ with a special lifetime label $lab$ using a syntax: \[scoped(lab)\ap T\]
+We refer to values that must not escape a given scope as \textit{tracked}, and likewise, their types are treated as tracked.
+For instance, capabilities are tracked, as are by default the types of implicit parameters.
+To distinguish between tracked and non-tracked types, we annotate each type $T$ with a special lifetime label $lab$, denoted by the syntax:
+\[scoped(lab)\ap T\]
 Lifetime labels range over \texttt{free}, \texttt{local} and polymorphic lifetime variables.
-\texttt{free} lifetime label is used to type non-tracked values.
-We assume it by default for every type.
-\texttt{local} present in tracked types, and a type system treats \texttt{local} specially to prevent escaping (for instance, a function cannot return a value of a tracked type).
-For example, the \texttt{map} function can explicitly declare that it do not leak an argument function (so it is safe to pass it a closure with capabilities):
+The \texttt{free} label is used for non-tracked values and is assumed by default for all types.
+The \texttt{local} label appears in tracked types, which the type system handles specially to prevent their escape; for instance, a function is prohibited from returning a value of a tracked type.
+
+For example, the \texttt{map} function can be explicitly typed to ensure that it does not leak its argument function, thereby making it safe to pass closures that possess capabilities:
 \begin{minted}{swift}
     func map(xs: List<a>, f: scoped(local) (a) -> b): List<b>
 \end{minted}
 
-To allow a function to leak arguments through a result, a polymorphism over lifetimes can be used.
-In fact, it is an explicit function's dataflow specification in a signature. % todo dataflow term and citation
-For example, a lazy \texttt{map} function instead of eagerly computing a result, immediately returns a collection that remembers required processing inside.
-We specify it by assigning the same lifetime variable \texttt{l} to both argument \texttt{f} and a result type.
-Such a function still supports contextual polymorphism since it can leak \texttt{f} only with a result and a call site is aware that this result should not escape:
+To enable a function to propagate its arguments through its result, polymorphism over lifetime labels can be used.
+In essence, this is an explicit specification of the function’s dataflow directly in the type signature. % todo dataflow term and citation
+For instance, a lazy \texttt{map} function does not eagerly compute and return the final result; instead, it immediately yields a collection that encapsulates the processing logic.
+This behavior can be captured by assigning the same lifetime variable~\texttt{l} to both the argument \texttt{f} and the result type.
+Consequently, the type system records that any tracked capabilities captured by \texttt{f} may be retained within the result.
+Such a function thus continues to support contextual polymorphism, as it can only permit \texttt{f} to escape with the result; furthermore, the call site is made aware~--- via the signature~--- that the result must not escape its prescribed context:
 \begin{minted}{swift}
     func lazyMap(xs: LazyList<a>, f: scoped(l) (a) -> b): scoped(l) LazyList<b>
 
@@ -485,14 +492,14 @@ Such a function still supports contextual polymorphism since it can leak \texttt
     }
 \end{minted}
 
-We use intersection of lifetimes to express capturing two or more lifetime-polymorphic values:
+To express the capture of two or more lifetime-polymorphic values within the same scope, we employ the intersection of lifetimes:
 \begin{minted}{swift}
     func compose(f: scoped(l1) (b) -> c, g: scoped(l2) (a) -> b): scoped(l1&l2) (a) -> c
         = (x) => f(g(x))
 \end{minted}
 
-For the sake of simplicity, we get rid of lifetime polymorphism for compound datatypes by computing their lifetimes as an intersection of component's lifetimes.
-Lifetimes of components themselves on destructuring are approximated with a lifetime of a compound datatype.
+For the sake of simplicity, we dispense with lifetime polymorphism for compound datatypes by determining each compound's lifetime as the intersection of the lifetimes of its components.
+Upon destructuring, the lifetimes of the individual components are, in turn, approximated by the lifetime of the original compound datatype.
 \begin{minted}{swift}
     func first(x: scoped(l1) Int, y: scoped(l2) Int): scoped(l1&l2) Int {
         let intPair: scoped(l1&l2) IntPair = IntPair(x, y)
@@ -500,36 +507,38 @@ Lifetimes of components themselves on destructuring are approximated with a life
     }
 \end{minted}
 
-We establish subtyping in a way that non-tracked values can be used in positions where tracked values are expected.
-It increases the number of safe well-typed programs and helps in smooth migration for languages with untyped effects to the effect system.
+We define subtyping so that non-tracked values may be used in positions where tracked values are expected.
+This design increases the number of safe well-typed programs and facilitates gradual adoption of effect tracking for languages transitioning from untyped effects to an effect system.
 
-We allow tracked types to instantiate polymorphic type parameters to make them first-class citizens in a language.
-To control, whether tracked types can instantiate a type parameter, we use bounded polymorphism.
-For example, the \texttt{lazyMap} function do not leak values of polymorphic types, for instance, through global state, but only returns \texttt{b} back to the caller, so they can be instantiated with tracked types\footnote{We assume that \texttt{Any} is a top of types lattice.}\footnote{To preserve backward compatibility, \texttt{scoped(free) Any} type can be used as a default bound.}:
+We permit tracked types to instantiate polymorphic type parameters, thereby making them first-class citizens in the language.
+To control when tracked types are eligible for instantiation, we employ bounded polymorphism.
+For example, the \texttt{lazyMap} function is written in such a way that it does not leak values of polymorphic type parameters (e.g., through global state), but rather returns them directly to the caller.
+As a result, these parameters may be instantiated with tracked types:\footnote{We assume that \texttt{Any} serves as the top element in the type lattice.} \footnote{For backward compatibility, the type \texttt{scoped(free) Any} may be used as the default bound.}
 \begin{minted}{swift}
     func lazyMap(xs: LazyList<a>, f: scoped(l) (a) -> b): scoped(l) LazyList<b>
         where a <: scoped(local) Any, b <: scoped(local) Any
 \end{minted}
 
-Various techniques can be used to reduce boilerplate related to the lifetime polymorphism and specification of bounds.
-For example, the lifetime elision from the Rust language~\cite{matsakis2014rust} uses heuristics to automatically place lifetime variables (we use \texttt{scoped} keyword without a particular lifetime to trigger an elision mechanism).
-We will discuss this and other methods in Section~\ref{subsec:lifetime-elision}.
+Various techniques can be employed to reduce boilerplate associated with lifetime polymorphism and the specification of bounds.
+For example, the lifetime elision mechanism in the Rust language~\cite{matsakis2014rust} uses heuristics to automatically insert lifetime variables, thereby alleviating the need for explicit annotation.
+In our approach, using the \texttt{scoped} keyword without a specific lifetime parameter similarly invokes the elision mechanism.
+We will discuss this technique, along with alternative methods, in Section~\ref{subsec:lifetime-elision}.
 
-The type-based escape analysis feature is useful beyond its application to effect system construction.
-Namely, it can be used to reduce a number of heap allocations~\cite{lorenzen2024oxidizing}, implement borrowing for an ownership-based resource management~\cite{matsakis2014rust, lorenzen2024oxidizing}, ensure safety of non-local return~\cite{akhin2021kotlin}.
+The utility of type-based escape analysis extends well beyond its role in the construction of effect systems.
+Specifically, it can be leveraged to reduce the number of heap allocations~\cite{lorenzen2024oxidizing}, enable borrowing for the ownership-based resource management~\cite{matsakis2014rust, lorenzen2024oxidizing}, and ensure the safety of non-local returns~\cite{akhin2021kotlin}.
 
 \subsection{Summary} \label{subsec:idea-summary}
 
-An effect system can be seen as a combination of implicit parameters and type-based escape analysis features.
-Hence, the design of an effect system naturally splits into two parts and can be approached step-by-step.
+An effect system can be regarded as the integration of implicit parameters with type-based escape analysis.
+Consequently, the design of an effect system naturally decomposes into two distinct components and can be developed incrementally in a step-by-step manner.
 
-In fact, our previous discussion was centered around free variables.
-Indeed, a term naturally depends on a context with its free variables: in different contexts it obtains different semantics through them.
-So, they are the target for an effect system, while bound once are controlled by canonical type systems.
+In fact, our previous discussion has primarily focused on free variables.
+Indeed, a term inherently depends on its context via its free variables, acquiring different semantics depending on the particular context in which it is evaluated.
+So, free variables are the target for effect systems, while bound once are regulated by canonical type systems.
 
-Two parts of our perspective on effect systems originate from the fact that there are two ways of defining the semantics for free variables: dynamic and lexical scoping.
-It is convenient to do it one way or another depending on the situation.
-We summarize the correspondence on the fig.\ \ref{fig:free-vars} and discuss the connection with other works on effect system design in Section\ \ref{sec:related}.
+Our perspective on effect systems arises from a fundamental observation: the semantics of free variables can be defined by two principal scoping disciplines~--- dynamic and lexical scoping.
+Adopting one or the other proves advantageous depending on the programming scenario.
+We summarize the correspondence between these two disciplines in Figure~\ref{fig:free-vars} and further discuss the relationship to existing approaches in effect system design in Section~\ref{sec:related}.
 
 \begin{figure}
     \centering
