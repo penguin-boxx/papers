@@ -828,7 +828,7 @@ TODO theorems % todo theorem about determinism (and mb others)
 
 TODO formulate properties % todo
 
-\section{Design of implicit parameters} \label{sec:implicits}
+\section{Design of implicit parameters} \label{sec:implicits} % todo perplexityfy
 
 In this section we discuss design decisions for implicit parameters feature that make it more suitable as a component of a practical effect system.
 Along the discussion we introduce a formal calculi with implicit parameters $Core^{im}$ as an extension to $Core$.
@@ -1015,8 +1015,20 @@ Syntax of terms follows the changes in the syntax of types:
 
 \subsection{Typing rules for $Core_\Delta$}
 
-\begin{itemize}
-    \item % todo
+Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:core-delta-typing}):
+\begin{itemize} % todo make rule names explicit for other enumerations as well
+    \item \textbf{Lam:} The typing rule for $\lambda$-abstractions guarantees that no tracked value can escape the scope of the function via its return value.
+    Analogous to the treatment of data constructors, the lifetime associated with a function type is determined as the intersection of the lifetimes of all captured variables.
+    This ensures that the function itself cannot outlive any tracked resources it closes over.
+    \item \textbf{Match:} Lifetime parameters appearing in positive positions are conservatively approximated by the lifetime of the enclosing composite data type.
+    Since data types are covariant with respect to their lifetime parameters, lifetimes appearing in negative positions are replaced with the bottom lifetime \texttt{free}, analogous to covariant projections. % todo link to covariant projections
+    \item \textbf{Handle:} The $Handle$ rule plays crucial role in ensuring effect safety.
+    First, it annotates capabilities created within the handler with the lifetime label \texttt{local} and prohibits occurrences of \texttt{local} in positive positions within the result type $\eta$.
+    This restriction prevents capabilities from escaping the handler’s scope via returned values.
+    Second, the rule enforces a well-formedness condition on effect signatures to ensure that no capabilities are passed as arguments to operation calls.
+    Without this constraint, a capability introduced by an inner handler could be propagated to an operation in an outer handler, thus escaping its scope.
+    This restriction can be relaxed under certain conditions; further discussion is provided in Section. % todo ref
+    \item \textbf{TypesOf:} This rule extracts the types of designated variables from the typing context without discriminating between ordinary bindings and contextual bindings.
 \end{itemize}
 
 %! suppress = EscapeAmpersand
@@ -1038,7 +1050,6 @@ Syntax of terms follows the changes in the syntax of types:
             \Gamma\vdash \lambda \overline{x : \sigma} ~ \overline{y : \sigma'} \ldotp t : ctx(\overline{\sigma}) \left(\&{\overline{lt_+(\tau)}}\right)~ \overline{\sigma'} \to \eta
         }{
             \overline{x :_c \sigma}, \overline{y : \sigma'}, \Gamma\vdash t : \eta &
-            \overline{\sigma} \text{ distinct} &
             \Gamma\vdash_{fv(t)}\overline{\tau} &
             local\not\in lt_+(\eta)
         } \\
@@ -1084,7 +1095,7 @@ Syntax of terms follows the changes in the syntax of types:
         \infer[Handle]{
             \Gamma \vdash handle ~ x : T\ap\overline{\tau}~ with ~ \{\overline{op_i = t_i}\} ~in~u : \eta
         }{
-            \begin{array}{cll}
+            \begin{array}{ccc}
                 x :_c T\ap local\ap\overline{\tau}, \Gamma\vdash u : \eta & \overline{\beta}\not\cap ftv(\eta) & % todo beautify intersection
                 \Sigma(T) = \forall\overline{\alpha}\ldotp sig \hspace{1em} op_i : \forall\overline{\beta}\ldotp \overline{\sigma}_i\to\sigma'_i \in sig
                 \\
@@ -1132,7 +1143,6 @@ Syntax of terms follows the changes in the syntax of types:
             \infer[Sub\&]{\Delta' <: \&\overline{\Delta}}{local\in\overline{\Delta}}
         \end{array}
     \end{gather*}
-    % todo где нужна информация про баунд дженерика?
     \caption{Typing rules for $Core_{\Delta}$}
     \label{fig:core-delta-typing}
 \end{figure}
@@ -1142,12 +1152,6 @@ Syntax of terms follows the changes in the syntax of types:
 % todo higher-rank polymorphism is required for lambdas, иначе ничего не будет работать с абстракцией по хендлерам. Хотя можно просто всё сделать локалом в контексте по умолчанию, но тогда могут быть траблы с кепчурингом. Нужно исследовать, можно ли это как-то попроще добавить.
 
 %todo \cite{hannan1998type, boruch2023capturing}
-
-%todo \section{Semantics} \label{sec:semantics}
-
-% todo Barendregt’s ‘variable convention for simplicity?
-%
-%TODO % todo or make it a part of a regular discussion
 
 % todo ensure that the innermost handlers receives the operation
 % todo refer to a paper that proposed to instantiate a handle_m frame
@@ -1161,11 +1165,15 @@ Syntax of terms follows the changes in the syntax of types:
 
 % todo невозможность отсылать локальные вещи операциям это слишком жестко, нужно ослабить, иначе даже в массив сложит трекаемые вещи в одном скоупе не получится
 
-% todo update on inference
-
 % todo why tunelling (otherwise too much code duplication on polymorphic code)
 
 % todo resources that can leak
+
+% todo \overline{\sigma} \text{ distinct} &
+
+% todo future work: higher-ranked types, type inference
+
+% todo some safety theorem
 
 
 \section{Adoption in mainstream languages} \label{sec:mainstream}
