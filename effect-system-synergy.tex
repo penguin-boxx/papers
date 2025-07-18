@@ -556,25 +556,30 @@ We summarize the correspondence between these two disciplines in Figure~\ref{fig
 \end{figure}
 
 
-\section{Core calculus} \label{sec:core} % todo perplexityfy
+\section{Core calculus} \label{sec:core}
 
-In this section we introduce a convenient for us explicitly typed call-by-value core calculus $Core$ that we will extend later with omitting application and type-based escape analysis.
+In this section, we introduce an explicitly typed, call-by-value core calculus, denoted as $Core$, which serves as the foundational framework for our study.
+In subsequent sections, we will extend $Core$ by incorporating features such as omitting application and type-based escape analysis to enhance its expressiveness and safety guarantees.
 
 \subsection{Effect handlers} \label{subsec:handlers}
 
-In our formal elaborations we are going to use effect handlers as a universal mechanism for defining effects~\cite{plotkin2003algebraic, plotkin2013handling}, because it is powerful enough to express all effects of interest, thus we do not need to consider them one by one.
-At the same time, unlike monad transformers~\cite{liang1995monad, schrijvers2019monad}, dynamic semantics of effect handlers can be defined on its own without any type-directed translation, hence, it does not impose any restrictions on the effect system design.
+In our formal developments, we adopt effect handlers as a universal mechanism for defining effects~\cite{plotkin2003algebraic, plotkin2013handling}, since they are sufficiently expressive to capture all effects of interest.
+This obviates the need to treat individual effects separately.
+Furthermore, in contrast to monad transformers~\cite{liang1995monad, schrijvers2019monad}, the dynamic semantics of effect handlers can be defined independently of any type-directed translation.
+Consequently, this approach imposes no inherent constraints on the design of the effect system, providing us greater flexibility.
 
-Let us give a brief introduction to effect handlers and show how to use them to implement effects, discussed in the previous section~\ref{sec:idea}.
+We begin by providing a brief introduction to effect handlers and demonstrate how they can be used to implement the effects discussed in the previous Section~\ref{sec:idea}.
 
-The \texttt{handle} construct allows to define an execution context for a particular scope by defining a set of operations.
-The \texttt{perform} construct can be used by the code in the scope to call operations defined by a handler as an act of context interaction.
-We use lexically scoped handlers which require \texttt{perform} to refer to a specific instance of a handler with a binding~\cite{biernacki2019binders, brachthauser2020effects}.
-An implementation of each operation has access to a continuation of a call site, which can be used to return a result.
+The \texttt{handle} construct allows to define an execution context for a particular scope by specifying a set of effect operations.
+Within this scope, the \texttt{perform} construct allows code to invoke these operations, facilitating interaction with the execution context managed by the handler.
+The implementation of each operation within a handler is granted access to the continuation at the call site.
+This continuation can be invoked to resume the computation with an operation's result.
 
-For example, we can define an execution context providing a specific constant to a computation.
-To do so, we provide a handler of a \texttt{Reader} effect that provides \texttt{ask} operation returning a constant.
-A computation sums two invocations of \texttt{ask}, so the overall result will be $42$:
+In our setting, we employ lexically scoped handlers, which require that each \texttt{perform} invocation is associated with a specific handler instance through explicit binding~\cite{biernacki2019binders, brachthauser2020effects}.
+
+For example, consider defining an execution context that supplies a specific constant value to a computation.
+This can be achieved by providing a handler for a \texttt{Reader} effect, which offers an \texttt{ask} operation that returns the designated constant.
+The following computation sums the results of two invocations of \texttt{ask}; with implementation returning the constant $21$, the overall result of the computation will be $42$:
 \[
     \begin{array}{l}
         \keyword{handle} ~ h : Reader\ap Int ~\keyword{with}~ \{ ask = \lambda k\ldotp k\ap 21 \} ~\keyword{in} \\
@@ -582,8 +587,8 @@ A computation sums two invocations of \texttt{ask}, so the overall result will b
     \end{array}
 \]
 
-To implement exceptions, \texttt{throw} operation should simply throw away the continuation.
-The following program returns a thrown number $42$:
+To implement exception handling, the \texttt{throw} operation can be defined to discard the current continuation, effectively aborting the remainder of the computation.
+For instance, the following program returns the thrown value $42$:
 \[
     \begin{array}{l}
         \keyword{handle}~ h : Exception\ap Int ~\keyword{with}~ \{throw = \lambda e~k\ldotp e \} ~\keyword{in} \\
@@ -591,7 +596,7 @@ The following program returns a thrown number $42$:
     \end{array}
 \]
 
-Other algebraic effects like mutable state and nondeterminism can be implemented with \texttt{handle} construct as well. % todo citations
+Other algebraic effects, such as mutable state and nondeterminism, can likewise be implemented using the \texttt{handle} construct. % todo citations
 
 %\begin{equation}
 %    \begin{array}{l}
@@ -605,26 +610,27 @@ Other algebraic effects like mutable state and nondeterminism can be implemented
 
 \subsection{Syntax of $Core$} \label{subsec:syntax-core}
 
-Let us discuss the syntax of $Core$ (fig.\ \ref{fig:core-syntax}).
-By the over-line we denote a bunch of corresponding entries.
-Constructs highlighted with gray are used only for an operational semantics.
-Our considerations that lead to this syntax are the following:
+Let us introduce the syntax of $Core$, as illustrated in Figure~\ref{fig:core-syntax}.
+We use an overline to denote a sequence of corresponding entries.
+Constructs highlighted in gray are included solely to support the operational semantics.
+
+The main considerations that have shaped this syntax are as follows:
 \begin{itemize}
-    \item We split arguments into two groups, first group contains \textit{contextual arguments} that will be inferred automatically later.
-    This separation helps us to build algorithmic typing rules as functional type distinguishes contextual and ordinary arguments.
-    \item We use uncurried abstraction and application to make future implicit parameters inference local in a sense that typing information available to an application rule is enough~\cite{pierce2000local}.
+    \item We split function arguments into two groups: \emph{contextual arguments}, which will be inferred automatically in future extensions, and ordinary arguments.
+    This separation facilitates the development of algorithmic typing rules, because the functional type distinguishes contextual arguments from ordinary ones.
+    \item Abstractions and applications are uncurried, ensuring that inference of future implicit parameters is local.
+    That is, all necessary type information is available at the application rule~\cite{pierce2000local}.
     \item For the same purpose we couple contextual and ordinary parameters.
-    \item Capability constructors $K_{cap}$ are used in an operational semantics as a representation of a capability. % todo cite generalized evidence passing?
-    \item $handle$ construct creates a capability associated with a corresponding handler and binds it with a name.
-    At the same time $perform$ construct requires a capability to perform an effect.
-    This approach helps us to naturally build an effect system from the point of view we discussed before (Section~\ref{sec:idea}).
-    \item For brevity, we do not include $return$ block in handlers, because it does not add any expressiveness.
-    \item $handler_m$ construct serves as a continuation delimiter with a unique marker $m$ for an operational semantics.
-    \item In a function type $\ctx{e} \overline{\tau} \to \sigma$, over-line means a tuple of arguments, where the empty tuple is a unit value.
-    So, only an explicit application can cause effects, they cannot happen accidentally with a variable mention.
-    \item Typing context distinguishes between regular bindings and \textit{contextual bindings}.
-    Contextual ones are only allowed to have monotypes.
-    We might have two separate typing contexts, but this would have required us to have different sets for contextual and ordinary bindings.
+    \item Capability constructors $K_{cap}$ are used in an operational semantics to represent a capability. % todo cite generalized evidence passing?
+    \item  The \texttt{handle} construct introduces a capability associated with the newly created handler instance and binds it to a name.
+    The \texttt{perform} construct, in turn, requires a capability in order to perform an effectful operation.
+    This approach helps us to naturally build an effect system from the perspective discussed in Section~\ref{sec:idea}.
+    \item For conciseness, we omit \texttt{return} blocks in handlers, since they do not contribute additional expressiveness.
+    \item The $handler_m$ construct acts as a continuation delimiter, identified by a unique marker $m$ for operational semantics purposes.
+    \item In the function type $\ctx{e} \overline{\tau} \to \sigma$, the overline denotes a tuple of argument types, with the empty tuple interpreted as the unit type.
+    This design ensures that only explicit application can trigger effectful computation; effects cannot arise accidentally from merely mentioning a variable.
+    \item The typing context differentiates regular bindings from \emph{contextual bindings}, the latter of which are restricted to monotypes.
+    While separate typing contexts for each binding class would be possible, this would necessitate different variable domains for contextual and ordinary bindings.
 \end{itemize}
 
 \begin{figure}
@@ -667,30 +673,34 @@ Our considerations that lead to this syntax are the following:
 \end{figure}
 
 Note that the type of first-class functions contains a list of implicit parameters.
-It allows to type the abstraction over handlers.
-For example, the following function establishes en execution context with a handler for an exception type \texttt{E}\footnote{We use informally defined surface syntax for explanations. Its correspondence to our formal definitions is straight-forward.}:
+This enables us to type abstractions over handlers.
+For example, the following function establishes an execution context by introducing a handler for an exception type \texttt{E}\footnote{We employ an informally defined surface syntax for explanatory purposes; its correspondence to our formal definitions is straightforward.}:
 \begin{minted}{swift}
     func withE(f: context(Handler<E>) () -> r): r =
         try { f() } catch (e: E) { ... }
 \end{minted}
 
-We assume that an effect context $\Sigma$ is populated by user's \texttt{effect} declarations like ones in Koka. % todo citation
-Namely, for a program with the following declaration, $\Sigma = \{EffK : \forall\alpha\ldotp\{id : \forall\beta\ldotp b\to b, yield : a \to Unit\} \to Eff\ap a\}$ (there is a bijection between capability constructors and effect types):
+We assume that the effect context $\Sigma$ is populated by user-defined \texttt{effect} declarations, analogous to those found in Koka. % todo citation
+Specifically, for a program containing the following declaration,
 \begin{minted}{swift}
     effect Eff<a> {
         op id(x: b): b
         op yield(x: a): Unit
     }
 \end{minted}
+we have \[\Sigma = \{EffK_{cap} : \forall\alpha\ldotp\{id : \forall\beta\ldotp b\to b, yield : a \to Unit\} \to Eff\ap a\}\]
+There exists a bijection between capability constructors and effect types.
 
 \subsection{Operational semantics of $Core$}
 
-Let us get through the most interesting parts of our semantics (fig.\ \ref{fig:core-operational}):
+% todo refer to a paper that proposed to instantiate a handle_m frame
+
+Let us highlight the most significant aspects of our operational semantics, as presented in Figure~\ref{fig:core-operational}:
 \begin{itemize}
-    \item (handle) selects a capability constructor corresponding to a provided effect types $T$ and uses it to create a capability.
-    Also, it allocates a fresh marker $m$ and installs it with $handler$ construct.
-    \item (perform) destructs a capability, selects an operation and executes it with a current continuation delimited by a corresponding marker.
-    We use deep handlers~\cite{hillerstrom2018shallow}, so handler is reinstalled in a continuation.
+    \item \textbf{(handle)} rule selects the capability constructor associated with the specified effect type $T$ and uses it to instantiate a new capability.
+    Additionally, it allocates a fresh marker $m$ and installs it with the $handler$ construct.
+    \item \textbf{(perform)} rule deconstructs the provided capability, identifies the targeted operation, and invokes it with the current continuation, which is delimited by the associated marker $m$.
+    Since we adopt deep handlers~\cite{hillerstrom2018shallow}, the handler is reinstalled within the continuation.
 \end{itemize}
 
 \begin{figure}
@@ -724,25 +734,28 @@ Let us get through the most interesting parts of our semantics (fig.\ \ref{fig:c
     \label{fig:core-operational}
 \end{figure}
 
-Note that every $perform$ addresses a particular handler, so there is no effect encapsulation problem~\cite{lindley2018encapsulating}: an effect cannot be accidentally handled. % todo more citations
-For example, the following function will not be able to intercept \texttt{E2} exception potentially thrown in \texttt{f}, because \texttt{withE1} do not explicitly provide \texttt{f} a corresponding capability:
+It is important to note that every \texttt{perform} operation in our system is explicitly directed to a particular handler instance.
+As a result, there is no issue of accidental effect handling, so the effect encapsulation is achieved by default~\cite{lindley2018encapsulating}. % todo more citations
+
+For instance, consider a function \texttt{withE1} that installs a handler for exception \texttt{E1}.
+If a computation \texttt{f} potentially raises exception \texttt{E2}, \texttt{withE1} will not be able to intercept this exception, since it does not provide \texttt{f} with the corresponding capability for \texttt{E2}:
 \begin{minted}{swift}
     func withE1(f: context(Handler<E1>) () -> r): r =
         try { f() } catch (e: E1) { ... } catch (e: E2) { /* unreachable */ }
 \end{minted}
 
-Since we propagate a handler to an operation call site, we can avoid handler lookup and collection of a continuation if a callee operation is tail-resumptive~\cite{xie2020effect}.
-In a low-level implementation such $perform$ can be replaced with a virtual call. % todo citation
+Since handlers are propagated explicitly to the operation call site, our approach eliminates the need for dynamic handler lookup and the collection of the continuation when the callee operation is tail-resumptive~\cite{xie2020effect}.
+In a low-level implementation, such a \texttt{perform} construct can thus be compiled to a direct virtual call, further improving efficiency. % todo citation
 
 TODO theorems % todo theorem about determinism (and mb others)
 
 \subsection{Typing rules for $Core$}
 
 \begin{itemize}
-    \item Typing rules for $Core$ (fig.\ \ref{fig:core-typing}) are algorithmic.
-    \item We skip type well-formedness conditions and never-changing effect context $\Sigma$ for brevity.
-    \item An entry in an effect context $\Sigma$ and be uniquely identified by a capability type, so we use $\Sigma$ as a function: $\Sigma(T) = \forall\overline{\alpha}\ldotp sig \iff K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}\in\Sigma$.
-    \item Elements in the typing context be unique with respect to variable names.
+    \item The typing rules for $Core$ (see Figure~\ref{fig:core-typing}) are presented in algorithmic form.
+    \item For conciseness, we omit both type well-formedness conditions and the (invariant) effect context~$\Sigma$.
+    \item Each entry in the effect context~$\Sigma$ can be uniquely identified by its capability type; thus, we treat~$\Sigma$ as a mapping: $\Sigma(T) = \forall\overline{\alpha}\ldotp sig \iff K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}\in\Sigma$.
+    \item All variable bindings within the typing context are assumed to be unique with respect to variable names.
 \end{itemize}
 
 %! suppress = EscapeAmpersand
@@ -977,7 +990,8 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
 \begin{itemize}
     \item Monotypes are now annotated with explicit lifetime labels.
     \item Type schemas support abstraction over lifetime variables and permit the specification of polymorphic bounds.
-    \item We introduce utility operations that, given a type, return the set of lifetimes appearing in specified positions, positive and negative. % todo cite positions
+    \item We introduce utility operations that, given a type, return the set of lifetimes appearing in specified positions~--- positive and negative. % todo cite positions
+    Additionally, the lifetime of a generic type variable is approximated by the lifetime of its bounding type.
     \item The resulting lifetime associated with data constructors is computed as the intersection of all lifetimes corresponding to those values that may later be extracted~--- that is, lifetimes encountered in positive positions.
 \end{itemize}
 
@@ -1147,31 +1161,32 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
     \label{fig:core-delta-typing}
 \end{figure}
 
-% todo integration with implicit inference
+\subsection{Lifetime tunnelling}
 
-% todo higher-rank polymorphism is required for lambdas, иначе ничего не будет работать с абстракцией по хендлерам. Хотя можно просто всё сделать локалом в контексте по умолчанию, но тогда могут быть траблы с кепчурингом. Нужно исследовать, можно ли это как-то попроще добавить.
+
+
+TODO % todo reduce amount of boilerplate for polymorphic code
+% todo bounds instead of boxing (from capturing types)
+% todo why tunelling (otherwise too much code duplication on polymorphic code)
+% todo resources that can leak
+% todo невозможность отсылать локальные вещи операциям это слишком жестко, нужно ослабить, иначе даже в массив сложит трекаемые вещи в одном скоупе не получится
+% todo lifetimes in the middle instead of `here` mode (to allow handlers consume tracked things)
+
+\subsection{Integration with implicit parameters}
+
+TODO % todo
+% todo \overline{\sigma} \text{ distinct} &
+
+\subsection{Using effects with tracked values}
+
+TODO % todo
+
+
 
 %todo \cite{hannan1998type, boruch2023capturing}
 
-% todo ensure that the innermost handlers receives the operation
-% todo refer to a paper that proposed to instantiate a handle_m frame
-
-% todo bounds instead of boxing (from capturing types)
-% todo lifetimes in the middle instead of `here` mode (to allow handlers consume tracked things)
-
-% todo link to first class names for effect handlers
-
-% todo lifetime tunelling reduce amount of boilerplate for polymorphic code
-
-% todo невозможность отсылать локальные вещи операциям это слишком жестко, нужно ослабить, иначе даже в массив сложит трекаемые вещи в одном скоупе не получится
-
-% todo why tunelling (otherwise too much code duplication on polymorphic code)
-
-% todo resources that can leak
-
-% todo \overline{\sigma} \text{ distinct} &
-
 % todo future work: higher-ranked types, type inference
+% todo higher-rank polymorphism is required for lambdas, иначе ничего не будет работать с абстракцией по хендлерам. Хотя можно просто всё сделать локалом в контексте по умолчанию, но тогда могут быть траблы с кепчурингом. Нужно исследовать, можно ли это как-то попроще добавить.
 
 % todo some safety theorem
 
@@ -1200,6 +1215,8 @@ TODO % todo
 TODO % todo
 
 \subsection{Working with OOP}
+
+
 
 TODO % todo
 
