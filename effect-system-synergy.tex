@@ -633,13 +633,14 @@ The main considerations that have shaped this syntax are as follows:
     While separate typing contexts for each binding class would be possible, this would necessitate different variable domains for contextual and ordinary bindings.
 \end{itemize}
 
+% todo можно ли вызвать сейчас конструктор нормально?
 \begin{figure}
     \centering
     \begin{gather*}
         \begin{array}{lrll}
             \text{Variables} & & x, y, z, f, g, op \\
             \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \\
-            &&\vor K\ap \overline{\tau} \ap \overline{t} \vor \graybox{K_{cap}\ap\overline{\tau}\ap m\ap h} \\
+            &&\vor K\ap \overline{\tau} \ap \overline{v} \vor \graybox{K_{cap}\ap\overline{\tau}\ap m\ap h} \\
             &&\vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
             \\
             \text{Terms} &t, u &\Coloneqq v \vor t\ap\overline{\tau} \vor t \ap \overline{t} \ap \overline{t} \\
@@ -665,7 +666,7 @@ The main considerations that have shaped this syntax are as follows:
             \text{Free type variables} & & ftv(\cdot) \\
         \end{array}\\
         \begin{aligned}
-            \text{Evaluation context } E \Coloneqq \square \vor E \ap \overline{\tau} \vor E \ap \overline{t}\ap \overline{t} \vor v \ap (\overline{v}, E, \overline{t}) \ap \overline{t} \vor v \ap \overline{v} \ap (\overline{v}, E, \overline{t}) \vor handler_m ~ E
+            \text{Evaluation context } E \Coloneqq \square \vor E \ap \overline{\tau} \vor E \ap \overline{t}\ap \overline{t} \vor v \ap (\overline{v}, E, \overline{t}) \ap \overline{t} \vor v \ap \overline{v} \ap (\overline{v}, E, \overline{t}) \vor K\ap\overline{\tau}\ap(\overline{v}, E, \overline{t}) \vor handler_m ~ E
         \end{aligned}\\
     \end{gather*}
     \caption{Syntax of $Core$.}
@@ -1022,7 +1023,7 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
 Syntax of terms follows the changes in the syntax of types:
 \[
     \begin{array}{lll}
-        \text{Values} & v & \Coloneqq \ldots \vor \Lambda \graybox{\overline{l}}\ap\overline{\alpha}\ldotp v \vor K\ap\graybox{\overline{\Delta}}\ap\overline{\tau}\ap\overline{t} \vor \ldots \\
+        \text{Values} & v & \Coloneqq \ldots \vor \Lambda \graybox{\overline{l}}\ap\overline{\alpha}\ldotp v \vor K\ap\graybox{\overline{\Delta}}\ap\overline{\tau}\ap\overline{v} \vor \ldots \\
         \text{Terms} & t, u &\Coloneqq \ldots \vor t\ap\graybox{\overline{\Delta}}\ap\overline{\tau} \vor handle ~ x : T \ap\graybox{local}\ap \overline{\tau} ~with ~h~in ~t \vor \ldots
     \end{array}
 \]
