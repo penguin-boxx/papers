@@ -1042,7 +1042,7 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
     \item \textbf{Handle:} The $Handle$ rule plays crucial role in ensuring effect safety.
     First, it annotates capabilities created within the handler with the lifetime label \texttt{local} and prohibits occurrences of \texttt{local} in positive positions within the result type $\eta$.
     This restriction prevents capabilities from escaping the handler’s scope via returned values.
-    Second, the rule enforces a well-formedness condition on effect signatures to ensure that no capabilities are passed as arguments to operation calls.
+    Second, the rule enforces a well-formedness condition on effect signatures to ensure that no capabilities are passed as arguments to operation calls. % todo explain better, generics are bounded with free
     Without this constraint, a capability introduced by an inner handler could be propagated to an operation in an outer handler, thus escaping its scope.
     This restriction can be relaxed under certain conditions; further discussion is provided in Section. % todo ref
     \item \textbf{TypesOf:} This rule extracts the types of designated variables from the typing context without discriminating between ordinary bindings and contextual bindings.
@@ -1162,18 +1162,37 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
     \end{gather*}
     \caption{Typing rules for $Core_{\Delta}$}
     \label{fig:core-delta-typing}
+    % todo кажется, сабтайпинг не работает нормально без сабтайпинга на конструкторах
+    % todo что с полярностью на конструкторах
 \end{figure}
 
 \subsection{Lifetime tunnelling}
 
+Unlike OCaml modal types~\cite{lorenzen2024oxidizing}, our system permits types annotated with lifetimes to instantiate generic parameters.
+Following the terminology introduced by Boruch-Gruszecki et al.~\cite{boruch2023capturing}, we refer to this mechanism as \emph{lifetime tunnelling}.
+In the following, we discuss alternative approaches to this problem and provide a comparative analysis. % todo highlighting the benefits and trade-offs of our solution.
 
+Consider, for example, a function that updates the first component of a pair.
+In our approach, it suffices to specify appropriate bounds for the generic parameters to ensure that the function correctly operates on tracked values.
+Furthermore, note that if the function is instantiated with untracked types, its result will likewise remain untracked: no superfluous constraints will be imposed.
+\begin{minted}{swift}
+    func mapFirst(p: Pair<a, b>, f: (a) -> c): Pair<c, b>
+            where a <: scoped(local) Any, b <: scoped(local) Any, c <: scoped(local) Any {
+        Pair(f(fst(p)), snd(p)
+    }
+\end{minted}
+
+%Another approach is to propagate lifetimes of generics outside of a type constructor.
+%This will force us to return a tracked pair, since it will contain components that with lifetime approximated to a constructor's lifetime.
+%Modal OCaml allows to return locals by \texttt{exclave} feature~\cite{lorenzen2024oxidizing}:
+%\begin{minted}{ocaml}
+%    val mapFirst : 'a 'b pair @ local -> ('a @ local -> 'c @ local) -> 'c 'b pair @ local
+%    let mapFirst p f = exclave pair (f (fst p)) (snd p)
+%\end{minted}
 
 TODO % todo reduce amount of boilerplate for polymorphic code
 % todo bounds instead of boxing (from capturing types)
 % todo why tunelling (otherwise too much code duplication on polymorphic code)
-% todo resources that can leak
-% todo невозможность отсылать локальные вещи операциям это слишком жестко, нужно ослабить, иначе даже в массив сложит трекаемые вещи в одном скоупе не получится
-% todo lifetimes in the middle instead of `here` mode (to allow handlers consume tracked things)
 
 \subsection{Integration with implicit parameters}
 
@@ -1182,9 +1201,10 @@ TODO % todo
 
 \subsection{Using effects with tracked values}
 
+% todo resources that can leak
+% todo невозможность отсылать локальные вещи операциям это слишком жестко, нужно ослабить, иначе даже в массив сложит трекаемые вещи в одном скоупе не получится
+% todo lifetimes in the middle instead of `here` mode (to allow handlers consume tracked things)
 TODO % todo
-
-
 
 %todo \cite{hannan1998type, boruch2023capturing}
 
@@ -1209,8 +1229,6 @@ TODO % todo
 
 % todo unsafe escape hatches
 
-
-
 TODO % todo
 
 \subsection{Migrating to an effect system}
@@ -1219,14 +1237,10 @@ TODO % todo
 
 \subsection{Working with OOP}
 
-
-
 TODO % todo
-
 
 % todo abstraction inference
 % todo bidirectional semantics and higher-order effects
-
 
 \section{Related work} \label{sec:related}
 
@@ -1262,7 +1276,7 @@ TODO % todo
 %%
 %% The next two lines define the bibliography style to be used, and
 %% the bibliography file.
-% todo add links where possible for convenience of readers
+% todo add doi links where possible for convenience of readers
 \bibliographystyle{ACM-Reference-Format}
 \bibliography{bib}
 
