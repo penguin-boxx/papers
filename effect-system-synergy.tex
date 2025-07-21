@@ -748,7 +748,7 @@ If a computation \texttt{f} potentially raises exception \texttt{E2}, \texttt{wi
 Since handlers are propagated explicitly to the operation call site, our approach eliminates the need for dynamic handler lookup and the collection of the continuation when the callee operation is tail-resumptive~\cite{xie2020effect}.
 In a low-level implementation, such a \texttt{perform} construct can thus be compiled to a direct virtual call, further improving efficiency. % todo citation
 
-TODO theorems % todo theorem about determinism (and mb others)
+%TODO theorems % todo theorem about determinism (and mb others)
 
 \subsection{Typing rules for $Core$}
 
@@ -840,16 +840,16 @@ TODO theorems % todo theorem about determinism (and mb others)
     \label{fig:core-typing}
 \end{figure}
 
-TODO formulate properties % todo
+%TODO formulate properties % todo
 
 \section{Design of implicit parameters} \label{sec:implicits} % todo perplexityfy
 
-In this section we discuss design decisions for implicit parameters feature that make it more suitable as a component of a practical effect system.
-Along the discussion we introduce a formal calculi with implicit parameters $Core^{im}$ as an extension to $Core$.
+In this section we discuss design decisions for implicit parameters feature that enhance its suitability as a component of a practical effect system.
+Throughout the discussion, we introduce a formal calculus with implicit parameters, denoted as $Core^{im}$, which extends the $Core$ calculus.
 
 \subsection{Syntax of $Core^{im}$}
 
-We extend syntax of $Core^{ex}$ with an omitting application, which do not specify the first block of contextual arguments:
+We extend the syntax of $Core$ by introducing omitted application, which allows the first block of contextual arguments to be unspecified:
 \[
     \begin{array}{lcc}
         \text{Terms} & t, u &\Coloneqq \ldots \vor t\ap\overline{t} \vor \ldots
@@ -858,12 +858,12 @@ We extend syntax of $Core^{ex}$ with an omitting application, which do not speci
 
 \subsection{Inference of implicit parameters} \label{subsec:inference}
 
-We give a type-directed translation from $Core^{im}$ to $Core$ (fig.\ \ref{fig:fim-fex-inference}).
-Making translation rules for other constructs from typing rules for $Core$ is straight-forward.
+We define a type-directed translation from $Core^{im}$ to $Core$, as presented in Figure~\ref{fig:fim-fex-inference}.
+Deriving translation rules for other constructs from the typing rules for $Core$ is straightforward.
 
-$\Gamma\vdash_e \overline{x}$ relation selects from the typing context variables participating in the inference with given effect types.
-Note that since the typing context only stores bindings with unique names, a user can shadow a contextual binding with an ordinary one, and it will not participate in the inference anymore.
-This issue can be solved, for instance, by making typing context a list with duplications and assigning fresh names to contextual bindings.
+The relation $\Gamma\vdash_e \overline{x}$ selects from the typing context those variables that participate in inference with the specified effect types.
+Note that, since the typing context maintains only bindings with unique names, it is possible for a user to shadow a contextual binding with an ordinary one, causing it to be excluded from subsequent inference.
+This issue can be addressed, for example, by representing the typing context as a list that permits duplicate entries and by assigning fresh names to contextual bindings.
 
 \begin{figure}
     %! suppress = EscapeAmpersand
@@ -884,25 +884,27 @@ This issue can be solved, for instance, by making typing context a list with dup
     \label{fig:fim-fex-inference}
 \end{figure}
 
-There is a design decision to be made, whether inference should rely only on types, or on variable names as well.
-The second option is a bit more complicated than the first one, since it requires to store variables names in the effect rows.
-Moreover, it excludes renaming of implicit parameters from $\alpha$-equivalence, making a program more fragile regarding renaming.
-On the other hand, it allows to use simultaneously multiple effects of the same type.
-This problem attracts many attention from researchers. % todo citations
-However, we use the first option and argue that in practical programming using multiple effects of the same type is mostly undesired.
-We believe that users should provide many domain-specific effects instead of using basic ones directly.
-For example, some \texttt{UserRepository} effect is preferable to general \texttt{Database} effect, since it provides higher-level of abstraction.
+There is a design decision to be made, whether inference should depend solely on types, or additionally rely on variable names.
+The latter approach is more complex, as it necessitates storing variable names in effect rows and, furthermore, precludes the renaming of implicit parameters under $\alpha$-equivalence.
+This restriction can make programs more fragile with respect to renaming.
+On the other hand, this approach permits simultaneous use of multiple effects of the same type.
+This problem has attracted significant attention in the research community. % todo citations
 
-Another decision is when to substitute implicit parameters, on mentioning or, deferred, on application.
-It is a similar question to the type instantiation with first-class polymorphism (type inference infers type parameters)~\cite{emrich2020freezeml}. % todo verify citation
-Both ways are useful: the first is convenient with contextually-polymorphic functions \texttt{map(xs, f)}, the second helps with effect abstraction \texttt{withSomeException(f)}. % todo introduce effect abstraction somewhere % todo citations to kotlin, haskell and something
-Actually, the decision is about choosing the default, since one behaviour can be changed to another by the $\eta$-expansion. % todo explain better, examples
-Namely, assume that the substitution occurs on application:
+However, in this work, we use the first approach and argue that, in practical programming, relying on multiple effects of the same type is generally undesirable.
+Instead, we advocate for the definition and use of domain-specific effects rather than directly employing general-purpose ones.
+For instance, a domain-specific effect such as \texttt{UserRepository} offers a higher level of abstraction compared to a general-purpose \texttt{Database} effect.
+
+Another design decision concerns the timing of implicit parameter substitution: should it occur immediately upon mention, or should it be deferred until application?
+This question is analogous to type instantiation in the presence of first-class polymorphism, where type inference determines type parameters~\cite{emrich2020freezeml}. % todo verify citation
+Both strategies have their advantages: immediate substitution is convenient when working with contextually polymorphic functions, such as \texttt{map(xs, f)}, whereas deferred substitution facilitates effect abstraction, as in constructs like \texttt{withSomeException(f)}. % todo introduce effect abstraction somewhere % todo citations to kotlin, haskell and something
+
+Actually, this choice determines the default behavior, since either approach can be emulated by the other via $\eta$-expansion.
+For instance, let us assume that substitution is performed at application time:
 \begin{minted}{swift}
     f : context(IO) () -> Unit; g : (() -> Unit) -> Unit
     g(() => f())
 \end{minted}
-Or, assume that substitution occurs on mentioning:
+Alternatively, assume that substitution occurs at the point where a function is mentioned:
 \begin{minted}{swift}
     f : context(IO) () -> Unit; g : (context(IO) () -> Unit) -> Unit
     g(context(_: Eff) () => f()) // abstracts over contextual parameters
@@ -911,13 +913,13 @@ Or, assume that substitution occurs on mentioning:
 % todo have i introduced surface implicit abstraction somewhere
 % todo have i introduced the surface syntax anywhere
 
-TODO properties % todo
+%TODO properties % todo
 
 \subsection{System $Core^{im+<:}$ with implicit parameters and subtyping} \label{subsec:im-sub}
 
-It is convenient to have some form of subtyping on effect rows, since a function with less context requirements can naturally be used in more permissive contexts.
-For example, \texttt{withStd} is a function that provides default implementation for many effects.
-We should be able to pass a function that uses only some of them:
+It is desirable to support a form of subtyping on effect rows, as this allows functions with fewer contextual requirements to be used in more permissive contexts in a natural way.
+For example, \texttt{withStd} is a function that provides default implementation for several effects.
+We should therefore be able to pass to \texttt{withStd} a function that only utilizes a subset of those effects:
 \begin{minted}{swift}
     func withStd(f: context(IO, Allocator, Random) () -> r): r
     withStd(g) // g : context(IO) () -> Unit
@@ -926,16 +928,16 @@ We should be able to pass a function that uses only some of them:
 % todo find literature
 % todo row polymorphism can help somehow?
 % todo cite papers about row types
-Contexts can be seen as structural record types with width and permutation subtyping.
-However, the naive implementation of such records as dictionaries is not very efficient in time and space.
+Contexts can be modeled as structural record types with width and permutation subtyping.
+However, a straightforward implementation of such records as dictionaries tends to be inefficient in terms of both time and space complexity.
 
-To achieve an efficient implementation of subtyping, we restrict it to be shallow in a sense that one functional type subtypes another only if one effect row subtypes another, while arguments and return types should be the same:
+To enable efficient subtyping, we restrict subtyping to be shallow, meaning that one function type is a subtype of another only if their effect rows are in a subtyping relationship, while the argument and return types remain identical:
 \[
     \infer{\ctx{e} \tau \to \sigma <: \ctx{e'} \tau\to\sigma}{e' <: e}
 \]
 
-Now we can implement such shallow subtyping by $\eta$-expansion (fig.\ \ref{sig:fim-sub-app}).
-Relation $\Gamma\vdash t\Leftarrow \tau \step t_c$ performs $\eta$-expansion if a functional type is expected.
+With this restriction, shallow subtyping can be implemented via $\eta$-expansion (see Figure~\ref{sig:fim-sub-app}).
+The relation $\Gamma\vdash t\Leftarrow \tau \step t_c$ applies $\eta$-expansion to $t$ when a functional type $\tau$ is expected.
 
 \begin{figure}
     %! suppress = EscapeAmpersand
