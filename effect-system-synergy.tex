@@ -466,7 +466,7 @@ In the following, we provide an informal overview of the type-based escape analy
 We refer to values that must not escape a given scope as \textit{tracked}, and likewise, their types are treated as tracked.
 For instance, capabilities are tracked, as are by default the types of implicit parameters.
 To distinguish between tracked and non-tracked types, we annotate each type $T$ with a special lifetime label $lab$, denoted by the syntax:
-\[scoped(lab)\ap T\]
+\[scoped(lab)\ap T\] % todo change the syntax to something more reasonable
 Lifetime labels range over \texttt{free}, \texttt{local} and polymorphic lifetime variables.
 The \texttt{free} label is used for non-tracked values and is assumed by default for all types.
 The \texttt{local} label appears in tracked types, which the type system handles specially to prevent their escape; for instance, a function is prohibited from returning a value of a tracked type.
@@ -572,7 +572,7 @@ We begin by providing a brief introduction to effect handlers and demonstrate ho
 
 The \texttt{handle} construct allows to define an execution context for a particular scope by specifying a set of effect operations.
 Within this scope, the \texttt{perform} construct allows code to invoke these operations, facilitating interaction with the execution context managed by the handler.
-The implementation of each operation within a handler is granted access to the continuation at the call site.
+The implementation of each operation within a handler is granted access to a delimited continuation of the call site~\cite{dyvbig2007monadic}.
 This continuation can be invoked to resume the computation with an operation's result.
 
 In our setting, we employ lexically scoped handlers, which require that each \texttt{perform} invocation is associated with a specific handler instance through explicit binding~\cite{biernacki2019binders, brachthauser2020effects}.
@@ -858,7 +858,7 @@ We extend the syntax of $Core$ by introducing omitted application, which allows 
 
 \subsection{Inference of implicit parameters} \label{subsec:inference}
 
-We define a type-directed translation from $Core^{im}$ to $Core$, as presented in Figure~\ref{fig:fim-fex-inference}.
+We define a type-directed translation from $Core^{im}$ to $Core$, as presented in Figure~\ref{fig:core-im-core-implicit-inference}.
 Deriving translation rules for other constructs from the typing rules for $Core$ is straightforward.
 
 The relation $\Gamma\vdash_e \overline{x}$ selects from the typing context those variables that participate in inference with the specified effect types.
@@ -881,7 +881,7 @@ This issue can be addressed, for example, by representing the typing context as 
         \infer[Infer]{\Gamma\vdash_{\overline{\tau}} \overline{x}}{\overline{x :_c \tau}\subset \Gamma}
     \end{gather*}
     \caption{Inference of implicit parameters.}
-    \label{fig:fim-fex-inference}
+    \label{fig:core-im-core-implicit-inference}
 \end{figure}
 
 There is a design decision to be made, whether inference should depend solely on types, or additionally rely on variable names.
@@ -940,6 +940,7 @@ With this restriction, shallow subtyping can be implemented via $\eta$-expansion
 The relation $\Gamma\vdash t\Leftarrow \tau \step t_c$ applies $\eta$-expansion to $t$ when a functional type $\tau$ is expected.
 
 \begin{figure}
+    % todo typecheck before translation
     %! suppress = EscapeAmpersand
     \begin{gather*}
         \mathframebox{\Gamma\vdash t : \tau \step t_c} \\
@@ -997,6 +998,9 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
     Additionally, the lifetime of a generic type variable is approximated by the lifetime of its bounding type.
     \item The resulting lifetime associated with data constructors is computed as the intersection of all lifetimes corresponding to those values that may later be extracted~--- that is, lifetimes encountered in positive positions.
 \end{itemize}
+
+% todo say about the default constraints
+% todo syntax of lifetimes deliberately choosen to resemble a generic parameter
 
 %! suppress = MissingLabel
 \begin{figure}
@@ -1064,10 +1068,10 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
         \end{array}
         \\
         \infer[Lam]{
-            \Gamma\vdash \lambda \overline{x : \sigma} ~ \overline{y : \sigma'} \ldotp t : ctx(\overline{\sigma}) \left(\&{\overline{lt_+(\tau)}}\right)~ \overline{\sigma'} \to \eta
+            \Gamma\vdash \lambda \overline{x : \tau} ~ \overline{y : \sigma} \ldotp t : ctx(\overline{\tau}) \left(\&{\overline{lt_+(s)}}\right)~ \overline{\sigma} \to \eta
         }{
-            \overline{x :_c \sigma}, \overline{y : \sigma'}, \Gamma\vdash t : \eta &
-            \Gamma\vdash_{fv(t)}\overline{\tau} &
+            \overline{x :_c \tau}, \overline{y : \sigma}, \Gamma\vdash t : \eta &
+            \Gamma\vdash_{fv(t)}\overline{s} &
             local\not\in lt_+(\eta)
         } \\
         \infer[App]{
@@ -1166,6 +1170,8 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
     % todo что с полярностью на конструкторах
 \end{figure}
 
+% todo about the default generic bound for operations
+
 \subsection{Lifetime tunnelling}
 
 Unlike OCaml modal types~\cite{lorenzen2024oxidizing}, our system permits types annotated with lifetimes to instantiate generic parameters.
@@ -1178,9 +1184,36 @@ Furthermore, note that if the function is instantiated with untracked types, its
 \begin{minted}{swift}
     func mapFirst(p: Pair<a, b>, f: (a) -> c): Pair<c, b>
             where a <: scoped(local) Any, b <: scoped(local) Any, c <: scoped(local) Any {
-        Pair(f(fst(p)), snd(p)
+        Pair(f(fst(p)), snd(p))
     }
 \end{minted}
+
+% todo mention somewhere that our generics are invariant, with lifetimes as a special case
+
+% todo лайфтаймами нельзя инстанциировать полиморфные параметры, но конструкторы данных можно
+%A second approach would be to prohibit the instantiation of function type parameters with lifetimes, while still permitting lifetimes to instantiate data constructors.
+%This method does not involve bounded polymorphism; however, it requires that all generic occurrences be explicitly annotated with a lifetime.
+%Additionally, it necessitates support for variance and mandates that the result's lifetime be tracked independently of the argument lifetimes.
+%
+%\begin{minted}{swift}
+%    func mapFirst(
+%        p: Pair<scoped(local) a, scoped(local) b>,
+%        f: (scoped(local) a) -> scoped(local) c
+%    ): Pair<scoped(local) c, scoped(local) b> {
+%        Pair(f(fst(p)), snd(p))
+%    }
+%\end{minted}
+%
+%A third approach would be to propagate lifetimes of generics outside of a type constructor.
+
+
+
+% todo пропагирование лайфтаймов за конструктор
+
+% todo решение с перегрузкой
+
+% todo решение с полиморфизмом
+
 
 %Another approach is to propagate lifetimes of generics outside of a type constructor.
 %This will force us to return a tracked pair, since it will contain components that with lifetime approximated to a constructor's lifetime.
@@ -1196,15 +1229,62 @@ TODO % todo reduce amount of boilerplate for polymorphic code
 
 \subsection{Integration with implicit parameters}
 
-TODO % todo
+To extend $Core_\Delta$ with implicit parameters, resulting in $Core_\Delta^{im}$, it is necessary to incorporate omitted application into both the syntax and the translation rules, as described in Section~\ref{sec:implicits}.
+However, several details require careful consideration.
+
+Previously, to select appropriate implicit arguments, we employed type equality between the type of the contextual binding and the expected type of the implicit parameter (see Fig.\ \ref{fig:core-im-core-implicit-inference}).
+However, types in $Core_\Delta$ also include lifetimes, which should not participate in the inference process.
+At the same time, lifetime correctness must still be enforced.
+Therefore, we revise the rules as shown in Figure~\ref{fig:core-im-delta-core-implicit-inference}, where $erase(\cdot)$ denotes an operation that erases all lifetime information by setting all lifetimes to $free$.
+
+\begin{figure}
+    %! suppress = EscapeAmpersand
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash t : \tau \step t_{c}} \\
+        \infer[CtxApp]{
+            \Gamma\vdash t\ap\overline{u} : \sigma \step t_{c} \ap \overline{x}\ap\overline{u_{c}}
+        }{
+            \Gamma\vdash t : \ctx{\overline{\tau_1}} \overline{\tau} \to \sigma \step t_{c} &
+            \Gamma\vdash_{\overline{\tau_1}}\overline{x} &
+            \overline{\Gamma\vdash x : \tau_2} &
+            \overline{\Gamma\vdash \tau_2 <: \tau_1} &
+            \overline{\Gamma\vdash u : \tau \step u_{c}}
+        } \\
+        \mathframebox{\Gamma\vdash_{\overline{\tau}} \overline{x}}
+        \text{\hspace{2em}}
+        \infer[Infer]{\Gamma\vdash_{\overline{\tau}} \overline{x}}{\overline{x :_c erase(\tau)}\subset erase(\Gamma)}
+    \end{gather*}
+    \caption{Inference of implicit parameters for $Core_\Delta^{im}$.}
+    \label{fig:core-im-delta-core-implicit-inference}
+\end{figure}
+
+% TODO extend to subtyping on arguments
+
 % todo \overline{\sigma} \text{ distinct} &
+
+TODO % todo
+
 
 \subsection{Using effects with tracked values}
 
-% todo resources that can leak
+Note that, at present, it is not possible to pass tracked values to effectful operations.
+This limitation arises from the fact that capabilities are tracked, and their usage always requires an associated delimited continuation~--- the corresponding marker becomes invalid outside the scope of the relevant handler.
+However, if the use of a tracked value does not involve a continuation, it is safe to lend it to an operation call.
+Examples of such values include tracked resources or capabilities that witness tail-resumptive operations. % todo citations
+
+To enable this, we can introduce an additional lifetime, $regional$, with the ordering $free <: regional <: local$.
+This $regional$ lifetime differs from $local$ in two key aspects: it can bind generics of effectful operations, and it can appear within the parameter types of operations.
+
+In fact, permitting the passing of arbitrary capabilities to an operation effectively corresponds to representing a higher-order effect~\cite{wu2014effect, zhang2020handling, van2022handling}.
+We defer the investigation of this matter to future work.
+
+
+
+
+% todo check "effectful operation" term
+
 % todo невозможность отсылать локальные вещи операциям это слишком жестко, нужно ослабить, иначе даже в массив сложит трекаемые вещи в одном скоупе не получится
 % todo lifetimes in the middle instead of `here` mode (to allow handlers consume tracked things)
-TODO % todo
 
 %todo \cite{hannan1998type, boruch2023capturing}
 
@@ -1255,6 +1335,8 @@ TODO % todo
 TODO % todo
 
 % todo type inference and symilarity with first-class polymorphism
+
+% todo обобщить текущую систему через дженерики, кайнды и нормальный варианс
 
 
 \section{Conclusion} \label{sec:conclusion}
