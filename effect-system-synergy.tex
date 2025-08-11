@@ -45,7 +45,7 @@
 %% for your publication.
 %%
 %%
-\documentclass[acmsmall]{acmart}
+\documentclass[acmsmall,review,screen]{acmart}
 %%
 %% \BibTeX command to typeset BibTeX logo in the docs
 %\AtBeginDocument{%
@@ -104,15 +104,17 @@
 
 % Line numbers
 % https://tex.stackexchange.com/questions/16010/number-every-line-of-pages
-\usepackage{lineno}
-\usepackage{mathtools}
-\linenumbers
+%\usepackage{lineno}
+%\usepackage{mathtools}
+%\linenumbers
 % ------------------------------------------------
 
 \usepackage{multicol}
 \usepackage{minted}
 \setminted{xleftmargin=\parindent, autogobble, escapeinside=\#\#, numberblanklines=false, fontsize=\small} % todo use lstlisting instead with custom keywords
+\usepackage{listings} % todo setup for colang surface
 \usepackage{proof}
+\usepackage{mathtools}
 \usepackage[inference]{semantic}
 
 \newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
@@ -205,9 +207,11 @@
     In this paper, we propose a perspective on effect system design as a combination of two properly-designed language features: implicit parameters and type-based escape analysis.
     We argue that both features can be naturally realized in mainstream programming languages, are already familiar to practitioners, and provide independent utility.
     We motivate our approach by considering effect systems as mechanism for tracking free variables.
-    We detail the requirements for a practical design of implicit parameters and illustrate these concepts with a formal example.
-    Furthermore, we introduce a novel type-based escape analysis technique that relies primarily on straightforward programmer-supplied dataflow descriptions. % todo is it correct to talk about dataflow here?
-%    Finally, we formalize these ideas by presenting a calculus with an effect system constructed from these two core components. % todo adapt about OOP and other
+    We specify the requirements for a proper design of implicit parameters and illustrate these requirements through a formal example.
+    We introduce a novel type-based escape analysis technique based on polymorphic $\lambda$-calculus with subtyping that relies on straightforward programmer-supplied dataflow descriptions. % todo is it correct to talk about dataflow here?
+    Furthermore, we combine implicit parameters and type-based escape analysis together to provide an example of a minimalistic effect system.
+    Finally, we discuss technical approaches to make an effect system more practical for common programming scenarios.
+    % todo about proofs automation
 \end{abstract}
 
 %% todo
@@ -262,6 +266,8 @@
 \section{Introduction} \label{sec:intro}
 
 % Introducton makes claims, all of them should be supported later.
+
+% todo картинка с контекстом
 
 The discipline of programming primarily centers on the management of complexity, enabling developers to concentrate on a specific fragment of behavior within any given code segment.
 Abstraction and the separation of concerns are essential strategies in this process: distinct responsibilities are delegated to different program entities, such as functions or modules.
@@ -443,9 +449,9 @@ For example, if a \texttt{Handler} value were to escape a corresponding \texttt{
 Note that, in the example, the \texttt{Handler<SomeException>} capability acts as a lexically scoped free variable for the lambda function.
 The ability to close over such capabilities enables the technique known as \textit{contextual polymorphism}~\cite{brachthauser2020effects, brachthauser2022effects}.
 This approach allows higher-order functions to remain fully transparent with respect to effects, without introducing explicit polymorphic type variables that range over effect sets.
-Specifically, the type of a \texttt{map} function need not be entangled with effect-related parameters (we will discuss the \texttt{scoped} syntax in detail later)\footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}:
+Specifically, the type of the \texttt{map} function need not be entangled with effect-related parameters (we will discuss the \texttt{scoped} syntax in detail later)\footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}: % todo ref
 \begin{minted}{swift}
-    func map(xs: List<a>, f: #\color{gray}\texttt{scoped}# (a) -> b): List<b>
+    func map(xs: List<a>, f: #\color{gray}\texttt{scoped(local)}# (a) -> b): List<b>
 
     context(io: IO)
     func printAll(xs: List<Int>) {
@@ -519,6 +525,8 @@ As a result, these parameters may be instantiated with tracked types:\footnote{W
         where a <: scoped(local) Any, b <: scoped(local) Any
 \end{minted}
 
+% todo our alternative to tunnelling
+
 Various techniques can be employed to reduce boilerplate associated with lifetime polymorphism and the specification of bounds.
 For example, the lifetime elision mechanism in the Rust language~\cite{matsakis2014rust} uses heuristics to automatically insert lifetime variables, thereby alleviating the need for explicit annotation.
 In our approach, using the \texttt{scoped} keyword without a specific lifetime parameter similarly invokes the elision mechanism.
@@ -533,7 +541,7 @@ An effect system can be regarded as the integration of implicit parameters with 
 Consequently, the design of an effect system naturally decomposes into two distinct components and can be developed incrementally in a step-by-step manner.
 
 In fact, our previous discussion has primarily focused on free variables.
-Indeed, a term inherently depends on its context via its free variables, acquiring different semantics depending on the particular context in which it is evaluated.
+Indeed, a term inherently depends on its context via its free variables, acquiring different semantics depending on the particular context in which it is evaluated or defined.
 So, free variables are the target for effect systems, while bound once are regulated by canonical type systems.
 
 Our perspective on effect systems arises from a fundamental observation: the semantics of free variables can be defined by two principal scoping disciplines~--- dynamic and lexical scoping.
@@ -639,7 +647,7 @@ The main considerations that have shaped this syntax are as follows:
     \begin{gather*}
         \begin{array}{lrll}
             \text{Variables} & & x, y, z, f, g, op \\
-            \text{Values} &v &\Coloneqq x \vor \Lambda \overline{\alpha} \ldotp v \\
+            \text{Values} &v &\Coloneqq x \vor K \vor \Lambda \overline{\alpha} \ldotp v \\
             &&\vor K\ap \overline{\tau} \ap \overline{v} \vor \graybox{K_{cap}\ap\overline{\tau}\ap m\ap h} \\
             &&\vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
             \\
@@ -762,15 +770,20 @@ In a low-level implementation, such a \texttt{perform} construct can thus be com
 %! suppress = EscapeAmpersand
 \begin{figure}
     \begin{gather*}
-        \mathframebox{\Gamma\vdash t : \tau} \\
+        \mathframebox{\Gamma\vdash t : s} \\
         \infer[Var]{\Gamma\vdash x\ap\overline{\tau} : [\overline{\alpha\to\tau}]\ap\sigma}{x : \forall\overline{\alpha}\ldotp \sigma \in \Gamma}
         \text{\hspace{2em}}
-        \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma} \\
+        \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma}
+        \text{\hspace{2em}}
+        \infer[TLam]{
+            \Gamma\vdash\Lambda\overline{\alpha}\ldotp v : \forall\overline{\alpha}\ldotp\tau
+        }{
+            \Gamma\vdash v : \tau & ftv(\tau) = \overline{\alpha}
+        } \\
         \infer[Lam]{
             \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) ~ \overline{\tau_2} \to \sigma
         }{
-            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma &
-            \overline{\tau_1} \text{ distinct}
+            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma
         }
         \text{\hspace{2em}}
         \infer[App]{
@@ -817,7 +830,7 @@ In a low-level implementation, such a \texttt{perform} construct can thus be com
             \Gamma\vdash K_{cap}\ap\overline{\tau}\ap m\ap h : T\ap\overline{\tau}
         }{
             K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma
-        } % todo looks like a bull shit
+        }
         \hspace{2em}
         \infer[Handler]{
             \Gamma\vdash handler_m ~t : \tau
@@ -826,11 +839,6 @@ In a low-level implementation, such a \texttt{perform} construct can thus be com
         }\\
         \begin{array}{ccccc}
             \mathframebox{\Gamma\vdash t : s} &
-            \infer[TLam]{
-                \Gamma\vdash\Lambda\overline{\alpha}\ldotp v : \forall\overline{\alpha}\ldotp\tau
-            }{
-                \Gamma\vdash v : \tau & ftv(\tau) = \overline{\alpha}
-            } &
             \mathframebox{\Gamma\vdash p} &
             \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
             \infer[Prog]{\Gamma\vdash x : s = t, p}{\Gamma\vdash t : s & \Gamma\vdash p}
@@ -1114,7 +1122,7 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
             \end{array}
         }\\
         \infer[Handle]{
-            \Gamma \vdash handle ~ x : T\ap\overline{\tau}~ with ~ \{\overline{op_i = t_i}\} ~in~u : \eta
+            \Gamma \vdash handle ~ x : T\ap local\ap\overline{\tau}~ with ~ \{\overline{op_i = t_i}\} ~in~u : \eta
         }{
             \begin{array}{ccc}
                 x :_c T\ap local\ap\overline{\tau}, \Gamma\vdash u : \eta & \overline{\beta}\not\cap ftv(\eta) & % todo beautify intersection
@@ -1296,12 +1304,18 @@ We defer the investigation of this matter to future work.
 
 \section{Adoption in mainstream languages} \label{sec:mainstream}
 
-% todo every method is a higher-order function (see citatioon in Capturing types)
+%Adoption of such a big feature as an effect system in a mainstream language is a big challenge.
+%An effect system design should be simple and make use of available developer experience.
+%Furthermore, it should not require boilerplate and be convenient in use with various popular language features.
+%Finally, an effect system design should provide a clear path of gradual adoption as well as escape hatches allowing to solve complicated scenarios outside of an effect system and integrate with it afterwards.
+%
+%% todo похвалить предложенный дизайн в чём-т
+%In this section we informally discuss possible extensions to an effect system design that are supposed to make it better in terms of aforementioned requirements.
+
+
 
 \subsection{Simplifying lifetime polymorphism} \label{subsec:lifetime-elision}
 
-% todo OOP
-% todo escape hatches
 
 TODO % todo
 
@@ -1316,6 +1330,8 @@ TODO % todo
 TODO % todo
 
 \subsection{Working with OOP}
+
+% todo every method is a higher-order function (see citatioon in Capturing types)
 
 TODO % todo
 
