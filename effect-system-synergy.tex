@@ -1052,10 +1052,10 @@ Let us specify $lt_\Gamma^+(\cdot)$ explicitly, other operations are straight-fo
 \[
     \begin{array}{lll}
         lt_\Gamma^+(\alpha) & = & lt_\Gamma^+(\tau) \text{ if } \alpha <: \tau \in \Gamma, \{\} \text{ otherwise} \\
-        lt_\Gamma^+(T\ap\Delta\ap\overline{\tau}) & = & \{\Delta\} \cup \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)} \\
+        lt_\Gamma^+(T\ap\Delta\ap\overline{\tau}) & = & \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)} \cup \{\Delta\} \\
         lt_\Gamma^-(T\ap\Delta\ap\overline{\tau}) & = & \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)} \\
-        lt_\Gamma^{+}(\ctx{\overline{\tau}}\overline{\sigma}\to\overline{\eta}) & = & \overline{lt_\Gamma^{-}(\tau)} \cup \overline{lt_\Gamma^{-}(\sigma)} \cup \overline{lt_\Gamma^{+}(\eta)} \\
-        lt_\Gamma^{-}(\ctx{\overline{\tau}}\overline{\sigma}\to\overline{\eta}) & = & \overline{lt_\Gamma^{+}(\tau)} \cup \overline{lt_\Gamma^{+}(\sigma)} \cup \overline{lt_\Gamma^{-}(\eta)}
+        lt_\Gamma^{+}(\ctx{\overline{\tau}}\Delta~\overline{\sigma}\to\overline{\eta}) & = & \overline{lt_\Gamma^{-}(\tau)} \cup \overline{lt_\Gamma^{-}(\sigma)} \cup \overline{lt_\Gamma^{+}(\eta)} \cup \{\Delta\} \\
+        lt_\Gamma^{-}(\ctx{\overline{\tau}}\Delta~\overline{\sigma}\to\overline{\eta}) & = & \overline{lt_\Gamma^{+}(\tau)} \cup \overline{lt_\Gamma^{+}(\sigma)} \cup \overline{lt_\Gamma^{-}(\eta)}
     \end{array}
 \]
 The lifetime of a type variable is approximated by the lifetime of its bounding type, if such a bound exists.
@@ -1076,7 +1076,7 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
 \begin{itemize} % todo make rule names explicit for other enumerations as well
     \item \textbf{Lam:} The typing rule for $\lambda$-abstractions guarantees that no tracked value can escape the scope of the function via its return value.
     Analogous to the treatment of data constructors, the lifetime associated with a function type is determined as the intersection of the lifetimes of all captured variables.
-    This ensures that the function itself cannot outlive any tracked resources it closes over.
+    This ensures that the function itself cannot outlive any tracked resources it closes over. % todo explain zero set
     \item \textbf{Match:} Lifetime parameters appearing in positive positions are conservatively approximated by the lifetime of the enclosing composite data type.
     Since data types are covariant with respect to their lifetime parameters, lifetimes appearing in negative positions are replaced with the bottom lifetime \texttt{free}, analogous to covariant projections. % todo link to covariant projections
     \item \textbf{Handle:} The $Handle$ rule plays crucial role in ensuring effect safety.
@@ -1091,24 +1091,34 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
 %! suppress = EscapeAmpersand
 \begin{figure}
     \begin{gather*}
-        \mathframebox{\Gamma\vdash t : \tau} \\
+        \mathframebox{\Gamma\vdash t : s} \\
+        \begin{array}{ccc}
+            \infer[Var]{\Gamma\vdash x : s}{x : s \in \Gamma} &
+            \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma} &
+            \infer[Ctor]{\Gamma\vdash K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap(\&\overline{lt_\emptyset^+(\tau)})\ap \overline{\alpha}}{K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap(\&\overline{lt_\emptyset^+(\tau)})\ap \overline{\alpha} \in \Gamma} % todo can avoid this rule?
+        \end{array} \\
         \begin{array}{cc}
-            \infer[Var]{
-                \Gamma\vdash x\ap\overline{\Delta}\ap\overline{\tau} : [\overline{l\to\Delta}]\ap[\overline{\alpha\to\tau}]\ap\sigma
+            \infer[TLam]{
+                \Gamma\vdash\Lambda\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp t : \forall\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp\tau
             }{
-                x : \forall\overline{l}\ap(\overline{\alpha <: \tau'})\ldotp \sigma \in \Gamma &
-                \Gamma\vdash\tau <: [\overline{l\to\Delta}]\ap\tau'
+                \overline{\alpha <: \sigma}, \Gamma\vdash t : \tau
+            } &
+            \infer[TApp]{
+                \Gamma\vdash x\ap\overline{\Delta}\ap\overline{\tau'} : [\overline{\alpha\to\tau'}]\ap[\overline{l\to\Delta}]\ap\sigma
+            }{
+                x : \forall\overline{l}\ap(\overline{\alpha <: \tau})\ldotp \sigma \in \Gamma
+                &
+                \overline{\Gamma\vdash\tau' <: [\overline{l\to\Delta}]\ap\tau}
             }
-            &
-            \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma}
-        \end{array}
-        \\
+        \end{array} \\
         \infer[Lam]{
-            \Gamma\vdash \lambda \overline{x : \tau} ~ \overline{y : \sigma} \ldotp t : ctx(\overline{\tau}) \left(\&{\overline{lt_+(s)}}\right)~ \overline{\sigma} \to \eta
+            \Gamma\vdash \lambda \overline{x : \tau} ~ \overline{y : \sigma} \ldotp t : ctx(\overline{\tau}) \left(\&{\overline{lt_\Gamma^+(s)}}\right)~ \overline{\sigma} \to \eta
         }{
-            \overline{x :_c \tau}, \overline{y : \sigma}, \Gamma\vdash t : \eta &
-            \Gamma\vdash_{fv(t)}\overline{s} &
-            local\not\in lt_+(\eta)
+            \overline{x :_c \tau}, \overline{y : \sigma}, \Gamma\vdash t : \eta
+            &
+            \Gamma\vdash_{fv(t)\setminus \overline{x}\setminus\overline{y}}\overline{s}
+            &
+            local\not\in lt_\emptyset^+(\eta)
         } \\
         \infer[App]{
             \Gamma\vdash t \ap \overline{u_1} \ap \overline{u_2} : \eta
@@ -1129,11 +1139,11 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
             \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_j} \to u_i }\}  : \eta
         }{
             \begin{array}{c}
-                K_i : \forall \overline{l}~\overline{\alpha}\ldotp \overline{\sigma_j} \to T\ap(\&\overline{lt_+(\sigma)})\ap\overline{\alpha}
+                K_i : \forall \overline{l}~\overline{\alpha}\ldotp \overline{\sigma_j} \to T\ap(\&\overline{lt_\emptyset^+(\sigma)})\ap\overline{\alpha} \in \Gamma
                 \text{\hspace{1em}}
                 \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
                 \\
-                \overline{x_j : [\overline{\alpha\to\tau}, \overline{flt_+(\sigma_j)\to\Delta}, \overline{flt_{-}(\sigma_j)\to free}]\ap \sigma_j}, \Gamma \vdash u_i : \eta
+                \overline{x_j : [\overline{\alpha\to\tau}, \overline{flt_+(\sigma_j)\to\Delta}, \overline{flt_{-}(\sigma_j)\to free}]\ap \sigma_j}, \Gamma \vdash u_i : \eta % todo pos and neg simultaneously
             \end{array}
         }\\
         \infer[Perform]{
@@ -1171,13 +1181,7 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
         }{
             \Gamma\vdash t : \tau
         }\\
-        \begin{array}{cccc}
-            \mathframebox{\Gamma\vdash t : s} &
-            \infer[TLam]{
-                \Gamma\vdash\Lambda\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp v : \forall\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp\tau
-            }{
-                \overline{\alpha <: \sigma}, \Gamma\vdash v : \tau & flt(\tau) = \overline{l} & ftv(\tau) = \overline{\alpha}
-            } &
+        \begin{array}{cc}
             \mathframebox{\Gamma\vdash_{\overline{x}}\overline{\tau}}
             &
             \infer[TypesOf]{\Gamma\vdash_{\overline{x}}\overline{\tau}}{\overline{x :_\cdot \tau} \subset \Gamma}
