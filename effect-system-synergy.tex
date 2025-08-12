@@ -626,8 +626,8 @@ Constructs highlighted in gray are included solely to support the operational se
 
 The main considerations that have shaped this syntax are as follows:
 \begin{itemize}
-    \item The functional type $\ctx{e}\overline{\tau}\to\sigma$ ensures that implicit parameters should always be followed with ordinary ones to avoid computations being forced by inference of implicits (the overline denotes a tuple of argument types, with the empty tuple interpreted as the unit type).
-    \item Following the functional type, on the term level we split function arguments into two groups: \emph{contextual arguments}, which will be inferred automatically in future extensions, and ordinary arguments.
+    \item The functional type $\ctx{e}\overline{\tau}\to\sigma$ ensures that implicit parameters are always followed by ordinary parameters to prevent computations from being prematurely triggered by the inference of implicits (the overline denotes a tuple of argument types, with the empty tuple interpreted as the unit type).
+    \item Corresponding to the functional type, at the term level we partition function arguments into two categories: \emph{contextual arguments}, which are intended to be inferred automatically by the type system in future extensions, and ordinary arguments, which must be provided explicitly by the programmer.
     \item Capability constructors $K_{cap}$ are used in an operational semantics to represent a capability. % todo cite generalized evidence passing?
     \item  The \texttt{handle} construct introduces a capability associated with the newly created handler instance and binds it to a name.
     The \texttt{perform} construct, in turn, requires a capability in order to perform an effectful operation.
@@ -1015,9 +1015,9 @@ Let us introduce $Core_\Delta$, an extension of $Core$ that incorporates lifetim
 Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syntax}, with changes highlighted in gray.
 \begin{itemize}
     \item Monotypes are now annotated with explicit lifetime labels.
+    The syntax is deliberately chosen to be identical to that of type arguments to emphasize that lifetimes can be regarded as ordinary types, albeit of a distinct kind.
     \item Type schemas support abstraction over lifetime variables and permit the specification of polymorphic bounds.
     \item We introduce utility operations that, given a type, return the set of lifetimes appearing in specified positions~--- positive and negative. % todo cite positions
-    Additionally, the lifetime of a generic type variable is approximated by the lifetime of its bounding type.
     \item The resulting lifetime associated with data constructors is computed as the intersection of all lifetimes corresponding to those values that may later be extracted~--- that is, lifetimes encountered in positive positions.
 \end{itemize}
 
@@ -1034,19 +1034,33 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
             \text{Lifetimes} & \graybox{\Delta} &\Coloneqq l \vor local \vor free \vor \&\overline{\Delta} \\
             \text{Monotypes} & \tau, \sigma, \eta &\Coloneqq \alpha \vor T \ap \graybox{\Delta} \ap \overline{\tau} \vor \ctx{e} \graybox{\Delta}~\overline{\tau} \to \sigma \\
             \text{Type schemas} & s &\Coloneqq \forall \graybox{\overline{l}}~\overline{(\alpha \graybox{<: \tau})}\ldotp \sigma \\
+            \text{Free type variables} & & ftv(\cdot) \\
+            \text{Lifetimes in positive positions} & & \graybox{lt_\Gamma^+(\cdot)}, \graybox{lt_\Gamma^-(\cdot)} \\
+            \text{Free lifetime variables} & & \graybox{flt^+(\cdot)}, \graybox{flt^-(\cdot)} \\
             \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
             \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \vor \graybox{\alpha <: \tau, \Gamma} \\
+            & &\vor K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{(\&\overline{lt_\emptyset^+(\tau)})}\ap \overline{\alpha}, \Gamma \\
             \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap \graybox{local} \ap\overline{\alpha}}\} \\
-            \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{(\alpha \graybox{<: \eta})}\ldotp\overline{\tau}\to\sigma}\} \\
-            \text{Data constructors} & & K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{(\&\overline{lt_+(\tau)})}\ap \overline{\alpha} \\
-            \text{Free type variables} & & ftv(\cdot) \\
-            \text{Positive lifetimes} & & \graybox{lt_+(\cdot)} \\
-            \text{Free lifetime variables} & & \graybox{flt_+(\cdot)}, \graybox{flt_-(\cdot)}
+            \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{\alpha}\ldotp\overline{\tau}\to\sigma}\}
         \end{array}
     \]
     \caption{Syntax of types for $Core_\Delta$.}
     \label{fig:core-delta-syntax}
 \end{figure}
+
+Let us specify $lt_\Gamma^+(\cdot)$ explicitly, other operations are straight-forward:
+\[
+    \begin{array}{lll}
+        lt_\Gamma^+(\alpha) & = & lt_\Gamma^+(\tau) \text{ if } \alpha <: \tau \in \Gamma, \{\} \text{ otherwise} \\
+        lt_\Gamma^+(T\ap\Delta\ap\overline{\tau}) & = & \{\Delta\} \cup \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)} \\
+        lt_\Gamma^-(T\ap\Delta\ap\overline{\tau}) & = & \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)} \\
+        lt_\Gamma^{+}(\ctx{\overline{\tau}}\overline{\sigma}\to\overline{\eta}) & = & \overline{lt_\Gamma^{-}(\tau)} \cup \overline{lt_\Gamma^{-}(\sigma)} \cup \overline{lt_\Gamma^{+}(\eta)} \\
+        lt_\Gamma^{-}(\ctx{\overline{\tau}}\overline{\sigma}\to\overline{\eta}) & = & \overline{lt_\Gamma^{+}(\tau)} \cup \overline{lt_\Gamma^{+}(\sigma)} \cup \overline{lt_\Gamma^{-}(\eta)}
+    \end{array}
+\]
+The lifetime of a type variable is approximated by the lifetime of its bounding type, if such a bound exists.
+In some cases, we intentionally employ an empty context to exclude the influence of bounds.
+Also, since type constructor parameters are invariant, they are treated as both positive and negative simultaneously.
 
 Syntax of terms follows the changes in the syntax of types:
 \[
