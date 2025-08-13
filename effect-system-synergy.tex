@@ -825,7 +825,7 @@ In a low-level implementation, such a \texttt{perform} construct can thus be com
             &
             \begin{array}{ll}
                 \overline{\beta}_i\not\cap ftv(\eta) & % todo beautify intersection
-                \Sigma(T) = \forall\overline{\alpha}\ldotp sig, \hspace{0.5em} op_i : \forall\overline{\beta}_i\ldotp \overline{\sigma}_i\to\sigma'_i \in sig
+                \Sigma(T) = \forall\overline{\alpha}\ldotp sig \hspace{0.6em} op_i : \forall\overline{\beta}_i\ldotp \overline{\sigma}_i\to\sigma'_i \in sig
                 \\
                 \theta = [\overline{\alpha\to\tau}] &
                 \Gamma\vdash\theta\ap t_i : \forall \overline{\beta}_i\ldotp \overline{\theta\ap\sigma_i}\to(\theta\ap\sigma_i'\to\eta)\to\eta
@@ -1037,6 +1037,7 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
             \text{Free type variables} & & ftv(\cdot) \\
             \text{Lifetimes in positive positions} & & \graybox{lt_\Gamma^+(\cdot)}, \graybox{lt_\Gamma^-(\cdot)} \\
             \text{Free lifetime variables} & & \graybox{flt^+(\cdot)}, \graybox{flt^-(\cdot)} \\
+            \text{Least upper bound} & & \graybox{lub(\cdot)} \\
             \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
             \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \vor \graybox{\alpha <: \tau, \Gamma} \\
             & &\vor K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{(\&\overline{lt_\emptyset^+(\tau)})}\ap \overline{\alpha}, \Gamma \\
@@ -1088,6 +1089,8 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
     \item \textbf{TypesOf:} This rule extracts the types of designated variables from the typing context without discriminating between ordinary bindings and contextual bindings.
 \end{itemize}
 
+% todo rename lifetime intersection
+
 %! suppress = EscapeAmpersand
 \begin{figure}
     \begin{gather*}
@@ -1136,14 +1139,16 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
             \end{array}
         }\\
         \infer[Match]{
-            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_j} \to u_i }\}  : \eta
+            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_j} \to u_i }\}  : lub(\overline{\eta_i})
         }{
-            \begin{array}{c}
-                K_i : \forall \overline{l}~\overline{\alpha}\ldotp \overline{\sigma_j} \to T\ap(\&\overline{lt_\emptyset^+(\sigma)})\ap\overline{\alpha} \in \Gamma
-                \text{\hspace{1em}}
+            \begin{array}{cc}
+                K_i : \forall \overline{l}~\overline{\alpha}\ldotp \overline{\sigma}_j \to T\ap(\&\overline{lt_\emptyset^+(\sigma)})\ap\overline{\alpha} \in \Gamma
+                &
                 \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
                 \\
-                \overline{x_j : [\overline{\alpha\to\tau}, \overline{flt_+(\sigma_j)\to\Delta}, \overline{flt_{-}(\sigma_j)\to free}]\ap \sigma_j}, \Gamma \vdash u_i : \eta % todo pos and neg simultaneously
+                \theta = [\overline{flt_+(\sigma_j)\to\Delta}, \overline{flt_{-}(\sigma_j)\to free}] \hspace{1em} flt_+(\overline{\sigma}_j) \not\cap flt_{-}(\overline{\sigma}_j)
+                &
+                \overline{x_j : [\overline{\alpha\to\tau}]\ap\theta\ap\sigma_j'}, \Gamma \vdash u_i : \eta_i
             \end{array}
         }\\
         \infer[Perform]{
@@ -1163,17 +1168,25 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
             \Gamma \vdash handle ~ x : T\ap local\ap\overline{\tau}~ with ~ \{\overline{op_i = t_i}\} ~in~u : \eta
         }{
             \begin{array}{ccc}
-                x :_c T\ap local\ap\overline{\tau}, \Gamma\vdash u : \eta & \overline{\beta}\not\cap ftv(\eta) & % todo beautify intersection
-                \Sigma(T) = \forall\overline{\alpha}\ldotp sig \hspace{1em} op_i : \forall\overline{\beta}\ldotp \overline{\sigma}_i\to\sigma'_i \in sig
+                x :_c T\ap local\ap\overline{\tau}, \Gamma\vdash u : \eta
+                &
+                \overline{\beta}_i\not\cap ftv(\eta)
+                &
+                \Sigma(T) = \forall\overline{\alpha}\ldotp sig
+                \hspace{1em}
+                op_i : \forall\overline{\beta}_i\ldotp \overline{\sigma}_i\to\sigma'_i \in sig
                 \\
-                local \not\in lt_+(\eta)\cup\overline{lt_+(\sigma)} & \theta = [\overline{\alpha\to\tau}] &
+                local \not\in lt_\emptyset^+(\eta)\cup\overline{lt_\emptyset^+(\theta\ap\sigma_i)}
+                &
+                \theta = [\overline{\alpha\to\tau}]
+                &
                 \Gamma\vdash\theta\ap t_i : \forall \overline{\beta}\ldotp \overline{\theta\ap\sigma_i}\to(\theta\ap\sigma_i'\to\eta)\to\eta
             \end{array}
         }\\
         \infer[Cap]{
             \Gamma\vdash K_{cap}\ap\overline{\tau}\ap m\ap h : T\ap local \ap\overline{\tau}
         }{
-            K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma
+            K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap local\ap\overline{\alpha} \in \Sigma
         }
         \hspace{2em}
         \infer[Handler]{
@@ -1181,12 +1194,9 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
         }{
             \Gamma\vdash t : \tau
         }\\
-        \begin{array}{cc}
-            \mathframebox{\Gamma\vdash_{\overline{x}}\overline{\tau}}
-            &
-            \infer[TypesOf]{\Gamma\vdash_{\overline{x}}\overline{\tau}}{\overline{x :_\cdot \tau} \subset \Gamma}
-        \end{array} \\
-        \begin{array}{ccc}
+        \begin{array}{ccccc}
+            \mathframebox{\Gamma\vdash_{\overline{x}}\overline{\tau}} &
+            \infer[TypesOf]{\Gamma\vdash_{\overline{x}}\overline{\tau}}{\overline{x :_\cdot \tau} \subset \Gamma} &
             \mathframebox{\Gamma\vdash p} &
             \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
             \infer[Prog]{\Gamma\vdash x : s = t, p}{\Gamma\vdash t : s & \Gamma\vdash p}
@@ -1207,10 +1217,12 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
     \caption{Typing rules for $Core_{\Delta}$}
     \label{fig:core-delta-typing}
     % todo кажется, сабтайпинг не работает нормально без сабтайпинга на конструкторах
-    % todo что с полярностью на конструкторах
 \end{figure}
 
 % todo about the default generic bound for operations
+% todo equality up to normalization
+% todo (local \in) check respects normalization
+% todo careful checks of escaping for handlers (State example)
 
 \subsection{Lifetime tunnelling}
 
@@ -1313,7 +1325,7 @@ However, if the use of a tracked value does not involve a continuation, it is sa
 Examples of such values include tracked resources or capabilities that witness tail-resumptive operations. % todo citations
 
 To enable this, we can introduce an additional lifetime, $regional$, with the ordering $free <: regional <: local$.
-This $regional$ lifetime differs from $local$ in two key aspects: it can bind generics of effectful operations, and it can appear within the parameter types of operations.
+This $regional$ lifetime differs from $local$ in two key aspects: it can bound generics of effectful operations, and it can appear within the parameter types of operations.
 
 In fact, permitting the passing of arbitrary capabilities to an operation effectively corresponds to representing a higher-order effect~\cite{wu2014effect, zhang2020handling, van2022handling}.
 We defer the investigation of this matter to future work.
