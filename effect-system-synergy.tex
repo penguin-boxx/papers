@@ -527,7 +527,7 @@ As a result, these parameters may be instantiated with tracked types:\footnote{W
 
 % todo our alternative to tunnelling
 
-Various techniques can be employed to reduce boilerplate associated with lifetime polymorphism and the specification of bounds.
+Various techniques can be employed to reduce boilerplate associated with lifetime polymorphism and the specification of bounds. % todo dependent sugar
 For example, the lifetime elision mechanism in the Rust language~\cite{matsakis2014rust} uses heuristics to automatically insert lifetime variables, thereby alleviating the need for explicit annotation.
 In our approach, using the \texttt{scoped} keyword without a specific lifetime parameter similarly invokes the elision mechanism.
 We will discuss this technique, along with alternative methods, in Section~\ref{subsec:lifetime-elision}.
@@ -587,7 +587,7 @@ In our setting, we employ lexically scoped handlers, which require that each \te
 
 For example, consider defining an execution context that supplies a specific constant value to a computation.
 This can be achieved by providing a handler for a \texttt{Reader} effect, which offers an \texttt{ask} operation that returns the designated constant.
-The following computation sums the results of two invocations of \texttt{ask}; with implementation returning the constant $21$, the overall result of the computation will be $42$:
+The following computation sums the results of two invocations of \texttt{ask}; with implementation returning the constant $21$, the overall result of the computation will be $42$: % todo this is a `context let`
 \[
     \begin{array}{l}
         \keyword{handle} ~ h : Reader\ap Int ~\keyword{with}~ \{ ask = \lambda k\ldotp k\ap 21 \} ~\keyword{in} \\
@@ -1037,10 +1037,11 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
             \text{Free type variables} & & ftv(\cdot) \\
             \text{Lifetimes in positive positions} & & \graybox{lt_\Gamma^+(\cdot)}, \graybox{lt_\Gamma^-(\cdot)} \\
             \text{Free lifetime variables} & & \graybox{flt^+(\cdot)}, \graybox{flt^-(\cdot)} \\
+            \text{Free type variables} & & \graybox{ftv^+(\cdot)}, \graybox{ftv^-(\cdot)} \\
             \text{Least upper bound} & & \graybox{lub(\cdot)} \\
             \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
             \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \vor \graybox{\alpha <: \tau, \Gamma} \\
-            & &\vor K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{(\&\overline{lt_\emptyset^+(\tau)})}\ap \overline{\alpha}, \Gamma \\
+            & &\vor K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{\left(\&\overline{lt_\emptyset^+(\tau)}\right)}\ap \overline{\alpha}, \Gamma \\
             \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap \graybox{local} \ap\overline{\alpha}}\} \\
             \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{\alpha}\ldotp\overline{\tau}\to\sigma}\}
         \end{array}
@@ -1077,7 +1078,7 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
 \begin{itemize} % todo make rule names explicit for other enumerations as well
     \item \textbf{Lam:} The typing rule for $\lambda$-abstractions guarantees that no tracked value can escape the scope of the function via its return value.
     Analogous to the treatment of data constructors, the lifetime associated with a function type is determined as the intersection of the lifetimes of all captured variables.
-    This ensures that the function itself cannot outlive any tracked resources it closes over. % todo explain zero set
+    This ensures that the function itself cannot outlive any tracked capabilities it closes over. % todo explain zero set
     \item \textbf{Match:} Lifetime parameters appearing in positive positions are conservatively approximated by the lifetime of the enclosing composite data type.
     Since data types are covariant with respect to their lifetime parameters, lifetimes appearing in negative positions are replaced with the bottom lifetime \texttt{free}, analogous to covariant projections. % todo link to covariant projections
     \item \textbf{Handle:} The $Handle$ rule plays crucial role in ensuring effect safety.
@@ -1088,6 +1089,8 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
     This restriction can be relaxed under certain conditions; further discussion is provided in Section. % todo ref
     \item \textbf{TypesOf:} This rule extracts the types of designated variables from the typing context without discriminating between ordinary bindings and contextual bindings.
 \end{itemize}
+
+% todo omit reflexivity, transitivity
 
 % todo rename lifetime intersection
 
@@ -1115,7 +1118,7 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
             }
         \end{array} \\
         \infer[Lam]{
-            \Gamma\vdash \lambda \overline{x : \tau} ~ \overline{y : \sigma} \ldotp t : ctx(\overline{\tau}) \left(\&{\overline{lt_\Gamma^+(s)}}\right)~ \overline{\sigma} \to \eta
+            \Gamma\vdash \lambda \overline{x : \tau} ~ \overline{y : \sigma} \ldotp t : ctx(\overline{\tau}) \left(\&{lt_{\Gamma\setminus ftv^-(\overline{\tau})\setminus ftv^-(\overline{\sigma})\setminus ftv^+(\eta)}^+(\overline{s})}\right)~ \overline{\sigma} \to \eta
         }{
             \overline{x :_c \tau}, \overline{y : \sigma}, \Gamma\vdash t : \eta
             &
@@ -1201,28 +1204,51 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
             \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
             \infer[Prog]{\Gamma\vdash x : s = t, p}{\Gamma\vdash t : s & \Gamma\vdash p}
         \end{array}\\
-        \begin{array}{cccc}
-            \mathframebox{\Gamma\vdash \sigma <: \tau} &
-            \infer[SubAny]{\Gamma\vdash \sigma <: Any\ap local}{} &
-            \infer[SubT]{\Gamma\vdash T\ap\Delta' <: T\ap\Delta}{\Delta' <: \Delta} &
-            \infer[SubBound]{\Gamma\vdash \alpha <: \tau}{\alpha <: \tau \in \Gamma}
+        \mathframebox{\Gamma\vdash \sigma <: \tau} \\
+        \begin{array}{cc}
+            \infer[SubCtx]{\Gamma\vdash \alpha <: \tau}{\alpha <: \tau \in \Gamma} &
+            \infer[SubData]{
+                \Gamma\vdash K'\ap\Delta'\ap\overline{\tau} <: K\ap\Delta\ap\overline{\tau}
+            }{
+                K' <: K & \Delta' <: \Delta
+            }
+        \end{array} \\
+        \begin{array}{cc}
+            \infer[SubFunAny]{
+                \Gamma\vdash Any\ap\Delta' <: \ctx{e}\Delta~\overline{\tau}\to\sigma
+            } {
+                \Delta' <: \Delta
+            } &
+            \infer[SubFun]{ % todo support variance for functions? клашится с подтипизацией на эффектах
+                \Gamma\vdash\ctx{e}\Delta'~\overline{\tau}\to\sigma <: \ctx{e}\Delta~\overline{\tau}\to\sigma
+            }{
+                \Delta' <: \Delta
+            }
         \end{array} \\
         \begin{array}{cccc}
             \mathframebox{\Delta' <: \Delta} &
             \infer[SubFree]{free <: \Delta}{} &
             \infer[SubLocal]{\Delta <: local}{} &
-            \infer[Sub\&]{\Delta' <: \&\overline{\Delta}}{local\in\overline{\Delta}}
+            \infer[Sub\&]{
+                \&\overline{\Delta'} <: \&\overline{\Delta}
+            }{
+                \forall\Delta'\in\overline{\Delta'}\ldotp\exists\Delta\in\overline{\Delta}\ldotp \Delta' <: \Delta
+            }
+        \end{array} \\
+        \begin{array}{cc}
+            \mathframebox{K <: K} & \infer[SubK]{Any <: K}{}
         \end{array}
     \end{gather*}
-    \caption{Typing rules for $Core_{\Delta}$}
+    \caption{Typing rules for $Core_{\Delta}$.}
     \label{fig:core-delta-typing}
-    % todo кажется, сабтайпинг не работает нормально без сабтайпинга на конструкторах
 \end{figure}
 
 % todo about the default generic bound for operations
 % todo equality up to normalization
 % todo (local \in) check respects normalization
 % todo careful checks of escaping for handlers (State example)
+
+% todo описать проблемы при типизации хендлеров с сабтайпингом
 
 \subsection{Lifetime tunnelling}
 
