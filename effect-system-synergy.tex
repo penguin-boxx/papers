@@ -530,7 +530,7 @@ As a result, these parameters may be instantiated with tracked types:\footnote{W
 Various techniques can be employed to reduce boilerplate associated with lifetime polymorphism and the specification of bounds. % todo dependent sugar
 For example, the lifetime elision mechanism in the Rust language~\cite{matsakis2014rust} uses heuristics to automatically insert lifetime variables, thereby alleviating the need for explicit annotation.
 In our approach, using the \texttt{scoped} keyword without a specific lifetime parameter similarly invokes the elision mechanism.
-We will discuss this technique, along with alternative methods, in Section~\ref{subsec:lifetime-elision}.
+We will discuss this technique, along with alternative methods, in Section~\ref{subsec:lifetime-poly-enhancement}.
 
 The utility of type-based escape analysis extends well beyond its role in the construction of effect systems.
 Specifically, it can be leveraged to reduce the number of heap allocations~\cite{lorenzen2024oxidizing}, enable borrowing for the ownership-based resource management~\cite{matsakis2014rust, lorenzen2024oxidizing}, and ensure the safety of non-local returns~\cite{akhin2021kotlin}.
@@ -1378,7 +1378,7 @@ This relation treats functional types by verifying subtyping on effect rows as a
 \[
     %! suppress = EscapeAmpersand
     \infer[SubFunEff]{
-        \Gamma\vdash \ctx{e'} \Delta' ~ (\overline{\tau'})\to \sigma' <: \ctx{e} \Delta ~ (\overline{\tau})\to \sigma
+        \Gamma\vdash \ctx{e'} \Delta' ~ (\overline{\tau'})\to \sigma' <:_c \ctx{e} \Delta ~ (\overline{\tau})\to \sigma
     }{
         \Gamma\vdash e <: e' & \overline{\Gamma\vdash \tau <: \tau'} & \Delta' <: \Delta & \Gamma\vdash \eta' <: \eta
     }
@@ -1415,20 +1415,42 @@ We defer the investigation of this matter to future work.
 
 \section{Adoption in mainstream languages} \label{sec:mainstream}
 
-%Adoption of such a big feature as an effect system in a mainstream language is a big challenge.
-%An effect system design should be simple and make use of available developer experience.
-%Furthermore, it should not require boilerplate and be convenient in use with various popular language features.
-%Finally, an effect system design should provide a clear path of gradual adoption as well as escape hatches allowing to solve complicated scenarios outside of an effect system and integrate with it afterwards.
-%
-%% todo похвалить предложенный дизайн в чём-т
-%In this section we informally discuss possible extensions to an effect system design that are supposed to make it better in terms of aforementioned requirements.
+The adoption of a substantial feature such as an effect system in a mainstream programming language presents a significant challenge.
+The design of the effect system should be straightforward and leverage existing developer expertise.
+Moreover, it must minimize boilerplate and ensure compatibility with widely used language features to facilitate.
+Lastly, the effect system should support a clear pathway for gradual adoption, alongside providing escape mechanisms that allow complex scenarios to be addressed outside the effect system, with the option for subsequent integration.
 
+In this section, we provide an informal discussion of potential extensions to our effect system design, aimed at improving it with respect to the aforementioned requirements.
 
+\subsection{Simplifying lifetime polymorphism} \label{subsec:lifetime-poly-enhancement}
 
-\subsection{Simplifying lifetime polymorphism} \label{subsec:lifetime-elision}
+We consider the lifetime polymorphism the most problematic aspect of our design.
+A user should manually introduce lifetime names and link lifetimes of result with lifetimes of arguments in a relational manner:
+\begin{minted}{swift}
+    func compose
+        <la, lb, lc, lf, lg, a <: Any'la, b <: Any'lb, c <: Any'lc>
+        (f: (b)'lf -> c, g: (a)'lg -> b): (a)'lb&lf&lg -> c
+\end{minted}
 
+One possible solution is to employ the lifetime elision mechanism~\cite{matsakis2014rust}, which automatically inserts lifetimes into type signatures based on heuristics.
+However, these heuristics may not always produce the intended results, necessitating manual lifetime annotations by the user in certain cases.
+In our example, this approach can look like the following (prime requires compiler to elide a lifetime):
+\begin{minted}{swift}
+    func compose
+        <a <: Any', b <: Any', c <: Any'>
+        (f: (b)' -> c, g: (a)' -> b): (a)' -> c
+\end{minted}
 
-TODO % todo
+An alternative solution is to introduce special syntax in the surface language that enables direct specification of capturing through term variables.
+Although the syntax resembles dependent typing, we expect it to be fully implementable through a straightforward desugaring process that translates the surface language into the core calculus with lifetime polymorphism.
+\begin{minted}{swift}
+    func compose<a, b, c>(f: (b) -> c, g: (a) -> b): (a)'f+g -> c
+\end{minted}
+
+This solution may necessitate the introduction of explicit names for generic arguments in order to precisely specify more complex data flows:
+\begin{minted}{swift}
+    func makeRepository(files: Map<String, file: File>): Repository'file
+\end{minted}
 
 \subsection{Escaping from an effect system}
 
