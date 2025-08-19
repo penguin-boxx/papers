@@ -1473,33 +1473,78 @@ However, in practice, there are scenarios where code may need to violate effect 
  and rethrowing later.
 Designing such a mechanism in a safe and sound manner presents significant challenges.
 
-\subsection{Working with OOP}
+\subsection{Working with OOP} \label{subsec:oop}
 
-% todo every method is a higher-order function (see citatioon in Capturing types)
+Object-oriented programming remains a widely adopted paradigm in contemporary software development, presenting notable challenges for effect systems.
+Consider the following example: an interface declares a set of method signatures to which all implementations must conform.
+However, what happens if an implementation needs to throw exceptions beyond those specified in the interface’s signature?
 
-TODO % todo
+Note that only the code that is aware about the specific implementation type has enough information to properly handle implementation-specific exceptions.
+So, we can capture all needed capabilities on the object constructor call site:
+\begin{minted}{kotlin}
+    interface I { fun f() }
 
-% todo abstraction inference
-% todo bidirectional semantics and higher-order effects
+    class Impl : I {
+        context let _: Handler<SomeException>
+
+        context(e: Handler<SomeException>)
+        Impl() { this.e = e }
+
+        override fun f() { throw SomeException() } // uses stored capabilities
+    }
+
+    fun main() {
+        try {
+            let i = Impl() // captures capabilities
+            g(i)
+        } catch (e: SomeException) { ... }
+    }
+\end{minted}
+
+% todo alternatives with associated types
+% todo every method is a higher-order function (see citation in Capturing types)
 
 \section{Related work} \label{sec:related}
 
-% todo capture calculus boxing
+In this section we give a brief overview of existing solutions and provide a competitive analysis of our design.
 
-% todo row-types
-% todo capability-based, Scala
-% todo modal effect types
+\subsection{Conventional row-polymorphic effect systems} \label{subsec:overview-rows}
+
+Row-based effect systems are
+
+TODO % todo
+
+\subsection{Capability-based effect systems} \label{subsec:overview-caps}
+
+TODO % todo
+
+\subsection{Modal effect systems} \label{subsec:overview-modal}
+
+TODO % todo
+
+\subsection{Misc} \label{subsec:overview-misc}
+
 % todo coeffects, coeffect style vs effect style
 % todo papers about regions?
 
 TODO % todo
 
+
+% todo capture calculus boxing
+
+
+
+TODO % todo
+
+
+
+
+\section{Conclusion and future work} \label{sec:conclusion}
+
 % todo type inference and symilarity with first-class polymorphism
-
 % todo обобщить текущую систему через дженерики, кайнды и нормальный варианс
-
-
-\section{Conclusion} \label{sec:conclusion}
+% todo abstraction inference
+% todo bidirectional semantics and higher-order effects
 
 TODO % todo
 
