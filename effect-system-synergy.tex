@@ -697,7 +697,7 @@ Specifically, for a program containing the following declaration,
 we have \[\Sigma = \{EffK_{cap} : \forall\alpha\ldotp\{id : \forall\beta\ldotp b\to b, yield : a \to Unit\} \to Eff\ap a\}\]
 There exists a bijection between capability constructors and effect types.
 
-\subsection{Operational semantics of $Core$}
+\subsection{Operational semantics of $Core$} \label{subsec:core-operational}
 
 % todo refer to a paper that proposed to instantiate a handle_m frame
 
@@ -1436,9 +1436,7 @@ One possible solution is to employ the lifetime elision mechanism~\cite{matsakis
 However, these heuristics may not always produce the intended results, necessitating manual lifetime annotations by the user in certain cases.
 In our example, this approach can look like the following (prime requires compiler to elide a lifetime):
 \begin{minted}{swift}
-    func compose
-        <a <: Any', b <: Any', c <: Any'>
-        (f: (b)' -> c, g: (a)' -> b): (a)' -> c
+    func compose<a <: Any', b <: Any', c <: Any'>(f: (b)' -> c, g: (a)' -> b): (a)' -> c
 \end{minted}
 
 An alternative solution is to introduce special syntax in the surface language that enables direct specification of capturing through term variables.
@@ -1452,15 +1450,28 @@ This solution may necessitate the introduction of explicit names for generic arg
     func makeRepository(files: Map<String, file: File>): Repository'file
 \end{minted}
 
-\subsection{Escaping from an effect system}
+In this case, it is crucial that the generated lifetime parameters remain always inferrable.
+We defer a thorough development of this surface syntax and its translation to future work.
 
-% todo unsafe escape hatches
+\subsection{Gradual adoption of the effect system}
 
-TODO % todo
+The effect system we present supports gradual adoption.
+We outline the stages of adoption in user code as follows:
+\begin{enumerate}
+    \item No effect system.
+    All standard effects, such as I/O and exceptions, are available globally through untracked capabilities.
+    \item Partial effect system.
+    Capabilities remain untracked and are no longer globally available; instead, they must be explicitly passed via contextual parameters.
+    \item Full effect system.
+    Capabilities are tracked, and functions are required to specify their dataflows explicitly in signatures.
+\end{enumerate}
 
-\subsection{Migrating to an effect system}
+Furthermore, a practical language design should include an unsafe type cast to untracked types, enabling developers to handle complex scenarios without dealing escape analysis.
 
-TODO % todo
+In our design, all effects are bound to specific handlers (see Section~\ref{subsec:core-operational}); that is, exceptions are aware of their handlers at the moment they are thrown.
+However, in practice, there are scenarios where code may need to violate effect encapsulation—for example, by intercepting all exceptions, storing them,
+ and rethrowing later.
+Designing such a mechanism in a safe and sound manner presents significant challenges.
 
 \subsection{Working with OOP}
 
