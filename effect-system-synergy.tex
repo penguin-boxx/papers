@@ -846,10 +846,10 @@ In a low-level implementation, such a \texttt{perform} construct can thus be com
             \mathframebox{\Gamma\vdash p} &
             \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
             \infer[Prog]{
-                \Gamma\vdash x : \forall\overline{\alpha}\ldotp \tau = t, p
+                \Gamma\vdash x : s = t, p
             }{
-                \Gamma\vdash t : \forall\overline{\alpha}\ldotp \tau &
-                ftv(t) = \overline{\alpha} &
+                \Gamma\vdash t : s &
+                ftv(s) = \emptyset &
                 \Gamma\vdash p
             }
         \end{array}
@@ -880,6 +880,9 @@ We define a type-directed translation from $Core^{im}$ to $Core$, as presented i
 Deriving translation rules for other constructs from the typing rules for $Core$ is straightforward.
 
 The relation $\Gamma\vdash_e \overline{x}$ selects from the typing context those variables that participate in inference with the specified effect types.
+When multiple candidates exist for a type, the leftmost one is selected.
+Since function arguments are uncurried and thus appear logically simultaneously in the context, we require contextual arguments to have distinct types.
+
 Note that, since the typing context maintains only bindings with unique names (see Section\ \ref{subsec:core-typing}), it is possible for a user to shadow a contextual binding with an ordinary one, causing it to be excluded from subsequent inference.
 This issue can be addressed, for example, by representing the typing context as a list that permits duplicating entries and by assigning additional fresh names to contextual bindings.
 Implicits inference should use these names to refer directly to contextual binding avoiding shadowing.
@@ -888,6 +891,12 @@ Implicits inference should use these names to refer directly to contextual bindi
     %! suppress = EscapeAmpersand
     \begin{gather*}
         \mathframebox{\Gamma\vdash t : \tau \step t_{c}} \\
+        \infer[Lam]{
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) ~ \overline{\tau_2} \to \sigma \step \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t_c
+        }{
+            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma \step t_c &
+            distinct(\overline{\tau_1})
+        } \\
         \infer[CtxApp]{
             \Gamma\vdash t\ap\overline{u} : \sigma \step t_{c} \ap \overline{x}\ap\overline{u_{c}}
         }{
@@ -895,9 +904,14 @@ Implicits inference should use these names to refer directly to contextual bindi
             \Gamma\vdash_e\overline{x} &
             \overline{\Gamma\vdash u : \tau \step u_{c}}
         } \\
-        \mathframebox{\Gamma\vdash_e \overline{x}}
-        \text{\hspace{2em}}
-        \infer[Infer]{\Gamma\vdash_{\overline{\tau}} \overline{x}}{\overline{x :_c \tau}\subset \Gamma}
+        \begin{array}{cc}
+            \mathframebox{\Gamma\vdash_e \overline{x}} &
+            \infer[Infer]{
+                \Gamma\vdash_{\overline{\tau}} \overline{x}
+            }{
+                \overline{x :_c \tau}\subset \Gamma
+            }
+        \end{array}
     \end{gather*}
     \caption{Inference of implicit parameters.}
     \label{fig:core-im-core-implicit-inference}
@@ -909,7 +923,7 @@ This restriction can make programs more fragile with respect to renaming.
 On the other hand, this approach permits simultaneous use of multiple effects of the same type.
 This problem has attracted significant attention in the research community. % todo citations
 
-However, in this work, we use the first approach and argue that, in practical programming, relying on multiple effects of the same type is generally undesirable.
+However, in this work, we use the first approach and argue that, in practical programming, relying on multiple effects of the same type may be undesirable.
 Instead, we advocate for the definition and use of domain-specific effects rather than directly employing general-purpose ones.
 For instance, a domain-specific effect such as \texttt{UserRepository} offers a higher level of abstraction compared to a general-purpose \texttt{Database} effect.
 
@@ -1017,11 +1031,10 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
     \item Monotypes are now annotated with explicit lifetime labels.
     The syntax is deliberately chosen to be identical to that of type arguments to emphasize that lifetimes can be regarded as ordinary types, albeit of a distinct kind.
     \item Type schemas support abstraction over lifetime variables and permit the specification of polymorphic bounds.
-    \item We introduce utility operations that, given a type, return the set of lifetimes appearing in specified positions~--- positive and negative. % todo cite positions
     \item The resulting lifetime associated with data constructors is computed as the intersection of all lifetimes corresponding to those values that may later be extracted~--- that is, lifetimes encountered in positive positions.
 \end{itemize}
 
-% todo say about the default constraints
+% todo say about the default constraints (different in different places)
 % todo syntax of lifetimes deliberately choosen to resemble a generic parameter
 
 %! suppress = MissingLabel
@@ -1034,10 +1047,10 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
             \text{Lifetimes} & \graybox{\Delta} &\Coloneqq l \vor local \vor free \vor \&\overline{\Delta} \\
             \text{Monotypes} & \tau, \sigma, \eta &\Coloneqq \alpha \vor T \ap \graybox{\Delta} \ap \overline{\tau} \vor \ctx{e} \graybox{\Delta}~\overline{\tau} \to \sigma \\
             \text{Type schemas} & s &\Coloneqq \forall \graybox{\overline{l}}~\overline{(\alpha \graybox{<: \tau})}\ldotp \sigma \\
-            \text{Free type variables} & & ftv(\cdot) \\
-            \text{Lifetimes in positive positions} & & \graybox{lt_\Gamma^+(\cdot)}, \graybox{lt_\Gamma^-(\cdot)} \\
-            \text{Free lifetime variables} & & \graybox{flt^+(\cdot)}, \graybox{flt^-(\cdot)} \\
-            \text{Free type variables} & & \graybox{ftv^+(\cdot)}, \graybox{ftv^-(\cdot)} \\
+            \text{Position sign} & \graybox{p} & \Coloneqq + \vor - \\
+            \text{Free type variables} & & ftv^p(\cdot) \\
+            \text{Lifetimes in positive positions} & & \graybox{lt_\Gamma^p(\cdot)} \\
+            \text{Free lifetime variables} & & \graybox{flt^p(\cdot)} \\
             \text{Least upper bound} & & \graybox{lub(\cdot)} \\
             \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
             \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \vor \graybox{\alpha <: \tau, \Gamma} \\
@@ -1074,11 +1087,12 @@ Syntax of terms follows the changes in the syntax of types:
 
 \subsection{Typing rules for $Core_\Delta$}
 
-Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:core-delta-typing}):
-\begin{itemize} % todo make rule names explicit for other enumerations as well
+Let us explain several key aspects of the typing rules for $Core_\Delta$ (Fig.\ \ref{fig:core-delta-typing}):
+\begin{itemize}
     \item \textbf{Lam:} The typing rule for $\lambda$-abstractions guarantees that no tracked value can escape the scope of the function via its return value.
     Analogous to the treatment of data constructors, the lifetime associated with a function type is determined as the intersection of the lifetimes of all captured variables.
     This ensures that the function itself cannot outlive any tracked capabilities it closes over. % todo explain zero set
+    % todo explain context filtration
     \item \textbf{Match:} Lifetime parameters appearing in positive positions are conservatively approximated by the lifetime of the enclosing composite data type.
     Since data types are covariant with respect to their lifetime parameters, lifetimes appearing in negative positions are replaced with the bottom lifetime \texttt{free}, analogous to covariant projections. % todo link to covariant projections
     \item \textbf{Handle:} The $Handle$ rule plays crucial role in ensuring effect safety.
@@ -1086,11 +1100,11 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
     This restriction prevents capabilities from escaping the handler’s scope via returned values.
     Second, the rule enforces a well-formedness condition on effect signatures to ensure that no capabilities are passed as arguments to operation calls. % todo explain better, generics are bounded with free
     Without this constraint, a capability introduced by an inner handler could be propagated to an operation in an outer handler, thus escaping its scope.
-    This restriction can be relaxed under certain conditions; further discussion is provided in Section. % todo ref
+    This restriction can be relaxed under certain conditions; further discussion is provided in Section~\ref{subsec:relax-tracked}.
     \item \textbf{TypesOf:} This rule extracts the types of designated variables from the typing context without discriminating between ordinary bindings and contextual bindings.
 \end{itemize}
 
-% todo omit reflexivity, transitivity
+% todo omit reflexivity, transitivity for subtyping
 
 % todo rename lifetime intersection
 
@@ -1202,7 +1216,13 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
             \infer[TypesOf]{\Gamma\vdash_{\overline{x}}\overline{\tau}}{\overline{x :_\cdot \tau} \subset \Gamma} &
             \mathframebox{\Gamma\vdash p} &
             \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
-            \infer[Prog]{\Gamma\vdash x : s = t, p}{\Gamma\vdash t : s & \Gamma\vdash p}
+            \infer[Prog]{
+                \Gamma\vdash x : s = t, p
+            }{
+                \Gamma\vdash t : s &
+                flt(s)\cup ftv(s) = \emptyset &
+                \Gamma\vdash p
+            }
         \end{array}\\
         \mathframebox{\Gamma\vdash \sigma <: \tau} \\
         \begin{array}{cc}
@@ -1248,25 +1268,39 @@ Let us highlight some of the key aspects of the typing rules (fig.\ \ref{fig:cor
 % todo (local \in) check respects normalization
 % todo careful checks of escaping for handlers (State example)
 
+% todo mention somewhere that our generics are invariant, with lifetimes as a special case
+
 % todo описать проблемы при типизации хендлеров с сабтайпингом
 
 \subsection{Lifetime tunnelling}
 
-Unlike OCaml modal types~\cite{lorenzen2024oxidizing}, our system permits types annotated with lifetimes to instantiate generic parameters.
+Our system allows tracked types to instantiate type parameters.
 Following the terminology introduced by Boruch-Gruszecki et al.~\cite{boruch2023capturing}, we refer to this mechanism as \emph{lifetime tunnelling}.
-In the following, we discuss alternative approaches to this problem and provide a comparative analysis. % todo highlighting the benefits and trade-offs of our solution.
 
 Consider, for example, a function that updates the first component of a pair.
-In our approach, it suffices to specify appropriate bounds for the generic parameters to ensure that the function correctly operates on tracked values.
+In our approach, it suffices to specify appropriate bounds for the type parameters to ensure that the function correctly operates on tracked types.
 Furthermore, note that if the function is instantiated with untracked types, its result will likewise remain untracked: no superfluous constraints will be imposed.
 \begin{minted}{swift}
     func mapFirst(p: Pair<a, b>, f: (a) -> c): Pair<c, b>
-            where a <: scoped(local) Any, b <: scoped(local) Any, c <: scoped(local) Any {
+            where a <: Any'local, b <: Any'local, c <: Any'local {
         Pair(f(fst(p)), snd(p))
     }
 \end{minted}
 
-% todo mention somewhere that our generics are invariant, with lifetimes as a special case
+When capturing, we approximate the lifetimes of type parameters using the
+lifetimes of their bounds.
+To improve precision, polymorphic bounds can
+be specified for lifetimes:
+\begin{minted}{swift}
+    func mapFirst(p: Pair<a, b>): ((a) -> c)'la&lb -> Pair<c, b>
+            where a <: Any'la, b < Any'lb, c <: Any'lc {
+        (f) => Pair(f(fst(p)), snd(p))
+    }
+\end{minted}
+
+%Unlike OCaml modal types~\cite{lorenzen2024oxidizing}, our system permits types annotated with lifetimes to instantiate generic parameters.
+%
+%In the following, we discuss alternative approaches to this problem and provide a comparative analysis. % todo highlighting the benefits and trade-offs of our solution.
 
 % todo лайфтаймами нельзя инстанциировать полиморфные параметры, но конструкторы данных можно
 %A second approach would be to prohibit the instantiation of function type parameters with lifetimes, while still permitting lifetimes to instantiate data constructors.
@@ -1284,14 +1318,11 @@ Furthermore, note that if the function is instantiated with untracked types, its
 %
 %A third approach would be to propagate lifetimes of generics outside of a type constructor.
 
-
-
 % todo пропагирование лайфтаймов за конструктор
 
 % todo решение с перегрузкой
 
 % todo решение с полиморфизмом
-
 
 %Another approach is to propagate lifetimes of generics outside of a type constructor.
 %This will force us to return a tracked pair, since it will contain components that with lifetime approximated to a constructor's lifetime.
@@ -1319,6 +1350,12 @@ Therefore, we revise the rules as shown in Figure~\ref{fig:core-im-delta-core-im
     %! suppress = EscapeAmpersand
     \begin{gather*}
         \mathframebox{\Gamma\vdash t : \tau \step t_{c}} \\
+        \infer[Lam]{
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) ~ \overline{\tau_2} \to \sigma \step \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t_c
+        }{
+            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma \step t_c &
+            distinct(erase(\overline{\tau_1}))
+        } \\
         \infer[CtxApp]{
             \Gamma\vdash t\ap\overline{u} : \sigma \step t_{c} \ap \overline{x}\ap\overline{u_{c}}
         }{
@@ -1336,14 +1373,18 @@ Therefore, we revise the rules as shown in Figure~\ref{fig:core-im-delta-core-im
     \label{fig:core-im-delta-core-implicit-inference}
 \end{figure}
 
-% TODO extend to subtyping on arguments
+To support subtyping on effect rows via $\eta$-expansion (Section~\ref{subsec:im-sub}), we introduce an additional subtyping relation specifically for the application rule.
+This relation treats functional types by verifying subtyping on effect rows as a whole, rather than performing pointwise subtyping on individual effect types:
+\[
+    %! suppress = EscapeAmpersand
+    \infer[SubFunEff]{
+        \Gamma\vdash \ctx{e'} \Delta' ~ (\overline{\tau'})\to \sigma' <: \ctx{e} \Delta ~ (\overline{\tau})\to \sigma
+    }{
+        \Gamma\vdash e <: e' & \overline{\Gamma\vdash \tau <: \tau'} & \Delta' <: \Delta & \Gamma\vdash \eta' <: \eta
+    }
+\]
 
-% todo \overline{\sigma} \text{ distinct} &
-
-TODO % todo
-
-
-\subsection{Using effects with tracked values}
+\subsection{Using effects with tracked values} \label{subsec:relax-tracked}
 
 Note that, at present, it is not possible to pass tracked values to effectful operations.
 This limitation arises from the fact that capabilities are tracked, and their usage always requires an associated delimited continuation~--- the corresponding marker becomes invalid outside the scope of the relevant handler.
