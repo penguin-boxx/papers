@@ -1508,13 +1508,22 @@ So, we can capture all needed capabilities on the object constructor call site:
 
 In this section we give a brief overview of existing solutions and provide a competitive analysis of our design.
 
-\subsection{Conventional row-polymorphic effect systems} \label{subsec:overview-rows}
+\subsection{Row-polymorphic effect systems} \label{subsec:overview-rows}
 
-Row-based effect systems are
+Conventional row-based effect systems, first introduced by Lucassen and Gifford~\cite{lucassen1988polymorphic}, represent the most classical approach to effect systems construction.
+Notable implementations of row-based effect systems include the Koka language~\cite{leijen2014koka, leijen2017type} and the Links language~\cite{hillerstrom2016liberating}.
+In addition, Haskell's \texttt{mtl} library\footnote{\url{https://hackage.haskell.org/package/mtl}} emulates row types by using type class constraints to represent lists of effects~\cite{jones1995functional}.
 
-TODO % todo
+Such effect systems employ effect polymorphism to type higher-order functions, expressing that a function produces at least the same effects as its argument function.
+Although this approach is relatively simple and well-studied, it is often regarded as verbose and somewhat alien to conventional language design.
+It introduces a distinct concept of effects that programmers must consistently consider, which can increase cognitive overhead and reduce accessibility.
+
+Row-based effect systems can be conceptualized as systems that type dynamically bound free variables (i.e., effect operations) in an effect-style manner, analogous to the Reader monad.
+In contrast, our approach leverages implicit parameters, which correspond to a coeffect-style~\cite{petricek2014coeffects}.
 
 \subsection{Capability-based effect systems} \label{subsec:overview-caps}
+
+
 
 TODO % todo
 
@@ -1522,19 +1531,13 @@ TODO % todo
 
 TODO % todo
 
-\subsection{Misc} \label{subsec:overview-misc}
+\subsection{Escape analysis} \label{subsec:overview-escape-analysis}
+
+TODO % todo
 
 % todo coeffects, coeffect style vs effect style
 % todo papers about regions?
-
-TODO % todo
-
-
 % todo capture calculus boxing
-
-
-
-TODO % todo
 
 
 
