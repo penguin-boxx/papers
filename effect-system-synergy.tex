@@ -110,12 +110,72 @@
 % ------------------------------------------------
 
 \usepackage{multicol}
-\usepackage{minted}
-\setminted{xleftmargin=\parindent, autogobble, escapeinside=\#\#, numberblanklines=false, fontsize=\small} % todo use lstlisting instead with custom keywords
-\usepackage{listings} % todo setup for colang surface
 \usepackage{proof}
 \usepackage{mathtools}
-\usepackage[inference]{semantic}
+
+\usepackage{listings}
+\lstdefinestyle{modern}{
+%    backgroundcolor=\color{gray!10},       % light gray background
+    basicstyle=\normalfont\ttfamily\footnotesize,     % fixed-width font, smaller size
+    keywordstyle=\color{blue!80!black}\bfseries,  % strong blue keywords
+    stringstyle=\color{red!70!black},      % subtle red for strings
+    commentstyle=\color{green!60!black}\itshape,  % italic green comments
+    numberstyle=\tiny\color{gray!50},      % small, gray line numbers
+%    numbers=left,                          % line numbers on the left
+%    numbersep=0pt,                        % space between numbers and code
+%    frame=single,                         % frame around listing
+    rulecolor=\color{gray!50},            % frame color
+%    frameround=tttt,                      % rounded corners on frame
+    tabsize=4,                           % tab size of 2 spaces
+    showspaces=false,                   % don't show spaces as underscores
+    showstringspaces=false,             % don't highlight spaces in strings
+    breaklines=false,                    % automatic line breaking
+    breakatwhitespace=false,             % break lines at whitespace
+    captionpos=b,                       % caption at the bottom
+    escapeinside={(*@}{@*)},             % escape to LaTeX inside comments
+    morekeywords={*,...},                % add additional keywords here
+    gobble=4,      % skip 4 characters of indentation in code lines
+}
+\lstdefinelanguage{colang}{
+    keywords=[1]{let, effect, perform, data, context, fun, if, else, throw, try, catch, local, free, op},
+    sensitive=true,
+    comment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+    breaklines=false,
+    tabsize=4,
+    showstringspaces=false,
+}
+\lstdefinelanguage{koka}{
+    keywords=[1]{fun,val,var,if,else,match,with,return,do,handle,throw,try,capture,let,in,open,module,where,import},
+    keywords=[1]{int,float,bool,string,unit,effect,handler,rec,mutable,global},
+    keywords=[2]{println,print},
+    sensitive=true,
+    comment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+    morestring=[b]',
+    alsoletter={!},
+    tabsize=4,
+    breaklines=false,
+    showspaces=false,
+    showstringspaces=false,
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=[3]\color{blue}\bfseries,
+    keywordstyle=[1]\color{teal},
+    keywordstyle=[2]\color{violet}\itshape,
+    commentstyle=\color{green!60!black}\itshape,
+    stringstyle=\color{red!70!black},
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    numbersep=8pt,
+    frame=single,
+    rulecolor=\color{gray!50},
+    frameround=tttt,
+    captionpos=b,
+    escapeinside={(*@}{@*)},
+}
+\lstset{style=modern}
 
 \newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
 \newcommand{\mathframebox}[1]{\framebox{$\displaystyle #1$}}
@@ -344,39 +404,39 @@ However, this approach comes at the expense of other benefits: specifically, it 
 
 \begin{figure}
     \begin{tabular}{p{0.3\textwidth} rrr}
-        \begin{minipage}[t]{0.3\textwidth}
-            \begin{minted}{swift}
-                func business1() {
+        \begin{minipage}[t]{0.35\textwidth}
+            \begin{lstlisting}[language=colang, gobble=16]
+                fun business1() {
                     let db = Db.open(...)
-                    db.query("update ...")
+                    db.query("...")
                 }
-            \end{minted}
+            \end{lstlisting}
         \end{minipage}
         &
-        \begin{minipage}[t]{0.3\textwidth}
-            \begin{minted}{swift}
-                func business2(db: Db) {
+        \begin{minipage}[t]{0.35\textwidth}
+            \begin{lstlisting}[language=colang, gobble=16]
+                fun business2(db: Db) {
                     db.query("...")
                 }
 
-                func caller() {
+                fun caller() {
                     let db = Db.open(...)
                     business2(db)
                 }
-            \end{minted}
+            \end{lstlisting}
         \end{minipage}
         &
-        \begin{minipage}[t]{0.3\textwidth}
-            \begin{minted}{swift}
-                func business3() {
+        \begin{minipage}[t]{0.35\textwidth}
+            \begin{lstlisting}[language=colang, gobble=16]
+                fun business3() {
                     db.query("...")
                 }
 
-                func caller() {
+                fun caller() {
                     let db = Db.open(...)
                     business3()
                 }
-            \end{minted}
+            \end{lstlisting}
         \end{minipage}
     \end{tabular}
     \caption{The road to dynamically scoped free variables.}
@@ -390,21 +450,21 @@ To make a value available for implicit parameter resolution, we employ the \text
 \begin{figure}[h]
     \begin{tabular}{p{0.5\textwidth} rl}
         \begin{minipage}[t]{0.3\textwidth}
-            \begin{minted}{swift}
+            \begin{lstlisting}[language=colang, gobble=16]
                 context(db: Db)
-                func business4() {
+                fun business4() {
                     db.query("...")
                 }
-            \end{minted}
+            \end{lstlisting}
         \end{minipage}
         &
-        \begin{minipage}[t]{0.3\textwidth}
-            \begin{minted}{swift}
-                func caller() {
+        \begin{minipage}[t]{0.5\textwidth}
+            \begin{lstlisting}[language=colang, gobble=16]
+                fun caller() {
                     context let db = Db.open(...)
                     business4()
                 }
-            \end{minted}
+            \end{lstlisting}
         \end{minipage}
     \end{tabular}
     \caption{Reclaming static type safety with implicit parameters.}
@@ -420,13 +480,13 @@ It is important to note, that until this point our discussion was based solely o
 Exceptions and other algebraic operations can be tracked in an analogous manner~\cite{odersky2021safer}.
 For example, a \texttt{throw SomeException()} construct can be interpreted as calling a function that requires an implicit parameter of type \texttt{Handler<SomeException>}.
 Correspondingly, constructs that handle exceptions must supply appropriate witness values for these implicit parameters.
-\begin{minted}{swift}
-    func checkingExceptions() {
+\begin{lstlisting}[language=colang]
+    fun checkingExceptions() {
         try { // provides a capability of type Handler<SomeException>
             throw SomeException() // requires a capability of type Handler<SomeException>
         } catch (e: SomeException) { ... }
     }
-\end{minted}
+\end{lstlisting}
 
 Nowadays, several widely used programming languages provide support for implicit parameters, and the inference mechanisms associated with these parameters is well understood~\cite{KEEP-context-parameters, oliveira2010type, lewis2000implicit}.
 Moreover, implicit parameters alone are sufficient as the evidence-passing technique to implement tail-resumptive algebraic operations~\cite{xie2020effect}.
@@ -437,32 +497,32 @@ An effect system should ensure that all computations are executed within appropr
 In our setting, the context must supply capabilities as evidence of its validity.
 Consequently, these capabilities must not be allowed to escape their corresponding contexts.
 For example, if a \texttt{Handler} value were to escape a corresponding \texttt{try-catch} block, we would lose the guarantee that all exceptions are handled and, thereby, the effect safety itself:
-\begin{minted}{swift}
-    func unsafe() {
+\begin{lstlisting}[language=colang]
+    fun unsafe() {
         let f = try {
             () => throw SomeException() // captures the Handler<SomeException> capability
         } catch (e: SomeException) { ... }
         f() // throws SomeException
     }
-\end{minted}
+\end{lstlisting}
 
 Note that, in the example, the \texttt{Handler<SomeException>} capability acts as a lexically scoped free variable for the lambda function.
 The ability to close over such capabilities enables the technique known as \textit{contextual polymorphism}~\cite{brachthauser2020effects, brachthauser2022effects}.
 This approach allows higher-order functions to remain fully transparent with respect to effects, without introducing explicit polymorphic type variables that range over effect sets.
 Specifically, the type of the \texttt{map} function need not be entangled with effect-related parameters (we will discuss the \texttt{scoped} syntax in detail later)\footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}: % todo ref
-\begin{minted}{swift}
-    func map(xs: List<a>, f: #\color{gray}\texttt{scoped(local)}# (a) -> b): List<b>
+\begin{lstlisting}[language=colang]
+    fun map(xs: List<a>, f: (a)'local -> b): List<b>
 
     context(io: IO)
-    func printAll(xs: List<Int>) {
+    fun printAll(xs: List<Int>) {
         map(xs, (x) => io.print(x)) // capability capturing is safe here
     }
-\end{minted}
+\end{lstlisting}
 
 Compare this with the corresponding function type in the Koka language, which features row-polymorphic types~\cite{leijen2014koka}:
-\begin{minted}{kotlin}
+\begin{lstlisting}[language=colang]
     fun map(xs: list<a>, f: (a) -> e b): e list<b>
-\end{minted}
+\end{lstlisting}
 
 To control the escaping of capabilities, some form of escape analysis is required. % todo citations
 Given that effect systems operate at the type level, it is natural to employ type-based techniques for escape analysis as well.
@@ -478,9 +538,9 @@ The \texttt{free} label is used for non-tracked values and is assumed by default
 The \texttt{local} label appears in tracked types, which the type system handles specially to prevent their escape; for instance, a function is prohibited from returning a value of a tracked type.
 
 For example, the \texttt{map} function can be explicitly typed to ensure that it does not leak its argument function, thereby making it safe to pass closures that possess capabilities:
-\begin{minted}{swift}
-    func map(xs: List<a>, f: scoped(local) (a) -> b): List<b>
-\end{minted}
+\begin{lstlisting}[language=colang]
+    fun map(xs: List<a>, f: (a)'local -> b): List<b>
+\end{lstlisting}
 
 To enable a function to propagate its arguments through its result, polymorphism over lifetime labels can be used.
 In essence, this is an explicit specification of the function’s dataflow directly in the type signature. % todo dataflow term and citation
@@ -488,30 +548,30 @@ For instance, a lazy \texttt{map} function does not eagerly compute and return t
 This behavior can be captured by assigning the same lifetime variable~\texttt{l} to both the argument \texttt{f} and the result type.
 Consequently, the type system records that any tracked capabilities captured by \texttt{f} may be retained within the result.
 Such a function thus continues to support contextual polymorphism, as it can only permit \texttt{f} to escape with the result; furthermore, the call site is made aware~--- via the signature~--- that the result must not escape its prescribed context:
-\begin{minted}{swift}
-    func lazyMap(xs: LazyList<a>, f: scoped(l) (a) -> b): scoped(l) LazyList<b>
+\begin{lstlisting}[language=colang]
+    fun lazyMap(xs: LazyList<a>, f: (a)'l -> b): LazyList<b>'l
 
-    context(io: IO) // io: scoped(local) IO
-    func printAll(xs: LazyList<Int>) {
-        let ys: scoped(local) LazyList<Int> = lazyMap(xs, (x) => io.print(x))
+    context(io: IO) // io: IO'l1
+    fun printAll(xs: LazyList<Int>) {
+        let ys: LazyList<Int>'l1 = lazyMap(xs, (x) => io.print(x))
         ys.collect() // force execution
     }
-\end{minted}
+\end{lstlisting}
 
 To express the capture of two or more lifetime-polymorphic values within the same scope, we employ the intersection of lifetimes:
-\begin{minted}{swift}
-    func compose(f: scoped(l1) (b) -> c, g: scoped(l2) (a) -> b): scoped(l1&l2) (a) -> c
+\begin{lstlisting}[language=colang]
+    fun compose(f: (b)'l1 -> c, g: (a)'l2 -> b): (a)'l1+l2 -> c
         = (x) => f(g(x))
-\end{minted}
+\end{lstlisting}
 
 For the sake of simplicity, we dispense with lifetime polymorphism for compound datatypes by determining each compound's lifetime as the intersection of the lifetimes of its components.
 Upon destructuring, the lifetimes of the individual components are, in turn, approximated by the lifetime of the original compound datatype.
-\begin{minted}{swift}
-    func first(x: scoped(l1) Int, y: scoped(l2) Int): scoped(l1&l2) Int {
-        let intPair: scoped(l1&l2) IntPair = IntPair(x, y)
+\begin{lstlisting}[language=colang]
+    fun first(x: Int'l1, y: Int'l2): Int'l1+l2 {
+        let intPair: IntPair'l1+l2 = IntPair(x, y)
         return intPair.fst
     }
-\end{minted}
+\end{lstlisting}
 
 We define subtyping so that non-tracked values may be used in positions where tracked values are expected.
 This design increases the number of safe well-typed programs and facilitates gradual adoption of effect tracking for languages transitioning from untyped effects to an effect system.
@@ -520,10 +580,10 @@ We permit tracked types to instantiate polymorphic type parameters, thereby maki
 To control when tracked types are eligible for instantiation, we employ bounded polymorphism.
 For example, the \texttt{lazyMap} function is written in such a way that it does not leak values of polymorphic type parameters (e.g., through global state), but rather returns them directly to the caller.
 As a result, these parameters may be instantiated with tracked types:\footnote{We assume that \texttt{Any} serves as the top element in the type lattice.} \footnote{For backward compatibility, the type \texttt{scoped(free) Any} may be used as the default bound.}
-\begin{minted}{swift}
-    func lazyMap(xs: LazyList<a>, f: scoped(l) (a) -> b): scoped(l) LazyList<b>
-        where a <: scoped(local) Any, b <: scoped(local) Any
-\end{minted}
+\begin{lstlisting}[language=colang]
+    fun lazyMap(xs: LazyList<a>, f: (a)'l -> b): LazyList<b>'l
+        where a <: Any'local, b <: Any'local
+\end{lstlisting}
 
 % todo our alternative to tunnelling
 
@@ -681,19 +741,19 @@ The main considerations that have shaped this syntax are as follows:
 Note that the type of first-class functions contains a list of implicit parameters.
 This enables us to type abstractions over handlers.
 For example, the following function establishes an execution context by introducing a handler for an exception type \texttt{E}\footnote{We employ an informally defined surface syntax for explanatory purposes; its correspondence to our formal definitions is straightforward.}:
-\begin{minted}{swift}
-    func withE(f: context(Handler<E>) () -> r): r =
+\begin{lstlisting}[language=colang]
+    fun withE(f: context(Handler<E>) () -> r): r =
         try { f() } catch (e: E) { ... }
-\end{minted}
+\end{lstlisting}
 
 We assume that the effect context $\Sigma$ is populated by user-defined \texttt{effect} declarations, analogous to those found in Koka. % todo citation
 Specifically, for a program containing the following declaration,
-\begin{minted}{swift}
+\begin{lstlisting}[language=colang]
     effect Eff<a> {
         op id(x: b): b
         op yield(x: a): Unit
     }
-\end{minted}
+\end{lstlisting}
 we have \[\Sigma = \{EffK_{cap} : \forall\alpha\ldotp\{id : \forall\beta\ldotp b\to b, yield : a \to Unit\} \to Eff\ap a\}\]
 There exists a bijection between capability constructors and effect types.
 
@@ -745,10 +805,10 @@ As a result, there is no issue of accidental effect handling, so the effect enca
 
 For instance, consider a function \texttt{withE1} that installs a handler for exception \texttt{E1}.
 If a computation \texttt{f} potentially raises exception \texttt{E2}, \texttt{withE1} will not be able to intercept this exception, since it does not provide \texttt{f} with the corresponding capability for \texttt{E2}:
-\begin{minted}{swift}
-    func withE1(f: context(Handler<E1>) () -> r): r =
+\begin{lstlisting}[language=colang]
+    fun withE1(f: context(Handler<E1>) () -> r): r =
         try { f() } catch (e: E1) { ... } catch (e: E2) { /* unreachable */ }
-\end{minted}
+\end{lstlisting}
 
 Since handlers are propagated explicitly to the operation call site, our approach eliminates the need for dynamic handler lookup and the collection of the continuation when the callee operation is tail-resumptive~\cite{xie2020effect}.
 In a low-level implementation, such a \texttt{perform} construct can thus be compiled to a direct virtual call, further improving efficiency. % todo citation
@@ -933,15 +993,15 @@ Both strategies have their advantages: immediate substitution is convenient when
 
 Actually, this choice determines the default behavior, since either approach can be emulated by the other via $\eta$-expansion.
 For instance, let us assume that substitution is performed at application time:
-\begin{minted}{swift}
+\begin{lstlisting}[language=colang]
     f : context(IO) () -> Unit; g : (() -> Unit) -> Unit
     g(() => f())
-\end{minted}
+\end{lstlisting}
 Alternatively, assume that substitution occurs at the point where a function is mentioned:
-\begin{minted}{swift}
+\begin{lstlisting}[language=colang]
     f : context(IO) () -> Unit; g : (context(IO) () -> Unit) -> Unit
     g(context(_: Eff) () => f()) // abstracts over contextual parameters
-\end{minted}
+\end{lstlisting}
 % todo special syntax for explicitly passed implicits
 
 %TODO properties
@@ -951,10 +1011,10 @@ Alternatively, assume that substitution occurs at the point where a function is 
 It is desirable to support a form of subtyping on effect rows, as this allows functions with fewer contextual requirements to be used in more permissive contexts in a natural way.
 For example, \texttt{withStd} is a function that provides default implementation for several effects.
 We should therefore be able to pass to \texttt{withStd} a function that only utilizes a subset of those effects:
-\begin{minted}{swift}
-    func withStd(f: context(IO, Allocator, Random) () -> r): r
+\begin{lstlisting}[language=colang]
+    fun withStd(f: context(IO, Allocator, Random) () -> r): r
     withStd(g) // g : context(IO) () -> Unit
-\end{minted}
+\end{lstlisting}
 
 % todo find literature
 % todo row polymorphism can help somehow?
@@ -1280,23 +1340,23 @@ Following the terminology introduced by Boruch-Gruszecki et al.~\cite{boruch2023
 Consider, for example, a function that updates the first component of a pair.
 In our approach, it suffices to specify appropriate bounds for the type parameters to ensure that the function correctly operates on tracked types.
 Furthermore, note that if the function is instantiated with untracked types, its result will likewise remain untracked: no superfluous constraints will be imposed.
-\begin{minted}{swift}
-    func mapFirst(p: Pair<a, b>, f: (a) -> c): Pair<c, b>
+\begin{lstlisting}[language=colang]
+    fun mapFirst(p: Pair<a, b>, f: (a) -> c): Pair<c, b>
             where a <: Any'local, b <: Any'local, c <: Any'local {
         Pair(f(fst(p)), snd(p))
     }
-\end{minted}
+\end{lstlisting}
 
 When capturing, we approximate the lifetimes of type parameters using the
 lifetimes of their bounds.
 To improve precision, polymorphic bounds can
 be specified for lifetimes:
-\begin{minted}{swift}
-    func mapFirst(p: Pair<a, b>): ((a) -> c)'la&lb -> Pair<c, b>
+\begin{lstlisting}[language=colang]
+    fun mapFirst(p: Pair<a, b>): ((a) -> c)'la+lb -> Pair<c, b>
             where a <: Any'la, b < Any'lb, c <: Any'lc {
         (f) => Pair(f(fst(p)), snd(p))
     }
-\end{minted}
+\end{lstlisting}
 
 %Unlike OCaml modal types~\cite{lorenzen2024oxidizing}, our system permits types annotated with lifetimes to instantiate generic parameters.
 %
@@ -1307,14 +1367,14 @@ be specified for lifetimes:
 %This method does not involve bounded polymorphism; however, it requires that all generic occurrences be explicitly annotated with a lifetime.
 %Additionally, it necessitates support for variance and mandates that the result's lifetime be tracked independently of the argument lifetimes.
 %
-%\begin{minted}{swift}
-%    func mapFirst(
+%\begin{lstlisting}[language=colang]
+%    fun mapFirst(
 %        p: Pair<scoped(local) a, scoped(local) b>,
 %        f: (scoped(local) a) -> scoped(local) c
 %    ): Pair<scoped(local) c, scoped(local) b> {
 %        Pair(f(fst(p)), snd(p))
 %    }
-%\end{minted}
+%\end{lstlisting}
 %
 %A third approach would be to propagate lifetimes of generics outside of a type constructor.
 
@@ -1330,7 +1390,7 @@ be specified for lifetimes:
 %\begin{minted}{ocaml}
 %    val mapFirst : 'a 'b pair @ local -> ('a @ local -> 'c @ local) -> 'c 'b pair @ local
 %    let mapFirst p f = exclave pair (f (fst p)) (snd p)
-%\end{minted}
+%\end{lstlisting}
 
 TODO % todo reduce amount of boilerplate for polymorphic code
 % todo bounds instead of boxing (from capturing types)
@@ -1426,29 +1486,29 @@ In this section, we provide an informal discussion of potential extensions to ou
 
 We consider the lifetime polymorphism the most problematic aspect of our design.
 A user should manually introduce lifetime names and link lifetimes of result with lifetimes of arguments in a relational manner:
-\begin{minted}{swift}
-    func compose
+\begin{lstlisting}[language=colang]
+    fun compose
         <la, lb, lc, lf, lg, a <: Any'la, b <: Any'lb, c <: Any'lc>
-        (f: (b)'lf -> c, g: (a)'lg -> b): (a)'lb&lf&lg -> c
-\end{minted}
+        (f: (b)'lf -> c, g: (a)'lg -> b): (a)'lb+lf+lg -> c
+\end{lstlisting}
 
 One possible solution is to employ the lifetime elision mechanism~\cite{matsakis2014rust}, which automatically inserts lifetimes into type signatures based on heuristics.
 However, these heuristics may not always produce the intended results, necessitating manual lifetime annotations by the user in certain cases.
 In our example, this approach can look like the following (prime requires compiler to elide a lifetime):
-\begin{minted}{swift}
-    func compose<a <: Any', b <: Any', c <: Any'>(f: (b)' -> c, g: (a)' -> b): (a)' -> c
-\end{minted}
+\begin{lstlisting}[language=colang]
+    fun compose<a <: Any', b <: Any', c <: Any'>(f: (b)' -> c, g: (a)' -> b): (a)' -> c
+\end{lstlisting}
 
 An alternative solution is to introduce special syntax in the surface language that enables direct specification of capturing through term variables.
 Although the syntax resembles dependent typing, we expect it to be fully implementable through a straightforward desugaring process that translates the surface language into the core calculus with lifetime polymorphism.
-\begin{minted}{swift}
-    func compose<a, b, c>(f: (b) -> c, g: (a) -> b): (a)'f+g -> c
-\end{minted}
+\begin{lstlisting}[language=colang]
+    fun compose<a, b, c>(f: (b) -> c, g: (a) -> b): (a)'f+g -> c
+\end{lstlisting}
 
 This solution may necessitate the introduction of explicit names for generic arguments in order to precisely specify more complex data flows:
-\begin{minted}{swift}
-    func makeRepository(files: Map<String, file: File>): Repository'file
-\end{minted}
+\begin{lstlisting}[language=colang]
+    fun makeRepository(files: Map<String, file: File>): Repository'file
+\end{lstlisting}
 
 In this case, it is crucial that the generated lifetime parameters remain always inferrable.
 We defer a thorough development of this surface syntax and its translation to future work.
@@ -1481,7 +1541,7 @@ However, what happens if an implementation needs to throw exceptions beyond thos
 
 Note that only the code that is aware about the specific implementation type has enough information to properly handle implementation-specific exceptions.
 So, we can capture all needed capabilities on the object constructor call site:
-\begin{minted}{kotlin}
+\begin{lstlisting}[language=colang]
     interface I { fun f() }
 
     class Impl : I {
@@ -1499,7 +1559,7 @@ So, we can capture all needed capabilities on the object constructor call site:
             g(i)
         } catch (e: SomeException) { ... }
     }
-\end{minted}
+\end{lstlisting}
 
 % todo alternatives with associated types
 % todo every method is a higher-order function (see citation in Capturing types)
