@@ -109,8 +109,9 @@
 %\linenumbers
 % ------------------------------------------------
 
-\usepackage{multicol}
-\usepackage{proof}
+% https://authors.acm.org/proceedings/production-information/accepted-latex-packages
+\usepackage{multicol} % is not allowed by ACM
+\usepackage{proof}    % is not allowed by ACM
 \usepackage{mathtools}
 
 \usepackage{listings}
@@ -131,7 +132,7 @@
     gobble=4,      % skip 4 characters of indentation in code lines
 }
 \lstdefinelanguage{colang}{
-    keywords=[1]{let, effect, perform, data, context, fun, if, else, throw, try, catch, local, free, op},
+    keywords=[1]{let, effect, perform, data, context, fun, where, if, else, throw, try, catch, local, free, op},
     sensitive=true,
     comment=[l]{//},
     morecomment=[s]{/*}{*/},
@@ -364,14 +365,14 @@ Contributions of this paper are summarized as follows:
 \section{Two pieces of an effect system design} \label{sec:idea}
 
 In this section we introduce the central idea of this paper through practical examples.
-We further illustrate that the pragmatic motivations for effect systems emerge organically from common programming scenarios.
+Also, we illustrate that the pragmatic motivations for effect systems emerge organically from common programming scenarios.
 
 \subsection{The road to implicit parameters} \label{subsec:implicits}
 
-In our running example (see fig.\ \ref{fig:db}), where the business logic function performs an update to the database storage.
+Consider our running example in Figure~\ref{fig:db}, where the business logic function executes an update operation on the database storage.
 
 The first version establishes its own database connection and executes a query.
-However, this approach has several notable drawbacks.
+This approach has several drawbacks.
 Firstly, it hinders testability, as it is not straightforward to replace the database connection with a mock or alternative implementation; consequently, verifying the business logic in isolation becomes challenging.
 Secondly, this function produces observable side effects --- such as performing database operations --- which are an integral part of its external contract.
 Nevertheless, these effects are not reflected in the function’s type signature.
@@ -381,7 +382,7 @@ Here, the business logic function is parameterized over the database connection,
 Furthermore, the observable effects are now made explicit through the \texttt{db} parameter.
 However, this approach incurs the overhead of additional syntactic complexity at the call site, as the administrative effort of explicitly passing parameters increases.
 While this may appear trivial for a single argument, the burden becomes significant if, for example, four such parameters must be threaded through multiple layers of the call stack.
-For best practices to be widely adopted, they should remain at least as accessible and convenient as less optimal alternatives.
+Best practices intended for widespread adoption should be at least as accessible and convenient as less optimal alternatives.
 
 To reduce boilerplate, the third version replaces ordinary parameters with dynamically scoped free variables.
 These variables acquire their values through lookup within the dynamic scope of the function call.
@@ -429,7 +430,7 @@ However, this approach comes at the expense of other benefits: specifically, it 
 \end{figure}
 
 To regain static type safety, we approximate dynamically scoped free variables using implicit function parameters~\cite{lewis2000implicit}.
-At the declaration site, we introduce a \texttt{context} keyword to define a group of implicit parameters, which are automatically supplied by the compiler at the call site (see fig.\ \ref{fig:implicits}).
+At the declaration site, we introduce a \lstinline[language=colang]|context| keyword to define a group of implicit parameters, which are automatically supplied by the compiler at the call site (see Figure\ \ref{fig:implicits}).
 To make a value available for implicit parameter resolution, we employ the \texttt{context let} declaration syntax.
 
 \begin{figure}[h]
@@ -456,14 +457,14 @@ To make a value available for implicit parameter resolution, we employ the \text
     \label{fig:implicits}
 \end{figure}
 
-In terms of effects and contexts, \texttt{context let} introduces an execution context, whose scope is restricted to the corresponding lexical region, and provides functionality of access to a database storage.
+In terms of effects and contexts, \lstinline[language=colang]|context let| introduces an execution context, whose scope is restricted to the corresponding lexical region, and provides functionality of access to a database storage.
 Implicit parameters express a function's requirements for its context.
 In order to invoke such a function, the context must establish its validity by supplying concrete values for these implicit parameters.
 We refer to these values as \textit{capabilities}, and logically they serve as witnesses of context validity.
 It is important to note, that until this point our discussion was based solely on the mechanism of bindings, and did not require any deep understanding of the abstract notion of effects.
 
 Exceptions and other algebraic operations can be tracked in an analogous manner~\cite{odersky2021safer}.
-For example, a \texttt{throw SomeException()} construct can be interpreted as calling a function that requires an implicit parameter of type \texttt{Handler<SomeException>}.
+For example, a \lstinline[language=colang]|throw SomeException()| construct can be interpreted as calling a function that requires an implicit parameter of type \lstinline[language=colang]|Handler<SomeException>|.
 Correspondingly, constructs that handle exceptions must supply appropriate witness values for these implicit parameters.
 \begin{lstlisting}[language=colang]
     fun checkingExceptions() {
@@ -481,96 +482,125 @@ Moreover, implicit parameters alone are sufficient as the evidence-passing techn
 An effect system should ensure that all computations are executed within appropriate contexts --- a property we refer to as \textit{effect safety}.
 In our setting, the context must supply capabilities as evidence of its validity.
 Consequently, these capabilities must not be allowed to escape their corresponding contexts.
-For example, if a \texttt{Handler} value were to escape a corresponding \texttt{try-catch} block, we would lose the guarantee that all exceptions are handled and, thereby, the effect safety itself:
+For example, if a \lstinline[language=colang]|Handler| value were to escape a corresponding \lstinline[language=colang]|try-catch| block, we would lose the guarantee that all exceptions are handled and, thereby, the effect safety itself:
 \begin{lstlisting}[language=colang]
     fun unsafe() {
-        let f = try {
-            () => throw SomeException() // captures the Handler<SomeException> capability
+        let f = try { // context let h: Handler<SomeException>
+            () => throw SomeException() // captures the h capability
         } catch (e: SomeException) { ... }
         f() // throws SomeException
     }
 \end{lstlisting}
 
-Note that, in the example, the \texttt{Handler<SomeException>} capability acts as a lexically scoped free variable for the lambda function.
-The ability to close over such capabilities enables the technique known as \textit{contextual polymorphism}~\cite{brachthauser2020effects, brachthauser2022effects}.
-This approach allows higher-order functions to remain fully transparent with respect to effects, without introducing explicit polymorphic type variables that range over effect sets.
-Specifically, the type of the \texttt{map} function need not be entangled with effect-related parameters (we will discuss the \texttt{scoped} syntax in detail later)\footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}: % todo ref
+To control the escaping of capabilities, some form of escape analysis is required~\cite{park1992escape}.
+Given that effect systems operate at the type level, it is natural to employ type-based techniques for escape analysis as well~\cite{xie2022first}.
+Furthermore, since this analysis must account for the flow of capabilities across function boundaries, it should be directly reflected in function signatures to be intra-procedural.
+In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
+
+We refer to values that must not escape a given scope as \textit{tracked}, and likewise, their types are designated as tracked.
+For instance, capabilities are tracked, as are, by default, the types of implicit function parameters.
+To differentiate between tracked and non-tracked types, each type \lstinline[language=colang]|T| is annotated with a special label \lstinline[language=colang]|lab|, referred to as a lifetime:
+\begin{lstlisting}[language=colang]
+    T'lab /* or for function types */ (A)'lab -> B
+\end{lstlisting}
+
+The \lstinline[language=colang]|free| lifetime label designates non-tracked values.
+In contrast, the \lstinline[language=colang]|local| label appears in tracked types and is treated specially by the type system to prevent their escape.
+For instance, the return type of the \lstinline[language=colang]|try-catch| block must not include the \lstinline[language=colang]|local| label.
+Consequently, the following code will be rejected by the type system, as the function’s lifetime is determined by the lifetimes of the captured values:
+\begin{lstlisting}[language=colang]
+    fun safe() {
+        let f = try { // context let h: Handler<SomeException>'local
+            () => throw SomeException() // : ()'local -> Nothing
+            // type error: resulting type of try-catch includes local
+        } catch (e: SomeException) { ... }
+        f()
+    }
+\end{lstlisting}
+
+Tracked values cannot be returned from functions as well.
+Thus, we can specify in type of a higher-order function that it do not leak an argument function.
+For example, the eager \lstinline[language=colang]|map| function calls its argument inplace:\footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}
 \begin{lstlisting}[language=colang]
     fun map(xs: List<a>, f: (a)'local -> b): List<b>
+\end{lstlisting}
 
-    context(io: IO)
+Note that it is safe to pass functions that capture capabilities to \lstinline[language=colang]|map|, and this safety can be verified statically:
+\begin{lstlisting}[language=colang]
+    context(io: IO'local)
     fun printAll(xs: List<Int>) {
         map(xs, (x) => io.print(x)) // capability capturing is safe here
     }
 \end{lstlisting}
 
-Compare this with the corresponding function type in the Koka language, which features row-polymorphic types~\cite{leijen2014koka}:
+In the example, the \lstinline[language=colang]|io| is a lexically scoped free variable for the lambda function.
+The ability to close over capabilities enables the technique known as \textit{contextual polymorphism}~\cite{brachthauser2020effects, brachthauser2022effects}.
+This approach allows higher-order functions to remain fully transparent with respect to effects, without introducing explicit polymorphic type variables that range over effect sets.
+In comparison, the corresponding function type in the Koka language employs row-polymorphic types, where the \lstinline[language=colang]|e| denotes a type variable ranging over effect row types~\cite{leijen2014koka}:
 \begin{lstlisting}[language=colang]
     fun map(xs: list<a>, f: (a) -> e b): e list<b>
 \end{lstlisting}
 
-To control the escaping of capabilities, some form of escape analysis is required. % todo citations
-Given that effect systems operate at the type level, it is natural to employ type-based techniques for escape analysis as well.
-Furthermore, since this analysis must account for the flow of capabilities across function boundaries, it should be cross-procedural and directly reflected in function signatures.
-In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
-
-We refer to values that must not escape a given scope as \textit{tracked}, and likewise, their types are treated as tracked.
-For instance, capabilities are tracked, as are by default the types of implicit parameters.
-To distinguish between tracked and non-tracked types, we annotate each type $T$ with a special lifetime label $lab$, denoted by the syntax:
-\[scoped(lab)\ap T\] % todo change the syntax to something more reasonable
-Lifetime labels range over \texttt{free}, \texttt{local} and polymorphic lifetime variables.
-The \texttt{free} label is used for non-tracked values and is assumed by default for all types.
-The \texttt{local} label appears in tracked types, which the type system handles specially to prevent their escape; for instance, a function is prohibited from returning a value of a tracked type.
-
-For example, the \texttt{map} function can be explicitly typed to ensure that it does not leak its argument function, thereby making it safe to pass closures that possess capabilities:
-\begin{lstlisting}[language=colang]
-    fun map(xs: List<a>, f: (a)'local -> b): List<b>
-\end{lstlisting}
-
 To enable a function to propagate its arguments through its result, polymorphism over lifetime labels can be used.
-In essence, this is an explicit specification of the function’s dataflow directly in the type signature. % todo dataflow term and citation
-For instance, a lazy \texttt{map} function does not eagerly compute and return the final result; instead, it immediately yields a collection that encapsulates the processing logic.
-This behavior can be captured by assigning the same lifetime variable~\texttt{l} to both the argument \texttt{f} and the result type.
-Consequently, the type system records that any tracked capabilities captured by \texttt{f} may be retained within the result.
-Such a function thus continues to support contextual polymorphism, as it can only permit \texttt{f} to escape with the result; furthermore, the call site is made aware~--- via the signature~--- that the result must not escape its prescribed context:
+In essence, this is an explicit specification of the function’s dataflow directly in the type signature.
+For instance, the lazy \lstinline[language=colang]|map| function does not eagerly compute and return the final result; instead, it immediately yields a collection that encapsulates the processing logic.
+This behavior can be captured by assigning the same lifetime variable~\lstinline[language=colang]|l| to both the argument function \lstinline[language=colang]|f| and the result type.
+Consequently, the type system records that any tracked capabilities captured by \lstinline[language=colang]|f| may be retained within the result.
+Thus, such a function continues to support contextual polymorphism, as it can only permit \texttt{f} to escape with the result, and the call site is made aware that the result must not escape its prescribed context:
 \begin{lstlisting}[language=colang]
     fun lazyMap(xs: LazyList<a>, f: (a)'l -> b): LazyList<b>'l
 
-    context(io: IO) // io: IO'l1
+    context(io: IO'local)
     fun printAll(xs: LazyList<Int>) {
-        let ys: LazyList<Int>'l1 = lazyMap(xs, (x) => io.print(x))
+        let ys: LazyList<Int>'local = lazyMap(xs, (x) => io.print(x))
         ys.collect() // force execution
     }
 \end{lstlisting}
 
-To express the capture of two or more lifetime-polymorphic values within the same scope, we employ the intersection of lifetimes:
+To express the capture of two or more lifetime-polymorphic values, we employ a syntax that denotes the minimum of their lifetimes:
 \begin{lstlisting}[language=colang]
-    fun compose(f: (b)'l1 -> c, g: (a)'l2 -> b): (a)'l1+l2 -> c
-        = (x) => f(g(x))
+    fun compose(f: (b)'l1 -> c, g: (a)'l2 -> b): (a)'l1+l2 -> c =
+        (x) => f(g(x))
 \end{lstlisting}
 
-For the sake of simplicity, we dispense with lifetime polymorphism for compound datatypes by determining each compound's lifetime as the intersection of the lifetimes of its components.
+For the sake of simplicity, lifetime polymorphism is not supported for compound datatypes.
+Instead, their lifetimes are computed as the minimum of the lifetimes of their components; the same mechanism is applied to closures.
 Upon destructuring, the lifetimes of the individual components are, in turn, approximated by the lifetime of the original compound datatype.
 \begin{lstlisting}[language=colang]
-    fun first(x: Int'l1, y: Int'l2): Int'l1+l2 {
-        let intPair: IntPair'l1+l2 = IntPair(x, y)
-        return intPair.fst
+    fun makeRepository(file: File'l1, conn: Connection'l2): Repository'l1+l2 =
+        Repository(file, conn)
+
+    context(repo: Repository'local)
+    fun registerUser(user: User) {
+        let conn: Connection'local = repo.conn
+        conn.send(user)
     }
 \end{lstlisting}
 
-We define subtyping so that non-tracked values may be used in positions where tracked values are expected.
+We define subtyping so that non-tracked values may be used in positions where tracked values are expected: \lstinline[language=colang]|free <: local|.
 This design increases the number of safe well-typed programs and facilitates gradual adoption of effect tracking for languages transitioning from untyped effects to an effect system.
 
 We permit tracked types to instantiate polymorphic type parameters, thereby making them first-class citizens in the language.
 To control when tracked types are eligible for instantiation, we employ bounded polymorphism.
-For example, the \texttt{lazyMap} function is written in such a way that it does not leak values of polymorphic type parameters (e.g., through global state), but rather returns them directly to the caller.
-As a result, these parameters may be instantiated with tracked types:\footnote{We assume that \texttt{Any} serves as the top element in the type lattice.} \footnote{For backward compatibility, the type \texttt{scoped(free) Any} may be used as the default bound.}
+For example, the \lstinline[language=colang]|map| function uses values of type \lstinline[language=colang]|a| inside and returns values of type \lstinline[language=colang]|b| directly to the caller.
+As a result, these type parameters may be instantiated with tracked types:\footnote{We assume that \lstinline[language=colang]|Any| serves as the top element in the type lattice.} \footnote{To preserve backward compatibility, the type \lstinline[language=colang]|Any'free| may be used as the default bound.}
 \begin{lstlisting}[language=colang]
-    fun lazyMap(xs: LazyList<a>, f: (a)'l -> b): LazyList<b>'l
-        where a <: Any'local, b <: Any'local
+    fun map(xs: List<a>, f: (a)'l -> b): List<b>'l where a <: Any'local, b <: Any'local
 \end{lstlisting}
 
-% todo our alternative to tunnelling
+Upon capturing, an unknown lifetime of a type argument is approximated by the lifetime of its bound.
+Consider the most permissive type for the \lstinline[language=colang]|lazyMap| function.
+For the parameter \lstinline[language=colang]|a| we use the polymorphic bound \lstinline[language=colang]|la| and include it into the resulting lifetime, since resulting lazy list captures initial list.
+The \lstinline[language=colang]|ba| is not used in the result type, because it includes \lstinline[language=colang]|b| itself.
+\begin{lstlisting}[language=colang]
+    fun lazyMap(xs: LazyList<a>, f: (a)'lf -> b): LazyList<b>'lf+la
+            where a <: Any'la, b <: Any'lb
+\end{lstlisting}
+
+
+
+
+
 
 Various techniques can be employed to reduce boilerplate associated with lifetime polymorphism and the specification of bounds. % todo dependent sugar
 For example, the lifetime elision mechanism in the Rust language~\cite{matsakis2014rust} uses heuristics to automatically insert lifetime variables, thereby alleviating the need for explicit annotation.
@@ -1564,7 +1594,7 @@ Although this approach is relatively simple and well-studied, it is often regard
 It introduces a distinct concept of effects that programmers must consistently consider, which can increase cognitive overhead and reduce accessibility.
 
 Row-based effect systems can be conceptualized as systems that type dynamically bound free variables (i.e., effect operations) in an effect-style manner, analogous to the Reader monad.
-In contrast, our approach leverages implicit parameters, which correspond to a coeffect-style~\cite{petricek2014coeffects}.
+In contrast, our approach leverages implicit parameters, which correspond to a coeffect-style~\cite{petricek2014coeffects}. % todo can supports lexical scoping
 
 \subsection{Capability-based effect systems} \label{subsec:overview-caps}
 
