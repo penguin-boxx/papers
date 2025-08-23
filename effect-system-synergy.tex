@@ -590,22 +590,19 @@ As a result, these type parameters may be instantiated with tracked types:\footn
 
 Upon capturing, an unknown lifetime of a type argument is approximated by the lifetime of its bound.
 Consider the most permissive type for the \lstinline[language=colang]|lazyMap| function.
-For the parameter \lstinline[language=colang]|a| we use the polymorphic bound \lstinline[language=colang]|la| and include it into the resulting lifetime, since resulting lazy list captures initial list.
+For the parameter \lstinline[language=colang]|a| we use the polymorphic bound \lstinline[language=colang]|la| and include it into the resulting lifetime, since the resulting lazy list captures the initial list.
 The \lstinline[language=colang]|ba| is not used in the result type, because it includes \lstinline[language=colang]|b| itself.
 \begin{lstlisting}[language=colang]
     fun lazyMap(xs: LazyList<a>, f: (a)'lf -> b): LazyList<b>'lf+la
             where a <: Any'la, b <: Any'lb
 \end{lstlisting}
 
-
-
-
-
-
-Various techniques can be employed to reduce boilerplate associated with lifetime polymorphism and the specification of bounds. % todo dependent sugar
-For example, the lifetime elision mechanism in the Rust language~\cite{matsakis2014rust} uses heuristics to automatically insert lifetime variables, thereby alleviating the need for explicit annotation.
-In our approach, using the \texttt{scoped} keyword without a specific lifetime parameter similarly invokes the elision mechanism.
-We will discuss this technique, along with alternative methods, in Section~\ref{subsec:lifetime-poly-enhancement}.
+Various techniques can be employed to mitigate the boilerplate associated with lifetime polymorphism.
+For instance, the lifetime elision mechanism in the Rust language~\cite{matsakis2014rust} utilizes heuristics to automatically insert lifetime variables, thus reducing the need for explicit annotations.
+This technique, along with dependent typing-like syntactic sugar, will be discussed in Section~\ref{subsec:lifetime-poly-enhancement}.
+\begin{lstlisting}[language=colang]
+    fun lazyMap(xs: LazyList<a>, f: (a)'lf -> b): LazyList<b>'f+xs
+\end{lstlisting}
 
 The utility of type-based escape analysis extends well beyond its role in the construction of effect systems.
 Specifically, it can be leveraged to reduce the number of heap allocations~\cite{lorenzen2024oxidizing}, enable borrowing for the ownership-based resource management~\cite{matsakis2014rust, lorenzen2024oxidizing}, and ensure the safety of non-local returns~\cite{akhin2021kotlin}.
