@@ -742,9 +742,10 @@ The main considerations that have shaped this syntax are as follows:
             \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{\alpha}\ldotp\overline{\tau}\to\sigma}\} \\
             \text{Free type variables} & & ftv(\cdot) \\
         \end{array}\\
-        \begin{aligned}
-            \text{Evaluation context } E \Coloneqq \square \vor E \ap \overline{\tau} \vor E \ap \overline{t}\ap \overline{t} \vor v \ap (\overline{v}, E, \overline{t}) \ap \overline{t} \vor v \ap \overline{v} \ap (\overline{v}, E, \overline{t}) \vor K\ap\overline{\tau}\ap(\overline{v}, E, \overline{t}) \vor handler_m ~ E
-        \end{aligned}\\
+        \begin{array}{ccl}
+            \text{Evaluation context} & E & \Coloneqq \square \vor E \ap \overline{\tau} \vor E \ap \overline{t}\ap \overline{t} \vor v \ap (\overline{v}, E, \overline{t}) \ap \overline{t} \vor v \ap \overline{v} \ap (\overline{v}, E, \overline{t}) \vor K\ap\overline{\tau}\ap(\overline{v}, E, \overline{t}) \\
+            && \vor match\ap E\ap \{\overline{K\ap\overline{x}\to t}\} \vor perform~op~x~\overline{\tau}~(\overline{v}, E, \overline{t}) \vor handler_m ~ E
+        \end{array}
     \end{gather*}
     \caption{Syntax of $Core$.}
     \label{fig:core-syntax}
