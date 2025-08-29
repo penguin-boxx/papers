@@ -787,9 +787,9 @@ Let us highlight the most significant aspects of our operational semantics, as p
             \\
             \text{(app)} &(\lambda \overline{x}~\overline{y}\ldotp t) \ap \overline{v} \ap \overline{v'} &\longrightarrow &[\overline{x\to v}, \overline{y\to v'}]\ap t
             \\
-            \text{(match)} &match ~K \ap \overline{v}~ with ~ \{ \overline{K_i \ap \overline{x} \to u_i}\} &\longrightarrow &[\overline{x\to v}]\ap u_k, \text{ where } K = K_k
+            \text{(match)} &match ~K \ap \overline{v} ~ \{ \overline{K_i \ap \overline{x} \to u_i}\} &\longrightarrow &[\overline{x\to v}]\ap u_k, \text{ where } K = K_k
             \\
-            \text{(handle)} &handle ~ x : T \ap \overline{\tau} ~with~h~in~t &\longrightarrow & handler_m ~[x \to K_{cap} \ap\overline{\tau}\ap m \ap h] \ap u
+            \text{(handle)} &handle ~ x : T \ap \overline{\tau} ~ \{h\}~in~t &\longrightarrow & handler_m ~[x \to K_{cap} \ap\overline{\tau}\ap m \ap h] \ap t
             \\
             &&\text{where} & m \text{ fresh}, {\color{gray}(K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}) \in \Sigma}
             \\
