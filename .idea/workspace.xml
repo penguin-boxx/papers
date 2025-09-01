@@ -6,6 +6,7 @@
   <component name="ChangeListManager">
     <list default="true" id="15554d1e-d56c-434a-97ac-1758983892bd" name="Changes" comment="Update">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bib.bib" beforeDir="false" afterPath="$PROJECT_DIR$/bib.bib" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/effect-system-synergy.tex" beforeDir="false" afterPath="$PROJECT_DIR$/effect-system-synergy.tex" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -82,22 +83,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1729770043791</updated>
-    </task>
-    <task id="LOCAL-00065" summary="Update">
-      <option name="closed" value="true" />
-      <created>1750621257464</created>
-      <option name="number" value="00065" />
-      <option name="presentableId" value="LOCAL-00065" />
-      <option name="project" value="LOCAL" />
-      <updated>1750621257464</updated>
-    </task>
-    <task id="LOCAL-00066" summary="Update">
-      <option name="closed" value="true" />
-      <created>1750672016289</created>
-      <option name="number" value="00066" />
-      <option name="presentableId" value="LOCAL-00066" />
-      <option name="project" value="LOCAL" />
-      <updated>1750672016289</updated>
     </task>
     <task id="LOCAL-00067" summary="Update">
       <option name="closed" value="true" />
@@ -475,7 +460,23 @@
       <option name="project" value="LOCAL" />
       <updated>1755978240300</updated>
     </task>
-    <option name="localTasksCounter" value="114" />
+    <task id="LOCAL-00114" summary="Update">
+      <option name="closed" value="true" />
+      <created>1756478157158</created>
+      <option name="number" value="00114" />
+      <option name="presentableId" value="LOCAL-00114" />
+      <option name="project" value="LOCAL" />
+      <updated>1756478157159</updated>
+    </task>
+    <task id="LOCAL-00115" summary="Update">
+      <option name="closed" value="true" />
+      <created>1756479119589</created>
+      <option name="number" value="00115" />
+      <option name="presentableId" value="LOCAL-00115" />
+      <option name="project" value="LOCAL" />
+      <updated>1756479119589</updated>
+    </task>
+    <option name="localTasksCounter" value="116" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

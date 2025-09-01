@@ -664,8 +664,8 @@ The following computation sums the results of two invocations of \lstinline[lang
 \begin{lstlisting}[language=colang]
     effect Reader<e> { op ask(): e }
 
-    handle r: Reader<Int> { op ask() resume(42) }
-    perform r.ask() + perform r.ask()
+    handle r: Reader<Int> { op ask() resume(42) } // like 'context let r = 42'
+    perform r.ask() + perform r.ask()             // like 'r + r'
 \end{lstlisting}
 
 To implement exception handling, the \texttt{throw} operation can be defined to discard the current continuation, effectively aborting the remainder of the computation.
@@ -673,8 +673,8 @@ For instance, the following program returns the first thrown value 1:
 \begin{lstlisting}[language=colang]
     effect Exception<e> { op raise(e): a }
 
-    handle h: Exception<Int> { op raise(e) e }
-    perform h.raise(1) + perform h.raise(2)
+    handle h: Exception<Int> { op raise(e) e } // like 'catch'
+    perform h.raise(1) + perform h.raise(2)    // like 'throw 1 + throw 2'
 \end{lstlisting}
 
 Other algebraic effects, such as mutable state and nondeterminism, can likewise be implemented using the \texttt{handle} construct~\cite{plotkin2013handling}.
@@ -753,13 +753,13 @@ The main considerations that have shaped this syntax are as follows:
 
 Note that the type of first-class functions contains a list of contextual argument types.
 This enables us to type abstractions over handlers.
-For example, the following function establishes an execution context by introducing a handler for an exception type \texttt{E}:
+For example, the following function establishes an execution context by introducing a handler for an exception type \lstinline[language=colang]{E}:
 \begin{lstlisting}[language=colang]
     fun withE(f: context(Handler<E>) () -> r): r =
         try { f() } catch (e: E) { ... }
 \end{lstlisting}
 
-We assume that the effect context $\Sigma$ is populated by user-defined \texttt{effect} declarations, analogous to those found in Koka~\cite{leijen2017type}.
+We assume that the effect context $\Sigma$ is populated by user-defined \lstinline[language=colang]{effect} declarations, analogous to those found in Koka~\cite{leijen2017type}.
 Specifically, for a program containing the following declaration,
 \begin{lstlisting}[language=colang]
     effect Eff<a> {
@@ -811,18 +811,18 @@ Let us highlight the most significant aspects of our operational semantics, as p
     \label{fig:core-operational}
 \end{figure}
 
-It is important to note that every \texttt{perform} operation in our system is explicitly directed to a particular handler instance.
-As a result, there is no issue of accidental effect handling, so the effect encapsulation is achieved by default~\cite{lindley2018encapsulating}. % todo more citations
+It is important to note that every \lstinline[language=colang]{perform} operation in our system is explicitly directed to a particular handler instance.
+As a result, there is no issue of accidental effect handling, so the effect encapsulation is achieved by default~\cite{lindley2018encapsulating, zhang2016accepting, brachthauser2020effects}.
 
-For instance, consider a function \texttt{withE1} that installs a handler for exception \texttt{E1}.
-If a computation \texttt{f} potentially raises exception \texttt{E2}, \texttt{withE1} will not be able to intercept this exception, since it does not provide \texttt{f} with the corresponding capability for \texttt{E2}:
+For instance, consider a function \lstinline[language=colang]{withE1} that installs a handler for exception \lstinline[language=colang]{E1}.
+If a computation \lstinline[language=colang]{f} potentially raises exception \lstinline[language=colang]{E2}, \lstinline[language=colang]{withE1} will not be able to intercept this exception, since it does not provide \lstinline[language=colang]{f} with the corresponding capability for \lstinline[language=colang]{E2}:
 \begin{lstlisting}[language=colang]
     fun withE1(f: context(Handler<E1>) () -> r): r =
         try { f() } catch (e: E1) { ... } catch (e: E2) { /* unreachable */ }
 \end{lstlisting}
 
 Since handlers are propagated explicitly to the operation call site, our approach eliminates the need for dynamic handler lookup and the collection of the continuation when the callee operation is tail-resumptive~\cite{xie2020effect}.
-In a low-level implementation, such a \texttt{perform} construct can thus be compiled to a direct virtual call, further improving efficiency. % todo citation
+In a low-level implementation, such a \lstinline[language=colang]{perform} construct can thus be compiled to a direct virtual call, further improving efficiency.
 
 %TODO theorems % todo theorem about determinism (and mb others)
 
@@ -831,7 +831,7 @@ In a low-level implementation, such a \texttt{perform} construct can thus be com
 \begin{itemize}
     \item The typing rules for $Core$ (see Figure~\ref{fig:core-typing}) are presented in algorithmic form.
     \item For conciseness, we omit both type well-formedness conditions and the (invariant) effect context~$\Sigma$.
-    \item Each entry in the effect context~$\Sigma$ can be uniquely identified by its capability type; thus, we treat~$\Sigma$ as a mapping: $\Sigma(T) = \forall\overline{\alpha}\ldotp sig \iff K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}\in\Sigma$.
+    \item Each entry in the effect context~$\Sigma$ can be uniquely identified by its capability type; thus, we treat~$\Sigma$ as a mapping: $\Sigma(T) = \left< \overline{\alpha}, sig \right> \iff K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}\in\Sigma$.
     \item All variable bindings within the typing context are assumed to be unique with respect to variable names, so rules $Var$ and $CVar$ do not contradict each other.
 \end{itemize}
 
@@ -842,7 +842,7 @@ In a low-level implementation, such a \texttt{perform} construct can thus be com
         \begin{array}{ccc}
             \infer[Var]{\Gamma\vdash x : s}{x : s \in \Gamma} &
             \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma} &
-            \infer[Ctor]{\Gamma\vdash K : \forall \overline{\alpha}\ldotp \tau\to T\ap\overline{\alpha}}{K : \forall \overline{\alpha}\ldotp \tau\to T\ap\overline{\alpha} \in \Gamma} % todo can avoid this rule?
+            \infer[Ctor]{\Gamma\vdash K : \forall \overline{\alpha}\ldotp \tau\to T\ap\overline{\alpha}}{K : \forall \overline{\alpha}\ldotp \tau\to T\ap\overline{\alpha} \in \Gamma}
         \end{array} \\
         \begin{array}{cc}
             \infer[TLam]{
@@ -872,17 +872,17 @@ In a low-level implementation, such a \texttt{perform} construct can thus be com
             \overline{\Gamma\vdash u_2 : \tau_2}
         }\\
         \infer[Match]{
-            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_j} \to u_i }\} : \eta
+            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_{ij}} \to u_i }\} : \eta
         }{
             \Gamma\vdash t : T \ap\overline{\tau} &
-            K_i : \forall \overline{\alpha}\ldotp \overline{\sigma_j} \to T\ap\overline{\alpha} \in \Gamma &
-            \overline{x_j : [\overline{\alpha\to\tau}]\ap \sigma_j}, \Gamma \vdash u_i : \eta
+            \Gamma\vdash K_i : \forall \overline{\alpha}\ldotp \overline{\sigma_{ij}} \to T\ap\overline{\alpha} &
+            \overline{x_{ij} : [\overline{\alpha\to\tau}]\ap \sigma_{ij}}, \Gamma \vdash u_i : \eta
         }\\
         \infer[Perform]{
             \Gamma\vdash perform \ap op\ap \overline{\tau_2}\ap x\ap \overline{t} : \theta\ap\eta
         }{
             \Gamma\vdash x : T\ap \overline{\tau_1} &
-            \Sigma(T) = \forall\overline{\alpha}\ldotp sig &
+            \Sigma(T) = \left< \overline{\alpha}, sig \right> &
             op : \forall\overline{\beta}\ldotp \overline{\sigma}\to\eta \in sig &
             \theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}] &
             \overline{\Gamma\vdash t : \theta\ap\sigma}
@@ -894,12 +894,12 @@ In a low-level implementation, such a \texttt{perform} construct can thus be com
                 x :_c T\ap\overline{\tau}, \Gamma\vdash u : \eta
             \end{gathered}
             &
-            \begin{array}{ll}
-                \overline{\beta}_i\not\cap ftv(\eta) & % todo beautify intersection
-                \Sigma(T) = \forall\overline{\alpha}\ldotp sig \hspace{0.6em} op_i : \forall\overline{\beta}_i\ldotp \overline{\sigma}_i\to\sigma'_i \in sig
+            \begin{array}{cc}
+                \Sigma(T) = \left< \overline{\alpha}, sig \right> &
+                op_i : \forall\overline{\beta_i}\ldotp \overline{\sigma_i}\to\sigma'_i \in sig
                 \\
                 \theta = [\overline{\alpha\to\tau}] &
-                \Gamma\vdash\theta\ap t_i : \forall \overline{\beta}_i\ldotp \overline{\theta\ap\sigma_i}\to(\theta\ap\sigma_i'\to\eta)\to\eta
+                \Gamma\vdash\theta\ap t_i : \forall \overline{\beta_i}\ldotp \ctx{}(\overline{\theta\ap\sigma_i}, \theta\ap\sigma_i'\to\eta)\to\eta
             \end{array}
         }\\
         \infer[Cap]{
