@@ -736,7 +736,7 @@ The main considerations that have shaped this syntax are as follows:
             \text{Monotypes} & \tau, \sigma, \eta &\Coloneqq \alpha \vor T \ap \overline{\tau} \vor \ctx{e} \overline{\tau} \to \sigma \\
             \text{Type schemas} & s &\Coloneqq \forall\overline{\alpha}\ldotp \tau \\
             \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
-            \text{Typing contexts} & \Gamma &\Coloneqq \epsilon \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
+            \text{Typing contexts} & \Gamma, G &\Coloneqq \epsilon \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
             &&\vor K : \forall\overline{\alpha}\ldotp \overline{\tau}\to T\ap \overline{\alpha}, \Gamma \\
             \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}}\} \\
             \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{\alpha}\ldotp\overline{\tau}\to\sigma}\} \\
@@ -823,8 +823,6 @@ If a computation \lstinline[language=colang]{f} potentially raises exception \ls
 
 Since handlers are propagated explicitly to the operation call site, our approach eliminates the need for dynamic handler lookup and the collection of the continuation when the callee operation is tail-resumptive~\cite{xie2020effect}.
 In a low-level implementation, such a \lstinline[language=colang]{perform} construct can thus be compiled to a direct virtual call, further improving efficiency.
-
-%TODO theorems % todo theorem about determinism (and mb others)
 
 \subsection{Typing rules for $Core$} \label{subsec:core-typing}
 
@@ -929,8 +927,6 @@ In a low-level implementation, such a \lstinline[language=colang]{perform} const
     \label{fig:core-typing}
 \end{figure}
 
-%TODO formulate properties
-
 \section{Design of implicit parameters} \label{sec:implicits}
 
 In this section we discuss design decisions for implicit parameters feature that enhance its suitability as a component of a practical effect system.
@@ -971,16 +967,16 @@ Implicits inference should use these names to refer directly to contextual bindi
         \infer[CtxApp]{
             \Gamma\vdash t\ap\overline{u} : \sigma \step t_{c} \ap \overline{x}\ap\overline{u_{c}}
         }{
-            \Gamma\vdash t : \ctx{e} \overline{\tau} \to \sigma \step t_{c} &
-            \Gamma\vdash_e\overline{x} &
-            \overline{\Gamma\vdash u : \tau \step u_{c}}
+            \Gamma\vdash t : \ctx{\overline{\tau_1}} \overline{\tau_2} \to \sigma \step t_{c} &
+            \overline{\Gamma\vdash_{\tau_1}\overline{x}} &
+            \overline{\Gamma\vdash u : \tau_2 \step u_{c}}
         } \\
         \begin{array}{cc}
-            \mathframebox{\Gamma\vdash_e \overline{x}} &
+            \mathframebox{\Gamma\vdash_\tau x} &
             \infer[Infer]{
-                \Gamma\vdash_{\overline{\tau}} \overline{x}
+                G, x :_c \tau, \Gamma\vdash_{\tau} x
             }{
-                \overline{x :_c \tau}\subset \Gamma
+                y :_c \tau \not\in G
             }
         \end{array}
     \end{gather*}
@@ -992,36 +988,36 @@ There is a design decision to be made, whether inference should depend solely on
 The latter approach is more complex, as it necessitates storing variable names in effect rows and, furthermore, precludes the renaming of implicit parameters under $\alpha$-equivalence.
 This restriction can make programs more fragile with respect to renaming.
 On the other hand, this approach permits simultaneous use of multiple effects of the same type.
-This problem has attracted significant attention in the research community. % todo citations
+%This problem has attracted significant attention in the research community~\cite{leijen2014koka}. % todo citations
 
 However, in this work, we use the first approach and argue that, in practical programming, relying on multiple effects of the same type may be undesirable.
 Instead, we advocate for the definition and use of domain-specific effects rather than directly employing general-purpose ones.
-For instance, a domain-specific effect such as \texttt{UserRepository} offers a higher level of abstraction compared to a general-purpose \texttt{Database} effect.
+For instance, a domain-specific effect such as \lstinline[language=colang]{UserRepository} offers a higher level of abstraction compared to a general-purpose \lstinline[language=colang]{Database} effect.
 
-Another design decision concerns the timing of implicit parameter substitution: should it occur immediately upon variable mention, or should it be deferred until application?
-This question is analogous to type instantiation in the presence of first-class polymorphism, where type inference determines type parameters~\cite{emrich2020freezeml}. % todo verify citation
-Both strategies have their advantages: immediate substitution is convenient when working with contextually polymorphic functions, such as \texttt{map(xs, f)}, whereas deferred substitution facilitates effect abstraction, as in constructs like \texttt{withSomeException(f)}. % todo introduce effect abstraction somewhere % todo citations to kotlin, haskell and something
+Another design decision concerns the timing of inference of implicit parameters: should it occur immediately upon variable mention, or should it be deferred until application?
+This question is analogous to type instantiation in the presence of first-class polymorphism, where type inference determines type parameters~\cite{emrich2020freezeml}.
+We consider that immediate substitution is preferable, because it is convenient when working with contextually polymorphic functions, such as \lstinline[language=colang]{map(xs, f)}~\cite{KEEP-context-parameters}.
+However, in our formal elaboration we use another approach for brevity.
 
 Actually, this choice determines the default behavior, since either approach can be emulated by the other via $\eta$-expansion.
 For instance, let us assume that substitution is performed at application time:
 \begin{lstlisting}[language=colang]
-    f : context(IO) () -> Unit; g : (() -> Unit) -> Unit
-    g(() => f())
+    context(_: IO) fun f(): Unit
+    fun g(_: () -> Unit): Unit
+    g(() => f()) // captures IO capability
 \end{lstlisting}
 Alternatively, assume that substitution occurs at the point where a function is mentioned:
 \begin{lstlisting}[language=colang]
-    f : context(IO) () -> Unit; g : (context(IO) () -> Unit) -> Unit
-    g(context(_: Eff) () => f()) // abstracts over contextual parameters
+    context(_: IO) fun f(): Unit
+    fun g(_: context(IO) () -> Unit): Unit
+    g(context(_: IO) () => f()) // abstracts over contextual parameters
 \end{lstlisting}
-% todo special syntax for explicitly passed implicits
 
-%TODO properties
-
-\subsection{System $Core^{im+<:}$ with implicit parameters and subtyping} \label{subsec:im-sub}
+\subsection{System $Core^{im+<:}$ with implicit parameters and subtyping on effect rows} \label{subsec:im-sub}
 
 It is desirable to support a form of subtyping on effect rows, as this allows functions with fewer contextual requirements to be used in more permissive contexts in a natural way.
-For example, \texttt{withStd} is a function that provides default implementation for several effects.
-We should therefore be able to pass to \texttt{withStd} a function that only utilizes a subset of those effects:
+For example, \lstinline[language=colang]{withStd} is a function that provides default implementation for several effects.
+We should therefore be able to pass to \lstinline[language=colang]{withStd} a function that only utilizes a subset of those effects:
 \begin{lstlisting}[language=colang]
     fun withStd(f: context(IO, Allocator, Random) () -> r): r
     withStd(g) // g : context(IO) () -> Unit
@@ -1030,15 +1026,17 @@ We should therefore be able to pass to \texttt{withStd} a function that only uti
 % todo find literature
 % todo row polymorphism can help somehow?
 % todo cite papers about row types
+% todo what if generate application (like for dictionaries) to reorder effect rows (do inhabitation of some form)?
+% todo Structural Subtyping as Parametric Polymorphism
 Contexts can be modeled as structural record types with width and permutation subtyping.
 However, a straightforward implementation of such records as dictionaries tends to be inefficient in terms of both time and space complexity.
 
 To enable efficient subtyping, we restrict subtyping to be shallow, meaning that one function type is a subtype of another only if their effect rows are in a subtyping relationship, while the argument and return types remain identical:
 \[
-    \infer[FunSub]{\ctx{e} \tau \to \sigma <: \ctx{e'} \tau\to\sigma}{e' <: e}
+    \infer[FunSub]{\ctx{e} \tau \to \sigma <:_c \ctx{e'} \tau\to\sigma}{e' <: e}
 \]
 
-With this restriction, shallow subtyping can be implemented via $\eta$-expansion (see Figure~\ref{sig:fim-sub-app}).
+With this restriction, shallow subtyping can be implemented via $\eta$-expansion (see Figure~\ref{fig:fim-sub-app}).
 The relation $\Gamma\vdash t\Leftarrow \tau \step t_c$ applies $\eta$-expansion to $t$ when a functional type $\tau$ is expected.
 
 \begin{figure}
@@ -1046,48 +1044,42 @@ The relation $\Gamma\vdash t\Leftarrow \tau \step t_c$ applies $\eta$-expansion 
     \begin{gather*}
         \mathframebox{\Gamma\vdash t : \tau \step t_c} \\
         \infer[App]{
-            \Gamma\vdash t\ap\overline{u} : \eta \step t_c \ap \overline{x} \ap \overline{u_c}
+            \Gamma\vdash t\ap\overline{u} : \sigma \step t_c \ap \overline{x} \ap \overline{u_c}
         }{
-            \Gamma\vdash t : ctx(\overline{\tau})~\overline{\sigma}\to \eta \step t_c
+            \Gamma\vdash t : ctx(\overline{\tau_1})~\overline{\tau_2}\to \sigma \step t_c
             &
-            \Gamma \vdash_{\overline{\tau}} \overline{x}
+            \overline{\Gamma \vdash_{\tau_1} x}
             &
-            \overline{\Gamma\vdash u : \sigma'}
+            \overline{\Gamma\vdash u : \tau_2'}
             &
-            \overline{\sigma' <: \sigma}
+            \overline{\tau_2' <:_c \tau_2}
             &
-            \overline{\Gamma\vdash u \Leftarrow \sigma \step u_c}
+            \overline{\Gamma\vdash u \Leftarrow \tau_2 \step u_c}
         } \\
         \mathframebox{\Gamma\vdash t \Leftarrow \tau \step t_c} \\
-        \begin{array}{cc}
+        \begin{array}{c}
             \infer[AppArg]{
                 \Gamma\vdash t \Leftarrow \tau \step t_c
             }{
                 \Gamma\vdash t : \tau \step t_c
             }
-            &
+            \\
             \infer[AppArgCtx]{
-                \Gamma \vdash t \Leftarrow ctx(\overline{\tau}) ~\overline{\sigma}\to\eta\step \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t_c\ap \overline{x'}\ap\overline{y}
+                \Gamma \vdash t \Leftarrow ctx(\overline{\tau_1}) ~\overline{\tau_2}\to\sigma\step \lambda \overline{x : \tau_1}~\overline{y : \tau_2}\ldotp t_c\ap \overline{x'}\ap\overline{y}
             }{
-                \Gamma \vdash t : ctx(\overline{\tau'}) ~\overline{\sigma}\to\eta \step t_c
+                \Gamma \vdash t : ctx(\overline{\tau_1'}) ~\overline{\tau_2}\to\sigma \step t_c
                 &
-                \overline{x :_c \tau} \vdash_{\overline{\tau'}} \overline{x'}
+                \overline{\overline{x :_c \tau_1} \vdash_{\tau_2'} x'}
                 &
-                \overline{x~y \text{ fresh}}
+                \overline{x \text{ fresh}}
+                &
+                \overline{y \text{ fresh}}
             }
         \end{array}
     \end{gather*}
-    \caption{Application rule for $Core^{im + <:}$.}
-    \label{sig:fim-sub-app}
+    \caption{Application rule of $Core^{im + <:}$.}
+    \label{fig:fim-sub-app}
 \end{figure}
-
-% todo link to bidirectional typing
-
-% todo big lambda inference
-
-% todo will subtyping break inference?
-
-% todo what if generate application (like for dictionaries) to reorder effect rows (do inhabitation of some form)?
 
 \section{Design of type-based escape analysis} \label{sec:escape}
 
