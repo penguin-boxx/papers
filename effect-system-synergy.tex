@@ -431,7 +431,7 @@ However, this approach comes at the expense of other benefits: specifically, it 
 
 To regain static type safety, we approximate dynamically scoped free variables using implicit function parameters~\cite{lewis2000implicit}.
 At the declaration site, we introduce a \lstinline[language=colang]|context| keyword to define a group of implicit parameters, which are automatically supplied by the compiler at the call site (see Figure\ \ref{fig:implicits}).
-To make a value available for implicit parameter resolution, we employ the \texttt{context let} declaration syntax.
+To make a value available for implicit parameter resolution, we employ the \lstinline[language=colang]{context let} declaration syntax.
 
 \begin{figure}[h]
     \begin{tabular}{p{0.5\textwidth} rl}
@@ -747,7 +747,7 @@ The main considerations that have shaped this syntax are as follows:
             && \vor match\ap E\ap \{\overline{K\ap\overline{x}\to t}\} \vor perform~op~x~\overline{\tau}~(\overline{v}, E, \overline{t}) \vor handler_m ~ E
         \end{array}
     \end{gather*}
-    \caption{Syntax of $Core$.}
+    \caption{Syntax for $Core$.}
     \label{fig:core-syntax}
 \end{figure}
 
@@ -807,7 +807,7 @@ Let us highlight the most significant aspects of our operational semantics, as p
     \[
         \hspace{-15em}\infer[\text{(step)}]{E[t]\longrightarrow E[t']}{t\longrightarrow t'}
     \]
-    \caption{Operational semantics of $Core$.}
+    \caption{Operational semantics for $Core$.}
     \label{fig:core-operational}
 \end{figure}
 
@@ -870,11 +870,11 @@ In a low-level implementation, such a \lstinline[language=colang]{perform} const
             \overline{\Gamma\vdash u_2 : \tau_2}
         }\\
         \infer[Match]{
-            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_{ij}} \to u_i }\} : \eta
+            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\} : \eta
         }{
             \Gamma\vdash t : T \ap\overline{\tau} &
-            \Gamma\vdash K_i : \forall \overline{\alpha}\ldotp \overline{\sigma_{ij}} \to T\ap\overline{\alpha} &
-            \overline{x_{ij} : [\overline{\alpha\to\tau}]\ap \sigma_{ij}}, \Gamma \vdash u_i : \eta
+            \Gamma\vdash K_i : \forall \overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\overline{\alpha} &
+            \overline{x_{i} : [\overline{\alpha\to\tau}]\ap \sigma_{i}}, \Gamma \vdash u_i : \eta
         }\\
         \infer[Perform]{
             \Gamma\vdash perform \ap op\ap \overline{\tau_2}\ap x\ap \overline{t} : \theta\ap\eta
@@ -1077,7 +1077,7 @@ The relation $\Gamma\vdash t\Leftarrow \tau \step t_c$ applies $\eta$-expansion 
             }
         \end{array}
     \end{gather*}
-    \caption{Application rule of $Core^{im + <:}$.}
+    \caption{Application rule for $Core^{im + <:}$.}
     \label{fig:fim-sub-app}
 \end{figure}
 
@@ -1098,7 +1098,6 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
 \end{itemize}
 
 % todo say about the default constraints (different in different places)
-% todo syntax of lifetimes deliberately choosen to resemble a generic parameter
 
 %! suppress = MissingLabel
 \begin{figure}
@@ -1107,17 +1106,19 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
             \text{Type variables} && \alpha, \beta \\
             \text{Type constructors} && T \\
             \text{Lifetime variables} && \graybox{l} \\
-            \text{Lifetimes} & \graybox{\Delta} &\Coloneqq l \vor local \vor free \vor \&\overline{\Delta} \\
+            \text{Lifetimes} & \graybox{\Delta} &\Coloneqq l \vor local \vor free \vor +\overline{\Delta} \vor \star \\
             \text{Monotypes} & \tau, \sigma, \eta &\Coloneqq \alpha \vor T \ap \graybox{\Delta} \ap \overline{\tau} \vor \ctx{e} \graybox{\Delta}~\overline{\tau} \to \sigma \\
             \text{Type schemas} & s &\Coloneqq \forall \graybox{\overline{l}}~\overline{(\alpha \graybox{<: \tau})}\ldotp \sigma \\
-            \text{Position sign} & \graybox{p} & \Coloneqq + \vor - \\
+            \text{Position sign} & \graybox{p} & \Coloneqq + \vor - \vor inv \\
             \text{Free type variables} & & ftv^p(\cdot) \\
-            \text{Lifetimes in positive positions} & & \graybox{lt_\Gamma^p(\cdot)} \\
+            \text{Lifetimes} & & \graybox{lt_\Gamma^p(\cdot)} \\
             \text{Free lifetime variables} & & \graybox{flt^p(\cdot)} \\
             \text{Least upper bound} & & \graybox{lub(\cdot)} \\
+            \text{Eliminate lifetimes} & & \graybox{elim^p_{\Delta, \overline{l}}(\cdot)} \\
             \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
-            \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \vor \graybox{\alpha <: \tau, \Gamma} \\
-            & &\vor K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{\left(\&\overline{lt_\emptyset^+(\tau)}\right)}\ap \overline{\alpha}, \Gamma \\
+            \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
+            & & \vor \graybox{\alpha <: \tau, \Gamma} \vor \graybox{l <: \Delta, \Gamma} \\
+            & &\vor K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{\left(+\overline{lt_\emptyset^+(\tau)}\right)}\ap \overline{\alpha}, \Gamma \\
             \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap \graybox{local} \ap\overline{\alpha}}\} \\
             \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{\alpha}\ldotp\overline{\tau}\to\sigma}\}
         \end{array}
@@ -1140,6 +1141,8 @@ The lifetime of a type variable is approximated by the lifetime of its bounding 
 In some cases, we intentionally employ an empty context to exclude the influence of bounds.
 Also, since type constructor parameters are invariant, they are treated as both positive and negative simultaneously.
 
+% todo lifetimes elimination
+
 Syntax of terms follows the changes in the syntax of types:
 \[
     \begin{array}{lll}
@@ -1150,7 +1153,7 @@ Syntax of terms follows the changes in the syntax of types:
 
 \subsection{Typing rules for $Core_\Delta$}
 
-Let us explain several key aspects of the typing rules for $Core_\Delta$ (Fig.\ \ref{fig:core-delta-typing}):
+Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure\ \ref{fig:core-delta-typing}):
 \begin{itemize}
     \item \textbf{Lam:} The typing rule for $\lambda$-abstractions guarantees that no tracked value can escape the scope of the function via its return value.
     Analogous to the treatment of data constructors, the lifetime associated with a function type is determined as the intersection of the lifetimes of all captured variables.
@@ -1178,7 +1181,7 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Fig.\ 
         \begin{array}{ccc}
             \infer[Var]{\Gamma\vdash x : s}{x : s \in \Gamma} &
             \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma} &
-            \infer[Ctor]{\Gamma\vdash K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap(\&\overline{lt_\emptyset^+(\tau)})\ap \overline{\alpha}}{K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap(\&\overline{lt_\emptyset^+(\tau)})\ap \overline{\alpha} \in \Gamma} % todo can avoid this rule?
+            \infer[Ctor]{\Gamma\vdash K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset^+(\tau)}\right)\ap \overline{\alpha}}{K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset^+(\tau)}\right)\ap \overline{\alpha} \in \Gamma}
         \end{array} \\
         \begin{array}{cc}
             \infer[TLam]{
@@ -1195,47 +1198,47 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Fig.\ 
             }
         \end{array} \\
         \infer[Lam]{
-            \Gamma\vdash \lambda \overline{x : \tau} ~ \overline{y : \sigma} \ldotp t : ctx(\overline{\tau}) \left(\&{lt_{\Gamma\setminus ftv^-(\overline{\tau})\setminus ftv^-(\overline{\sigma})\setminus ftv^+(\eta)}^+(\overline{s})}\right)~ \overline{\sigma} \to \eta
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) \left(+{lt_{\Gamma\setminus ftv^-(\overline{\tau_1}\cup\overline{\tau_2}) \setminus ftv^+(\sigma)}^+(\overline{s})}\right)~ \overline{\tau_2} \to \sigma
         }{
-            \overline{x :_c \tau}, \overline{y : \sigma}, \Gamma\vdash t : \eta
+            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma
             &
             \Gamma\vdash_{fv(t)\setminus \overline{x}\setminus\overline{y}}\overline{s}
             &
-            local\not\in lt_\emptyset^+(\eta)
+            local, \star \not\in lt_\emptyset^+(\sigma)
         } \\
         \infer[App]{
-            \Gamma\vdash t \ap \overline{u_1} \ap \overline{u_2} : \eta
+            \Gamma\vdash t \ap \overline{u_1} \ap \overline{u_2} : \sigma
         } {
-            \Gamma\vdash t : \ctx{\overline{\tau}} \Delta~\overline{\sigma}\to\eta
+            \Gamma\vdash t : \ctx{\overline{\tau_1}} \Delta~\overline{\tau_2}\to\sigma
             &
             \begin{array}{c}
-                \overline{\Gamma\vdash u_1 : \tau'} \\
-                \overline{\Gamma\vdash\tau' <: \tau}
+                \overline{\Gamma\vdash u_1 : \tau_1'} \\
+                \overline{\Gamma\vdash\tau_1' <: \tau_1}
             \end{array}
             &
             \begin{array}{c}
-                \overline{\Gamma\vdash u_2 : \sigma'} \\
-                \overline{\Gamma\vdash\sigma' <: \sigma}
+                \overline{\Gamma\vdash u_2 : \tau_2'} \\
+                \overline{\Gamma\vdash\tau_2' <: \tau_2}
             \end{array}
         }\\
         \infer[Match]{
-            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_j} \to u_i }\}  : lub(\overline{\eta_i})
+            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l_i}}^+\ap(\eta_i)}\right)
         }{
             \begin{array}{cc}
-                K_i : \forall \overline{l}~\overline{\alpha}\ldotp \overline{\sigma}_j \to T\ap(\&\overline{lt_\emptyset^+(\sigma)})\ap\overline{\alpha} \in \Gamma
+                \Gamma\vdash K_i : \forall \overline{l_i}~\overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\left(+\overline{lt_\emptyset^+(\sigma_i)}\right)\ap\overline{\alpha}
                 &
                 \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
                 \\
-                \theta = [\overline{flt_+(\sigma_j)\to\Delta}, \overline{flt_{-}(\sigma_j)\to free}] \hspace{1em} flt_+(\overline{\sigma}_j) \not\cap flt_{-}(\overline{\sigma}_j)
+                \overline{l_i' \text{ fresh}}
                 &
-                \overline{x_j : [\overline{\alpha\to\tau}]\ap\theta\ap\sigma_j'}, \Gamma \vdash u_i : \eta_i
+                \overline{l_i' <: \Delta}, \overline{x_i : [\overline{\alpha\to\tau}]\ap[\overline{l_i\to l_i'}]\ap\sigma_i'}, \Gamma \vdash u_i : \eta_i
             \end{array}
         }\\
         \infer[Perform]{
             \Gamma\vdash perform \ap op\ap \overline{\tau_2}\ap x\ap \overline{t} : \theta\ap\eta
         }{
             \begin{array}{ccc}
-                \Sigma(T) = \forall\overline{\alpha}\ldotp sig &
+                \Sigma(T) = \left< \overline{\alpha}, sig \right> &
                 \Gamma\vdash x : T\ap \Delta \ap \overline{\tau_1} &
                 \overline{\Gamma\vdash t : \sigma'}
                 \\
@@ -1250,17 +1253,15 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Fig.\ 
             \begin{array}{ccc}
                 x :_c T\ap local\ap\overline{\tau}, \Gamma\vdash u : \eta
                 &
-                \overline{\beta}_i\not\cap ftv(\eta)
+                \Sigma(T) = \left< \overline{\alpha}, sig \right>
                 &
-                \Sigma(T) = \forall\overline{\alpha}\ldotp sig
-                \hspace{1em}
-                op_i : \forall\overline{\beta}_i\ldotp \overline{\sigma}_i\to\sigma'_i \in sig
+                op_i : \forall\overline{\beta_i}\ldotp \overline{\sigma_i}\to\sigma'_i \in sig
                 \\
-                local \not\in lt_\emptyset^+(\eta)\cup\overline{lt_\emptyset^+(\theta\ap\sigma_i)}
+                local, \star \not\in lt_\emptyset^+(\eta)\cup\overline{lt_{\overline{\beta <: Any\ap free}, \Gamma}^+(\theta\ap\sigma_i)}
                 &
                 \theta = [\overline{\alpha\to\tau}]
                 &
-                \Gamma\vdash\theta\ap t_i : \forall \overline{\beta}\ldotp \overline{\theta\ap\sigma_i}\to(\theta\ap\sigma_i'\to\eta)\to\eta
+                \Gamma\vdash\theta\ap t_i : \forall \overline{(\beta <: Any\ap free)}\ldotp \ctx{} (\overline{\theta\ap\sigma_i}, \theta\ap\sigma_i'\to\eta)\to\eta
             \end{array}
         }\\
         \infer[Cap]{
@@ -1276,7 +1277,7 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Fig.\ 
         }\\
         \begin{array}{ccccc}
             \mathframebox{\Gamma\vdash_{\overline{x}}\overline{\tau}} &
-            \infer[TypesOf]{\Gamma\vdash_{\overline{x}}\overline{\tau}}{\overline{x :_\cdot \tau} \subset \Gamma} &
+            \infer[TypesOf]{\Gamma\vdash_{\overline{x}}\overline{s}}{\overline{x :_\cdot s} \subset \Gamma} &
             \mathframebox{\Gamma\vdash p} &
             \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
             \infer[Prog]{
@@ -1312,8 +1313,8 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Fig.\ 
             \mathframebox{\Delta' <: \Delta} &
             \infer[SubFree]{free <: \Delta}{} &
             \infer[SubLocal]{\Delta <: local}{} &
-            \infer[Sub\&]{
-                \&\overline{\Delta'} <: \&\overline{\Delta}
+            \infer[Sub+]{
+                +\overline{\Delta'} <: +\overline{\Delta}
             }{
                 \forall\Delta'\in\overline{\Delta'}\ldotp\exists\Delta\in\overline{\Delta}\ldotp \Delta' <: \Delta
             }
@@ -1332,8 +1333,6 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Fig.\ 
 % todo careful checks of escaping for handlers (State example)
 
 % todo mention somewhere that our generics are invariant, with lifetimes as a special case
-
-% todo описать проблемы при типизации хендлеров с сабтайпингом
 
 \subsection{Lifetime tunnelling}
 
@@ -1360,6 +1359,8 @@ be specified for lifetimes:
         (f) => Pair(f(fst(p)), snd(p))
     }
 \end{lstlisting}
+
+% todo implementation section
 
 %Unlike OCaml modal types~\cite{lorenzen2024oxidizing}, our system permits types annotated with lifetimes to instantiate generic parameters.
 %
