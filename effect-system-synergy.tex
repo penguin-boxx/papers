@@ -934,7 +934,7 @@ Throughout the discussion, we introduce a formal calculus with implicit paramete
 
 \subsection{Syntax of $Core^{im}$}
 
-We extend the syntax of $Core$ by introducing omitted application, which allows the first block of contextual arguments to be unspecified:
+We extend the syntax of $Core$ by introducing \emph{omitting application}, which allows the first block of contextual arguments to be unspecified:
 \[
     \begin{array}{lcc}
         \text{Terms} & t, u &\Coloneqq \ldots \vor t\ap\overline{t} \vor \ldots
@@ -1436,10 +1436,11 @@ be specified for lifetimes:
 To extend $Core_\Delta$ with implicit parameters, resulting in $Core_\Delta^{im}$, it is necessary to incorporate omitting application into both the syntax and the translation rules, as described in Section~\ref{sec:implicits}.
 However, several details require careful consideration.
 
-Previously, to select appropriate implicit arguments, we employed type equality between the type of the contextual binding and the expected type of the implicit parameter (see Fig.\ \ref{fig:core-im-core-implicit-inference}).
-However, types in $Core_\Delta$ also include lifetimes, which should not participate in the inference process.
-At the same time, lifetime correctness must still be enforced.
-Therefore, we revise the rules as shown in Figure~\ref{fig:core-im-delta-core-implicit-inference}, where $erase(\cdot)$ denotes an operation that erases all lifetime information by setting all lifetimes to $free$.
+Previously, to select appropriate implicit arguments, we used type equality between the type of the contextual binding and the expected type of the implicit parameter (see Figure\ \ref{fig:core-im-core-implicit-inference}).
+However, since $Core_\Delta$ supports subtyping, we revise these rules as shown in Figure~\ref{fig:core-im-delta-core-implicit-inference}.
+
+The $Infer$ rule selects the nearest appropriate binding that suits as an argument for an implicit parameter of type $\tau$.
+Additionally, the $distinct_{<:}$ operator ensures that least upper bound of every pair of argument types results in $Any$ type constructor.
 
 \begin{figure}
     %! suppress = EscapeAmpersand
@@ -1449,20 +1450,26 @@ Therefore, we revise the rules as shown in Figure~\ref{fig:core-im-delta-core-im
             \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) ~ \overline{\tau_2} \to \sigma \step \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t_c
         }{
             \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma \step t_c &
-            distinct(erase(\overline{\tau_1}))
+            distinct_{<:}(\overline{\tau_1})
         } \\
         \infer[CtxApp]{
             \Gamma\vdash t\ap\overline{u} : \sigma \step t_{c} \ap \overline{x}\ap\overline{u_{c}}
         }{
-            \Gamma\vdash t : \ctx{\overline{\tau_1}} \overline{\tau} \to \sigma \step t_{c} &
-            \Gamma\vdash_{\overline{\tau_1}}\overline{x} &
+            \Gamma\vdash t : \ctx{\overline{\tau_1}} \overline{\tau_2} \to \sigma \step t_{c} &
+            \overline{\Gamma\vdash_{\tau_1} x} &
             \overline{\Gamma\vdash x : \tau_2} &
             \overline{\Gamma\vdash \tau_2 <: \tau_1} &
             \overline{\Gamma\vdash u : \tau \step u_{c}}
         } \\
-        \mathframebox{\Gamma\vdash_{\overline{\tau}} \overline{x}}
-        \text{\hspace{2em}}
-        \infer[Infer]{\Gamma\vdash_{\overline{\tau}} \overline{x}}{\overline{x :_c erase(\tau)}\subset erase(\Gamma)}
+        \begin{array}{cc}
+            \mathframebox{\Gamma\vdash_\tau x} &
+            \infer[Infer]{
+                G, x :_c \sigma, \Gamma\vdash_{\tau} x
+            }{
+                \Gamma\vdash\sigma <: \tau &
+                \not\exists \sigma'\ldotp \sigma' <: \sigma \land y :_c \sigma' \in G
+            }
+        \end{array}
     \end{gather*}
     \caption{Inference of implicit parameters for $Core_\Delta^{im}$.}
     \label{fig:core-im-delta-core-implicit-inference}
@@ -1475,7 +1482,7 @@ This relation treats functional types by verifying subtyping on effect rows as a
     \infer[SubFunEff]{
         \Gamma\vdash \ctx{e'} \Delta' ~ (\overline{\tau'})\to \sigma' <:_c \ctx{e} \Delta ~ (\overline{\tau})\to \sigma
     }{
-        \Gamma\vdash e <: e' & \overline{\Gamma\vdash \tau <: \tau'} & \Delta' <: \Delta & \Gamma\vdash \eta' <: \eta
+        \Gamma\vdash e <: e' & \overline{\Gamma\vdash \tau <: \tau'} & \Gamma\vdash\Delta' <: \Delta & \Gamma\vdash \eta' <: \eta
     }
 \]
 
