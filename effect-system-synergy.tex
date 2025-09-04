@@ -132,7 +132,7 @@
     gobble=4,      % skip 4 characters of indentation in code lines
 }
 \lstdefinelanguage{colang}{
-    keywords=[1]{let, effect, perform, data, context, fun, where, if, else, throw, try, catch, local, free, op, handle, resume},
+    keywords=[1]{let, effect, perform, data, context, fun, where, if, else, throw, try, catch, local, free, op, handle, resume, class, interface, override, init},
     sensitive=true,
     comment=[l]{//},
     morecomment=[s]{/*}{*/},
@@ -1508,7 +1508,7 @@ We defer the investigation of this matter to future work.
 
 The adoption of a substantial feature such as an effect system in a mainstream programming language presents a significant challenge.
 The design of the effect system should be straightforward and leverage existing developer expertise.
-Moreover, it must minimize boilerplate and ensure compatibility with widely used language features to facilitate.
+Moreover, it must minimize boilerplate and ensure compatibility with widely used language features.
 Lastly, the effect system should support a clear pathway for gradual adoption, alongside providing escape mechanisms that allow complex scenarios to be addressed outside the effect system, with the option for subsequent integration.
 
 In this section, we provide an informal discussion of potential extensions to our effect system design, aimed at improving it with respect to the aforementioned requirements.
@@ -1576,24 +1576,21 @@ So, we can capture all needed capabilities on the object constructor call site:
     interface I { fun f() }
 
     class Impl : I {
-        context let _: Handler<SomeException>
-
-        context(e: Handler<SomeException>)
-        Impl() { this.e = e }
-
-        override fun f() { throw SomeException() } // uses stored capabilities
+        context(let e: Handler<SomeException>) init() {} // receive and store capability
+        override fun f() { throw SomeException() } // uses stored capability
     }
+
+    fun test(i: I'local) { i.f() }
 
     fun main() {
         try {
             let i = Impl() // captures capabilities
-            g(i)
+            test(i)
         } catch (e: SomeException) { ... }
     }
 \end{lstlisting}
 
-% todo alternatives with associated types
-% todo every method is a higher-order function (see citation in Capturing types)
+% tod alternatives with associated types
 
 \section{Related work} \label{sec:related}
 
