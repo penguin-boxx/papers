@@ -176,7 +176,7 @@
 \newcommand{\mathframebox}[1]{\framebox{$\displaystyle #1$}}
 \newcommand{\vor}{~|~}
 \newcommand{\ap}{~}
-\newcommand{\ctx}[1]{ctx(#1)~}
+\newcommand{\ctx}[1]{ctx\left(#1\right)~}
 \newcommand{\step}{\rightsquigarrow}
 \newcommand{\local}{\top}
 \newcommand{\free}{\bot}
@@ -1094,7 +1094,7 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
     \item Monotypes are now annotated with explicit lifetime labels.
     The syntax is deliberately chosen to be identical to that of type arguments to emphasize that lifetimes can be regarded as ordinary types, albeit of a distinct kind.
     \item Type schemas support abstraction over lifetime variables and permit the specification of polymorphic bounds.
-    \item The resulting lifetime associated with data constructors is computed as the intersection of all lifetimes corresponding to those values that may later be extracted~--- that is, lifetimes encountered in positive positions.
+    \item The resulting lifetime associated with data constructors is computed as the minimum of all lifetimes corresponding to those values that may later be extracted~--- that is, lifetimes encountered in positive positions.
 \end{itemize}
 
 % todo say about the default constraints (different in different places)
@@ -1127,10 +1127,12 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
     \label{fig:core-delta-syntax}
 \end{figure}
 
-Let us specify $lt_\Gamma^+(\cdot)$ explicitly, other operations are straight-forward:
+Let us explicitly define some operators.
+The definitions of others are straight-forward.
+The $lt_\Gamma^+(\cdot)$ is defined as follows:
 \[
     \begin{array}{lll}
-        lt_\Gamma^+(\alpha) & = & lt_\Gamma^+(\tau) \text{ if } \alpha <: \tau \in \Gamma, \{\} \text{ otherwise} \\
+        lt_\Gamma^+(\alpha) & = & lt_\Gamma^+(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise} \\
         lt_\Gamma^+(T\ap\Delta\ap\overline{\tau}) & = & \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)} \cup \{\Delta\} \\
         lt_\Gamma^-(T\ap\Delta\ap\overline{\tau}) & = & \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)} \\
         lt_\Gamma^{+}(\ctx{\overline{\tau}}\Delta~\overline{\sigma}\to\overline{\eta}) & = & \overline{lt_\Gamma^{-}(\tau)} \cup \overline{lt_\Gamma^{-}(\sigma)} \cup \overline{lt_\Gamma^{+}(\eta)} \cup \{\Delta\} \\
@@ -1141,7 +1143,29 @@ The lifetime of a type variable is approximated by the lifetime of its bounding 
 In some cases, we intentionally employ an empty context to exclude the influence of bounds.
 Also, since type constructor parameters are invariant, they are treated as both positive and negative simultaneously.
 
-% todo lifetimes elimination
+The lifetime elimination operator $elim_{\Delta, \overline{l}}^p(\cdot)$ approximates the designated existential lifetimes $\overline{l}$ to prevent their leakage outside the scope of the pattern-matching branch.
+It is defined as following:
+\[
+    \begin{array}{lll}
+        elim_{\Delta, \overline{l}}^p(\alpha) & = & \alpha \\
+        elim_{\Delta, \overline{l}}^p(K\ap \Delta\ap\overline{\tau}) & = & K\ap \left( elim_{\Delta, \overline{l}}^p(\Delta) \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{inv}(\tau)} \right) \\
+        elim_{\Delta, \overline{l}}^p(\ctx{\overline{\tau_1}}\Delta~\overline{\tau_2}\to\sigma) & = & \ctx{\overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau_1)}} \left( elim_{\Delta, \overline{l}}^p(\Delta) \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau_2)} \right)\to elim_{\Delta, \overline{l}}^{p}(\sigma) \\
+        elim_{\Delta, \overline{l}}^{p}(l') & = &
+        \begin{array}{llll}
+             l', \text{ if } l' \not\in\overline{l} & \text{ else } &
+             \Delta, \text{ if } p = + & \text{ else }
+        \end{array} \\
+        &&
+        \begin{array}{llll}
+            free, \text{ if } p = - & \text{ else } &
+            \star, \text{ if } p = inv
+        \end{array} \\
+        elim_{\Delta, \overline{l}}^{p}(+\overline{\Delta'}) & = & +\left( \overline{elim_{\Delta, \overline{l}}^{p}(\Delta')} \right)
+    \end{array}
+\]
+When the position is invariant and it is not possible to approximate a lifetime by a concrete bound, we employ the special lifetime $\star$, which denotes an unknown lifetime.
+We consider types with $\star$ lifetime tracked as well.
+% todo java wildcards?
 
 Syntax of terms follows the changes in the syntax of types:
 \[
@@ -1156,23 +1180,20 @@ Syntax of terms follows the changes in the syntax of types:
 Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure\ \ref{fig:core-delta-typing}):
 \begin{itemize}
     \item \textbf{Lam:} The typing rule for $\lambda$-abstractions guarantees that no tracked value can escape the scope of the function via its return value.
-    Analogous to the treatment of data constructors, the lifetime associated with a function type is determined as the intersection of the lifetimes of all captured variables.
-    This ensures that the function itself cannot outlive any tracked capabilities it closes over. % todo explain zero set
-    % todo explain context filtration
-    \item \textbf{Match:} Lifetime parameters appearing in positive positions are conservatively approximated by the lifetime of the enclosing composite data type.
-    Since data types are covariant with respect to their lifetime parameters, lifetimes appearing in negative positions are replaced with the bottom lifetime \texttt{free}, analogous to covariant projections. % todo link to covariant projections
+    Analogous to the treatment of data constructors, the lifetime associated with a function type is determined as the minimum of the lifetimes of all captured variables, excluding those that are present within the function type by themselves.
+    This ensures that the function itself cannot outlive any tracked capabilities it closes over.
+    \item \textbf{Match:}
+    Existential lifetimes of a data constructor are treated as covariant projections bounded by the lifetime of the type. % todo link to covariant projections
+    So, we substitute fresh lifetimes $l'$ in their place.
+    Furthermore, these fresh lifetime variables are eliminated from the resulting type of the branch.
     \item \textbf{Handle:} The $Handle$ rule plays crucial role in ensuring effect safety.
-    First, it annotates capabilities created within the handler with the lifetime label \texttt{local} and prohibits occurrences of \texttt{local} in positive positions within the result type $\eta$.
+    First, it annotates capabilities created within the handler with the lifetime label $local$ and prohibits occurrences of $local$ and $\star$ in positive positions within the result type $\eta$.
     This restriction prevents capabilities from escaping the handler’s scope via returned values.
-    Second, the rule enforces a well-formedness condition on effect signatures to ensure that no capabilities are passed as arguments to operation calls. % todo explain better, generics are bounded with free
+    Second, the rule enforces a well-formedness condition on effect signatures to ensure that no capabilities can be passed passed as arguments to operation calls.
     Without this constraint, a capability introduced by an inner handler could be propagated to an operation in an outer handler, thus escaping its scope.
     This restriction can be relaxed under certain conditions; further discussion is provided in Section~\ref{subsec:relax-tracked}.
     \item \textbf{TypesOf:} This rule extracts the types of designated variables from the typing context without discriminating between ordinary bindings and contextual bindings.
 \end{itemize}
-
-% todo omit reflexivity, transitivity for subtyping
-
-% todo rename lifetime intersection
 
 %! suppress = EscapeAmpersand
 \begin{figure}
@@ -1222,7 +1243,7 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure
             \end{array}
         }\\
         \infer[Match]{
-            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l_i}}^+\ap(\eta_i)}\right)
+            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l_i'}}^+\ap(\eta_i)}\right)
         }{
             \begin{array}{cc}
                 \Gamma\vdash K_i : \forall \overline{l_i}~\overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\left(+\overline{lt_\emptyset^+(\sigma_i)}\right)\ap\overline{\alpha}
@@ -1351,8 +1372,6 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure
 % todo (local \in) check respects normalization
 % todo careful checks of escaping for handlers (State example)
 
-% todo star and java wildcards
-
 \subsection{Lifetime tunnelling}
 
 Our system allows tracked types to instantiate type parameters.
@@ -1401,11 +1420,11 @@ be specified for lifetimes:
 %
 %A third approach would be to propagate lifetimes of generics outside of a type constructor.
 
-% todo пропагирование лайфтаймов за конструктор
+%  пропагирование лайфтаймов за конструктор
 
-% todo решение с перегрузкой
+%  решение с перегрузкой
 
-% todo решение с полиморфизмом
+%  решение с полиморфизмом
 
 %Another approach is to propagate lifetimes of generics outside of a type constructor.
 %This will force us to return a tracked pair, since it will contain components that with lifetime approximated to a constructor's lifetime.
@@ -1415,7 +1434,7 @@ be specified for lifetimes:
 %    let mapFirst p f = exclave pair (f (fst p)) (snd p)
 %\end{lstlisting}
 
-TODO % todo reduce amount of boilerplate for polymorphic code
+% todo reduce amount of boilerplate for polymorphic code
 % todo bounds instead of boxing (from capturing types)
 % todo why tunelling (otherwise too much code duplication on polymorphic code)
 
