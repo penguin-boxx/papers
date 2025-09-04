@@ -650,7 +650,7 @@ Consequently, this approach imposes no inherent constraints on the design of the
 
 We begin by providing a brief introduction to effect handlers and demonstrate how they can be used to implement the effects mentioned in the previous Section~\ref{sec:idea}.
 
-The \lstinline[language=colang]{handle} construct allows to define an execution context for a particular scope by specifying a set of effect operations.
+The \lstinline[language=colang]{handle} construct allows to define an execution context for a particular scope by specifying a set of \emph{effect operations}.
 Within this scope, the \lstinline[language=colang]{perform} construct allows code to invoke these operations, facilitating interaction with the execution context managed by the handler.
 The implementation of each operation within a handler is granted access to a delimited continuation of the call site~\cite{dyvbig2007monadic}.
 This continuation can be invoked to resume the computation with an operation's result.
@@ -703,7 +703,7 @@ The main considerations that have shaped this syntax are as follows:
     \item Corresponding to the functional type, at the term level we partition function arguments into two categories: \emph{contextual arguments} (or implicit arguments), which are intended to be inferred automatically in future extensions, and ordinary arguments, which must be provided explicitly by the programmer.
     \item Capability constructors $K_{cap}$ are used in an operational semantics to represent a capability.
     \item  The $handle$ construct introduces a capability associated with the newly created handler instance and binds it to a name.
-    The \texttt{perform} construct, in turn, requires a capability in order to perform an effectful operation.
+    The \texttt{perform} construct, in turn, requires a capability in order to perform an effect operation.
     This approach helps us to naturally build an effect system from the perspective discussed in Section~\ref{sec:idea}.
     \item For conciseness, we omit \texttt{return} blocks in handlers, since they do not contribute additional expressiveness.
     \item The $handler_m$ construct acts as a continuation delimiter, identified by a unique marker $m$ for operational semantics purposes.
@@ -988,7 +988,6 @@ There is a design decision to be made, whether inference should depend solely on
 The latter approach is more complex, as it necessitates storing variable names in effect rows and, furthermore, precludes the renaming of implicit parameters under $\alpha$-equivalence.
 This restriction can make programs more fragile with respect to renaming.
 On the other hand, this approach permits simultaneous use of multiple effects of the same type.
-%This problem has attracted significant attention in the research community~\cite{leijen2014koka}. % todo citations
 
 However, in this work, we use the first approach and argue that, in practical programming, relying on multiple effects of the same type may be undesirable.
 Instead, we advocate for the definition and use of domain-specific effects rather than directly employing general-purpose ones.
@@ -1095,9 +1094,8 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
     The syntax is deliberately chosen to be identical to that of type arguments to emphasize that lifetimes can be regarded as ordinary types, albeit of a distinct kind.
     \item Type schemas support abstraction over lifetime variables and permit the specification of polymorphic bounds.
     \item The resulting lifetime associated with data constructors is computed as the minimum of all lifetimes corresponding to those values that may later be extracted~--- that is, lifetimes encountered in positive positions.
+    \item For brevity, we assume $Any\ap local$ as the default constraint for data constructor generics and $Any\ap free$ for capability constructors and effect operations.
 \end{itemize}
-
-% todo say about the default constraints (different in different places)
 
 %! suppress = MissingLabel
 \begin{figure}
@@ -1368,8 +1366,6 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure
     \label{fig:core-delta-subtyping}
 \end{figure}
 
-% todo equality up to normalization
-% todo (local \in) check respects normalization
 % todo careful checks of escaping for handlers (State example)
 
 \subsection{Lifetime tunnelling}
@@ -1398,13 +1394,11 @@ be specified for lifetimes:
     }
 \end{lstlisting}
 
-% todo implementation section
-
 %Unlike OCaml modal types~\cite{lorenzen2024oxidizing}, our system permits types annotated with lifetimes to instantiate generic parameters.
 %
-%In the following, we discuss alternative approaches to this problem and provide a comparative analysis. % todo highlighting the benefits and trade-offs of our solution.
+%In the following, we discuss alternative approaches to this problem and provide a comparative analysis. % tod highlighting the benefits and trade-offs of our solution.
 
-% todo лайфтаймами нельзя инстанциировать полиморфные параметры, но конструкторы данных можно
+% tod лайфтаймами нельзя инстанциировать полиморфные параметры, но конструкторы данных можно
 %A second approach would be to prohibit the instantiation of function type parameters with lifetimes, while still permitting lifetimes to instantiate data constructors.
 %This method does not involve bounded polymorphism; however, it requires that all generic occurrences be explicitly annotated with a lifetime.
 %Additionally, it necessitates support for variance and mandates that the result's lifetime be tracked independently of the argument lifetimes.
@@ -1434,13 +1428,12 @@ be specified for lifetimes:
 %    let mapFirst p f = exclave pair (f (fst p)) (snd p)
 %\end{lstlisting}
 
-% todo reduce amount of boilerplate for polymorphic code
-% todo bounds instead of boxing (from capturing types)
-% todo why tunelling (otherwise too much code duplication on polymorphic code)
+% tod reduce amount of boilerplate for polymorphic code
+% tod why tunelling (otherwise too much code duplication on polymorphic code)
 
 \subsection{Integration with implicit parameters}
 
-To extend $Core_\Delta$ with implicit parameters, resulting in $Core_\Delta^{im}$, it is necessary to incorporate omitted application into both the syntax and the translation rules, as described in Section~\ref{sec:implicits}.
+To extend $Core_\Delta$ with implicit parameters, resulting in $Core_\Delta^{im}$, it is necessary to incorporate omitting application into both the syntax and the translation rules, as described in Section~\ref{sec:implicits}.
 However, several details require careful consideration.
 
 Previously, to select appropriate implicit arguments, we employed type equality between the type of the contextual binding and the expected type of the implicit parameter (see Fig.\ \ref{fig:core-im-core-implicit-inference}).
@@ -1488,31 +1481,20 @@ This relation treats functional types by verifying subtyping on effect rows as a
 
 \subsection{Using effects with tracked values} \label{subsec:relax-tracked}
 
-Note that, at present, it is not possible to pass tracked values to effectful operations.
+Note that, at present, it is not possible to pass tracked values to effect operations.
 This limitation arises from the fact that capabilities are tracked, and their usage always requires an associated delimited continuation~--- the corresponding marker becomes invalid outside the scope of the relevant handler.
 However, if the use of a tracked value does not involve a continuation, it is safe to lend it to an operation call.
-Examples of such values include tracked resources or capabilities that witness tail-resumptive operations. % todo citations
+Examples of such values include tracked resources or capabilities that witness tail-resumptive operations.
 
 To enable this, we can introduce an additional lifetime, $regional$, with the ordering $free <: regional <: local$.
-This $regional$ lifetime differs from $local$ in two key aspects: it can bound generics of effectful operations, and it can appear within the parameter types of operations.
+This $regional$ lifetime differs from $local$ in two key aspects: it can bound generics of effect operations, and it can appear within the parameter types of operations.
 
-In fact, permitting the passing of arbitrary capabilities to an operation effectively corresponds to representing a higher-order effect~\cite{wu2014effect, zhang2020handling, van2022handling}.
+In fact, permitting the passing of arbitrary capabilities to an operation effectively corresponds to representing higher-order effects~\cite{wu2014effect, zhang2020handling, van2022handling}.
 We defer the investigation of this matter to future work.
 
-
-
-
-% todo check "effectful operation" term
-
-% todo невозможность отсылать локальные вещи операциям это слишком жестко, нужно ослабить, иначе даже в массив сложит трекаемые вещи в одном скоупе не получится
-% todo lifetimes in the middle instead of `here` mode (to allow handlers consume tracked things)
-
-%todo \cite{hannan1998type, boruch2023capturing}
-
-% todo future work: higher-ranked types, type inference
-% todo higher-rank polymorphism is required for lambdas, иначе ничего не будет работать с абстракцией по хендлерам. Хотя можно просто всё сделать локалом в контексте по умолчанию, но тогда могут быть траблы с кепчурингом. Нужно исследовать, можно ли это как-то попроще добавить.
-
-% todo some safety theorem
+% todo implementation section
+% todo equality up to normalization
+% todo (local \in) check respects normalization
 
 
 \section{Adoption in mainstream languages} \label{sec:mainstream}
@@ -1625,7 +1607,7 @@ In contrast, our approach leverages implicit parameters, which correspond to a c
 
 \subsection{Capability-based effect systems} \label{subsec:overview-caps}
 
-
+% todo bounds instead of boxing (from capturing types)
 
 TODO % todo
 
@@ -1652,6 +1634,8 @@ TODO % todo
 % todo bidirectional semantics and higher-order effects
 
 % todo ensure consistent terminology: implicit/contextual
+
+TODO\footnote{\url{https://github.com/penguin-boxx/opo-effect-system}}
 
 TODO % todo
 
