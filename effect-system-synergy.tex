@@ -1117,7 +1117,7 @@ Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syn
             \text{Eliminate lifetimes} & & \graybox{elim^p_{\Delta, \overline{l}}(\cdot)} \\
             \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
             \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
-            & & \vor \graybox{\alpha <: \tau, \Gamma} \vor \graybox{l <: \Delta, \Gamma} \\
+            & & \vor \graybox{l <: \Delta, \Gamma} \vor \graybox{\alpha <: \tau, \Gamma} \\
             & &\vor K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{\left(+\overline{lt_\emptyset^+(\tau)}\right)}\ap \overline{\alpha}, \Gamma \\
             \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap \graybox{local} \ap\overline{\alpha}}\} \\
             \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{\alpha}\ldotp\overline{\tau}\to\sigma}\}
@@ -1250,18 +1250,26 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure
         \infer[Handle]{
             \Gamma \vdash handle ~ x : T\ap local\ap\overline{\tau}~ with ~ \{\overline{op_i = t_i}\} ~in~u : \eta
         }{
-            \begin{array}{ccc}
-                x :_c T\ap local\ap\overline{\tau}, \Gamma\vdash u : \eta
-                &
+            \begin{array}{cc}
                 \Sigma(T) = \left< \overline{\alpha}, sig \right>
                 &
-                op_i : \forall\overline{\beta_i}\ldotp \overline{\sigma_i}\to\sigma'_i \in sig
+                x :_c T\ap local\ap\overline{\tau}, \Gamma\vdash u : \eta
                 \\
-                local, \star \not\in lt_\emptyset^+(\eta)\cup\overline{lt_{\overline{\beta <: Any\ap free}, \Gamma}^+(\theta\ap\sigma_i)}
-                &
                 \theta = [\overline{\alpha\to\tau}]
                 &
-                \Gamma\vdash\theta\ap t_i : \forall \overline{(\beta <: Any\ap free)}\ldotp \ctx{} (\overline{\theta\ap\sigma_i}, \theta\ap\sigma_i'\to\eta)\to\eta
+                local, \star \not\in lt_\emptyset^+(\eta)\cup\overline{lt_{\overline{\beta <: \hat{\sigma}}, \Gamma}^+(\theta\ap\sigma_i)}
+                \\
+                \hat{\sigma} = Any\ap free
+                &
+                \Gamma\vdash\theta\ap t_i : \forall \overline{(\beta <: \hat{\sigma})}\ldotp \ctx{} (\overline{\theta\ap\sigma_i}, \theta\ap\sigma_i'\to\eta)\to\eta_i'
+                \\
+                \Gamma\vdash\eta_i' <: \eta
+                &
+                \begin{array}{cc}
+                    \overline{\beta}\cap ftv(\eta_i') = \emptyset
+                    &
+                    op_i : \forall\overline{\beta_i}\ldotp \overline{\sigma_i}\to\sigma'_i \in sig
+                \end{array}
             \end{array}
         }\\
         \infer[Cap]{
@@ -1287,52 +1295,63 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure
                 flt(s)\cup ftv(s) = \emptyset &
                 \Gamma\vdash p
             }
-        \end{array}\\
-        \mathframebox{\Gamma\vdash \sigma <: \tau} \\
-        \begin{array}{cc}
-            \infer[SubCtx]{\Gamma\vdash \alpha <: \tau}{\alpha <: \tau \in \Gamma} &
-            \infer[SubData]{
-                \Gamma\vdash K'\ap\Delta'\ap\overline{\tau} <: K\ap\Delta\ap\overline{\tau}
-            }{
-                K' <: K & \Delta' <: \Delta
-            }
-        \end{array} \\
-        \begin{array}{cc}
-            \infer[SubFunAny]{
-                \Gamma\vdash Any\ap\Delta' <: \ctx{e}\Delta~\overline{\tau}\to\sigma
-            } {
-                \Delta' <: \Delta
-            } &
-            \infer[SubFun]{ % todo support variance for functions? клашится с подтипизацией на эффектах
-                \Gamma\vdash\ctx{e}\Delta'~\overline{\tau}\to\sigma <: \ctx{e}\Delta~\overline{\tau}\to\sigma
-            }{
-                \Delta' <: \Delta
-            }
-        \end{array} \\
-        \begin{array}{cccc}
-            \mathframebox{\Delta' <: \Delta} &
-            \infer[SubFree]{free <: \Delta}{} &
-            \infer[SubLocal]{\Delta <: local}{} &
-            \infer[Sub+]{
-                +\overline{\Delta'} <: +\overline{\Delta}
-            }{
-                \forall\Delta'\in\overline{\Delta'}\ldotp\exists\Delta\in\overline{\Delta}\ldotp \Delta' <: \Delta
-            }
-        \end{array} \\
-        \begin{array}{cc}
-            \mathframebox{K <: K} & \infer[SubK]{Any <: K}{}
         \end{array}
     \end{gather*}
     \caption{Typing rules for $Core_{\Delta}$.}
     \label{fig:core-delta-typing}
 \end{figure}
 
-% todo about the default generic bound for operations
+\begin{figure}
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash \sigma <: \tau} \\
+        \begin{array}{cc}
+            \infer[SubCtx]{\Gamma\vdash \alpha <: \tau}{\alpha <: \tau \in \Gamma} &
+            \infer[SubData]{
+                \Gamma\vdash K'\ap\Delta'\ap\overline{\tau} <: K\ap\Delta\ap\overline{\tau}
+            }{
+                \Gamma\vdash\Delta' <: \Delta
+            }
+        \end{array} \\
+        \begin{array}{cc}
+            \infer[SubAny]{
+                \Gamma\vdash \tau <: Any\ap\Delta
+            }{
+                \Gamma\vdash \Delta'+lt_\Gamma^+(\tau) <: \Delta
+            } &
+            \infer[SubFun]{
+                \Gamma\vdash\ctx{\overline{\tau_1'}}\Delta'~\overline{\tau_2'}\to\sigma' <: \ctx{\overline{\tau_1}}\Delta~\overline{\tau_2}\to\sigma
+            }{
+                \overline{\Gamma\vdash\tau_1 <: \tau_1'} &
+                \Gamma\vdash\Delta' <: \Delta &
+                \overline{\Gamma\vdash\tau_2 <: \tau_2'} &
+                \sigma' <: \sigma
+            }
+        \end{array} \\
+        \mathframebox{\Gamma\vdash\Delta' <: \Delta} \\
+        \begin{array}{cc}
+            \infer[SubFree]{\Gamma\vdash free <: \Delta}{} &
+            \infer[SubLocal]{\Gamma\vdash\Delta <: local}{} \\
+            \infer[SubCtx_\Delta]{
+                \Gamma\vdash l <: \Delta
+            }{
+                l <: \Delta' \in \Gamma & \Gamma\vdash\Delta' <: \Delta
+            } &
+            \infer[Sub+]{
+                \Gamma\vdash+\overline{\Delta'} <: +\overline{\Delta}
+            }{
+                \forall\Delta'\in\overline{\Delta'}\ldotp\exists\Delta\in\overline{\Delta}\ldotp \Gamma\vdash\Delta' <: \Delta
+            }
+        \end{array}
+    \end{gather*}
+    \caption{Subtyping rules for $Core_{\Delta}$.}
+    \label{fig:core-delta-subtyping}
+\end{figure}
+
 % todo equality up to normalization
 % todo (local \in) check respects normalization
 % todo careful checks of escaping for handlers (State example)
 
-% todo mention somewhere that our generics are invariant, with lifetimes as a special case
+% todo star and java wildcards
 
 \subsection{Lifetime tunnelling}
 
