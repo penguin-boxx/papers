@@ -132,7 +132,7 @@
     gobble=4,      % skip 4 characters of indentation in code lines
 }
 \lstdefinelanguage{colang}{
-    keywords=[1]{let, effect, perform, data, context, fun, where, if, else, throw, try, catch, local, free, op, handle, resume, class, interface, override, init},
+    keywords=[1]{let, var, effect, perform, data, context, fun, where, if, else, throw, try, catch, local, free, op, handle, resume, class, interface, override, init},
     sensitive=true,
     comment=[l]{//},
     morecomment=[s]{/*}{*/},
@@ -326,18 +326,21 @@ Frequently, such an entity may be abstractly referred to as the \textit{executio
 An execution context can be characterized by at least one of the following properties:
 \begin{enumerate}
     \item Interactions with an execution context are observable.
-    For example, the memory management subsystem can be considered as the execution context --- each memory allocation can influence the addresses of subsequent allocations.
+    For example, the memory management subsystem can be considered as the execution context --- each memory mutation can influence the results of subsequent reads.
     In that case the context is responsible for bookkeeping of memory cells.
-    \item The activity of an execution context may be restricted to a particular scope, such that only code within this scope can interact with the context.
+    \item The activity of an execution context is restricted to a particular scope, such that only code within this scope can interact with the context.
     For example, an exception handler operates as an execution context confined to the body of a \texttt{try-catch} block; when an exception is thrown, control is transferred to the handler, which manages the exceptional situation.
     Another case is inversion of control, where an execution context restricts the provision of certain functionality to code within a defined scope, while code outside that scope may interact with a different context and access different functionality.
 \end{enumerate}
 
 An effect system reflects effects of a computation at the type level.
-It serves two primary purposes.
-Firstly, it makes effects explicit in type signatures, allowing functional abstraction boundaries to be specified with greater precision: implementation details are less likely to leak implicitly via context interactions. % todo пример добавить
-Secondly, an effect system provides static enforcement of \textit{effect safety} for a computation’s use: a computation may only be executed within an appropriate context (as previously discussed, contexts may have limited activity scopes).
-For example, an effect system is responsible for ensuring that all functionality required by inversion of control is available, and that all exceptions are handled. % todo
+Following the properties of execution contexts, it serves two primary purposes:
+\begin{enumerate}
+    \item An effect system makes effects explicit in type signatures, allowing functional abstraction boundaries to be specified with greater precision: implementation details are less likely to leak implicitly via context interactions.
+    For example, a function cannot have an unspecified observable behavior such as mutation of external state.
+    \item Furthermore, an effect system provides static enforcement of \textit{effect safety} for a computation’s use by ensuring that computations are only executed within appropriate contexts.
+    So, an effect system must ensure that all exceptions will be handled and all functionality required by inversion of control is available.
+\end{enumerate}
 It is also worth mentioning that effect systems can capture additional properties of computations, such as potential for divergence.
 
 Many promising designs of effect systems were proposed: row-polymorphic types~\cite{leijen2014koka}, capabilities~\cite{brachthauser2022effects, boruch2023capturing}, modal types~\cite{tang2025modal}, etc.
@@ -348,17 +351,15 @@ In this paper, we argue that effect systems can be conceptualized as a combinati
 Viewing effect systems from this perspective introduces axes within the effect system design space: varying the designs of these two features yields different possible instantiations.
 Moreover, this approach facilitates the seamless integration of effect systems into existing mainstream languages, as many of these languages already support at least one of these features, since each of which is independently practical.
 
-% todo переформулировать
-The general idea we present is not novel.
-For example, recent work in the Scala programming language bases on similar observations~\cite{odersky2021safer, boruch2023capturing}.
-However, our contribution lies in articulating this idea explicitly, systematically exploring its implications, and leveraging these insights to design a new effect system that is both practical and minimalistic.
+We base our work on prior research, predominantly arising from the Scala language~\cite{odersky2021safer, boruch2023capturing}.
+Our primary contribution lies in articulating the idea of effect system decomposition explicitly and leveraging these insights to design a new effect system that is both practical and minimalistic.
 
 Contributions of this paper are summarized as follows:
 \begin{itemize}
     \item We propose a perspective on effect system design as a combination of two properly-designed language features: implicit parameters and type-based escape analysis; and motivate our approach by looking at effect systems as systems for managing free variables (Section~\ref{sec:idea}).
     \item We describe required properties of implicit parameters design and provide a suitable one using a formal calculi (Section~\ref{sec:implicits}).
     \item We provide a novel type-based escape analysis technique that only requires straight-forward dataflow descriptions from a programmer (Section~\ref{sec:escape}).
-    \item We discuss multiple approaches aimed at enhancing the practicality of effect system design to facilitate its widespread adoption (Section~\ref{sec:mainstream}). % todo не выёбываться
+    \item We discuss multiple approaches aimed at improving the usability of an effect system, making it more accessible and easier for broad adoption (Section~\ref{sec:mainstream}).
     \item We compare our approach with previous art and show that other designs can be considered in implicit parameters and escape analysis basis (Section~\ref{sec:related}).
 \end{itemize}
 
@@ -370,94 +371,47 @@ Also, we illustrate that the pragmatic motivations for effect systems emerge nat
 
 \subsection{The road to implicit parameters} \label{subsec:implicits}
 
-Consider our running example in Figure~\ref{fig:db}, where the business logic function executes an update operation on the database storage.
-
-The first version establishes its own database connection and executes a query.
+Consider our running example, where the business logic function executes an update operation on the database storage.
+The first version establishes its own database connection and executes a query:
+\begin{lstlisting}[language=colang]
+    fun business1() { let db = Db.open(...); db.query("...") }
+\end{lstlisting}
 This approach has several drawbacks.
 Firstly, it hinders testability, as it is not straightforward to replace the database connection with a mock or alternative implementation; consequently, verifying the business logic in isolation becomes challenging.
 Secondly, this function produces observable side effects --- such as performing database operations --- which are an integral part of its external contract.
 Nevertheless, these effects are not reflected in the function’s signature.
 
-The second version provides a notable improvement.
+The second version provides a notable improvement:
+\begin{lstlisting}[language=colang]
+    fun business2(db: Db) { db.query("...") }
+    fun caller() { let db = Db.open(...); business2(db) }
+\end{lstlisting}
 Here, the business logic function is parameterized over the database connection, enabling the call site to supply a concrete implementation with the desired semantics.
 Furthermore, the observable effects are now made explicit through the \texttt{db} parameter.
 However, this approach incurs the overhead of additional syntactic complexity at the call site, as the administrative effort of explicitly passing parameters increases.
 While this may appear trivial for a single argument, the burden becomes significant if, for example, four such parameters must be threaded through multiple layers of the call stack.
 Best practices intended for widespread adoption should be at least as accessible and convenient as less optimal alternatives.
 
-To reduce boilerplate, the third version replaces ordinary parameters with dynamically scoped free variables.
-These variables acquire their values through lookup within the dynamic scope of the function call.
+To reduce boilerplate, the third version replaces ordinary parameter with dynamically scoped free variable \lstinline[language=colang]{db}.
+Such variables acquire their values through lookup within the dynamic scope of the function call.
+\begin{lstlisting}[language=colang]
+    fun business3() { db.query("...") }
+    fun caller() { let db = Db.open(...); business3() }
+\end{lstlisting}
 However, this approach comes at the expense of other benefits: specifically, it sacrifices static typing and the explicit representation of context dependencies.
 
-\begin{figure}
-    % todo палки
-    \begin{tabular}{p{0.3\textwidth} rrr}
-        \begin{minipage}[t]{0.35\textwidth}
-            \begin{lstlisting}[language=colang, gobble=16]
-                fun business1() {
-                    let db = Db.open(...)
-                    db.query("...")
-                }
-            \end{lstlisting}
-        \end{minipage}
-        &
-        \begin{minipage}[t]{0.35\textwidth}
-            \begin{lstlisting}[language=colang, gobble=16]
-                fun business2(db: Db) {
-                    db.query("...")
-                }
-
-                fun caller() {
-                    let db = Db.open(...)
-                    business2(db)
-                }
-            \end{lstlisting}
-        \end{minipage}
-        &
-        \begin{minipage}[t]{0.35\textwidth}
-            \begin{lstlisting}[language=colang, gobble=16]
-                fun business3() {
-                    db.query("...")
-                }
-
-                fun caller() {
-                    let db = Db.open(...)
-                    business3()
-                }
-            \end{lstlisting}
-        \end{minipage}
-    \end{tabular}
-    \caption{The road to dynamically scoped free variables.} % todo summary
-    \label{fig:db}
-\end{figure}
-
 To regain static type safety, we approximate dynamically scoped free variables using implicit function parameters~\cite{lewis2000implicit}.
-At the declaration site, we introduce a \lstinline[language=colang]|context| keyword to define a group of implicit parameters, which are automatically supplied by the compiler at the call site (see Figure\ \ref{fig:implicits}). % todo вынести повыше, чтобы не теряться
-To make a value available for implicit parameter resolution, we employ the \lstinline[language=colang]{context let} declaration syntax.
+At the declaration site, we introduce a \lstinline[language=colang]|context| keyword to define a group of implicit parameters, which are automatically supplied by the compiler at the call site.
+To make a value available for implicit parameter resolution, we use the \lstinline[language=colang]{context let} declaration syntax.
+\begin{lstlisting}[language=colang]
+    context(db: Db)
+    fun business4() { db.query("...") }
 
-\begin{figure}[h]
-    \begin{tabular}{p{0.5\textwidth} rl}
-        \begin{minipage}[t]{0.3\textwidth}
-            \begin{lstlisting}[language=colang, gobble=16]
-                context(db: Db)
-                fun business4() {
-                    db.query("...")
-                }
-            \end{lstlisting}
-        \end{minipage}
-        &
-        \begin{minipage}[t]{0.5\textwidth}
-            \begin{lstlisting}[language=colang, gobble=16]
-                fun caller() {
-                    context let db = Db.open(...)
-                    business4()
-                }
-            \end{lstlisting}
-        \end{minipage}
-    \end{tabular}
-    \caption{Reclaming static type safety with implicit parameters.}
-    \label{fig:implicits}
-\end{figure}
+    fun caller() {
+        context let db = Db.open(...)
+        business4()
+    }
+\end{lstlisting}
 
 In terms of effects and contexts, \lstinline[language=colang]|context let| introduces an execution context, whose scope is restricted to the corresponding lexical region, and provides functionality of access to a database storage.
 Implicit parameters express a function's requirements for its context.
@@ -476,7 +430,7 @@ Correspondingly, constructs that handle exceptions must supply appropriate witne
     }
 \end{lstlisting}
 
-Nowadays, several widely used programming languages provide support for implicit parameters, and the inference mechanisms associated with these parameters is well understood~\cite{KEEP-context-parameters, oliveira2010type, lewis2000implicit}. % todo вынести языки наверх
+Nowadays, several widely used programming languages provide support for implicit parameters, and the inference mechanisms associated with these parameters is well understood~\cite{KEEP-context-parameters, oliveira2010type, lewis2000implicit}.
 Moreover, implicit parameters alone are sufficient as the evidence-passing technique to implement tail-resumptive algebraic operations~\cite{xie2020effect}.
 
 \subsection{Retain effect safety with escape analysis} \label{subsec:escape}
@@ -485,17 +439,18 @@ An effect system should ensure that all computations are executed within appropr
 In our setting, the context must supply capabilities as evidence of its validity.
 Consequently, these capabilities must not be allowed to escape their corresponding contexts.
 For example, if a \lstinline[language=colang]|Handler| value were to escape a corresponding \lstinline[language=colang]|try-catch| block, we would lose the guarantee that all exceptions are handled and, thereby, the effect safety itself:
-% todo сказать явно про утекание
 \begin{lstlisting}[language=colang]
     fun unsafe() {
-        let f = try { // context let h: Handler<SomeException>
-            () => throw SomeException() // captures the h capability
+        var f
+        try { // context let h: Handler<SomeException>
+            let g: () -> Nothing = () => throw SomeException() // captures h capability
+            f = g // leak computation capturing capability
         } catch (e: SomeException) { ... }
         f() // throws SomeException
     }
 \end{lstlisting}
 
-To control the escaping of capabilities, some form of escape analysis is required~\cite{park1992escape}. % todo повторы
+To prevent the leakage of capabilities, some form of escape analysis is required~\cite{park1992escape}.
 Given that effect systems operate at the type level, it is natural to employ type-based techniques for escape analysis as well~\cite{xie2022first}.
 Furthermore, since this analysis must account for the flow of capabilities across function boundaries, it should be directly reflected in function signatures to be intra-procedural.
 In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
@@ -513,9 +468,10 @@ For instance, the return type of the \lstinline[language=colang]|try-catch| bloc
 Consequently, the following code will be rejected by the type system, as the function’s lifetime is determined by the lifetimes of the captured values:
 \begin{lstlisting}[language=colang]
     fun safe() {
-        let f = try { // context let h: Handler<SomeException>'local
-            () => throw SomeException() // : ()'local -> Nothing
-            // type error: resulting type of try-catch includes local
+        var f
+        try { // context let h: Handler<SomeException>'local
+            let g: ()'local -> Nothing = () => throw SomeException()
+            f = g // type error: leaking type includes local
         } catch (e: SomeException) { ... }
         f()
     }
@@ -536,10 +492,9 @@ Note that it is safe to pass functions that capture capabilities to \lstinline[l
     }
 \end{lstlisting}
 
-% todo похвалить себя
-In the example, the \lstinline[language=colang]|io| is a lexically scoped free variable for the lambda function.
+In the example, the \lstinline[language=colang]|io| is the lexically scoped free variable for the lambda function.
 The ability to close over capabilities enables the technique known as \textit{contextual polymorphism}~\cite{brachthauser2020effects, brachthauser2022effects}.
-This approach allows higher-order functions to remain fully transparent with respect to effects, without introducing explicit polymorphic type variables that range over effect rows.
+This approach allows higher-order functions to remain fully transparent with respect to effects, eliminating the need for explicit polymorphic type variables that range over effect rows.
 In comparison, the corresponding function type in the Koka language employs row-polymorphic types, where the \lstinline[language=colang]|e| denotes a type variable ranging over effect row types~\cite{leijen2014koka}:
 \begin{lstlisting}[language=colang]
     fun map(xs: list<a>, f: (a) -> e b): e list<b>
@@ -561,8 +516,7 @@ Thus, such a function continues to support contextual polymorphism, as it can on
     }
 \end{lstlisting}
 
-% todo явно сказать про плюс
-To express the capture of two or more lifetime-polymorphic values, we employ a syntax that denotes the minimum of their lifetimes:
+To express the capture of two or more lifetime-polymorphic values, we employ a syntax with plus that denotes the minimum of their lifetimes:
 \begin{lstlisting}[language=colang]
     fun compose(f: (b)'l1 -> c, g: (a)'l2 -> b): (a)'l1+l2 -> c =
         (x) => f(g(x))
