@@ -1244,9 +1244,9 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure
             \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l_i'}}^+\ap(\eta_i)}\right)
         }{
             \begin{array}{cc}
-                \Gamma\vdash K_i : \forall \overline{l_i}~\overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\left(+\overline{lt_\emptyset^+(\sigma_i)}\right)\ap\overline{\alpha}
-                &
                 \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
+                &
+                \Gamma\vdash K_i : \forall \overline{l_i}~\overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\left(+\overline{lt_\emptyset^+(\sigma_i)}\right)\ap\overline{\alpha}
                 \\
                 \overline{l_i' \text{ fresh}}
                 &
@@ -1594,7 +1594,8 @@ So, we can capture all needed capabilities on the object constructor call site:
 
 \section{Related work} \label{sec:related}
 
-In this section we give a brief overview of existing solutions and provide a competitive analysis of our design.
+In this section we give a brief overview of existing solutions, consider them from our perspective on effect systems and provide a competitive analysis of our design.
+For a more comprehensive overview, see~\cite{stoyan2024modern}.
 
 \subsection{Row-polymorphic effect systems} \label{subsec:overview-rows}
 
@@ -1607,41 +1608,30 @@ Although this approach is relatively simple and well-studied, it is often regard
 It introduces a distinct concept of effects that programmers must consistently consider, which can increase cognitive overhead and reduce accessibility.
 
 Row-based effect systems can be conceptualized as systems that type dynamically bound free variables (i.e., effect operations) in an effect-style manner, analogous to the Reader monad.
-In contrast, our approach leverages implicit parameters, which correspond to a coeffect-style~\cite{petricek2014coeffects}. % todo can supports lexical scoping
+In contrast, our approach leverages implicit parameters, which correspond to a coeffect-style~\cite{petricek2014coeffects}, and supports lexically scoped free variables as well.
 
 \subsection{Capability-based effect systems} \label{subsec:overview-caps}
 
-% todo bounds instead of boxing (from capturing types)
+In capability-based effect systems, instead of directly tracking the use of effect operations, the presence of special objects known as capabilities is monitored; such objects are required to perform effect operations.
+This approach has led to the realization that effect systems are fundamentally concerned with the management of free variables~\cite{odersky2022scoped}, and has enabled the discovery of contextual polymorphism~\cite{brachthauser2020effects, brachthauser2022effects}.
 
-TODO % todo
+While implicit parameters generally do not pose significant challenges, the escape analysis of capabilities remains a complex problem.
+One approach employs higher-rank polymorphism to prevent capabilities from escaping~\cite{launchbury1995state, xie2022first}.
+Another notable method is capture checking~\cite{boruch2023capturing} in the Scala language, which facilitates dependent types for escape analysis; in this setting, variable names correspond to concrete lifetimes and the root capability aligns with our \lstinline[language=colang]{local}.
+In contrast, our design does not utilize dependent typing and instead is based on well-understood bounded polymorphism and subtyping.
+Furthermore, we compute lifetimes of type variables by approximating them with the lifetimes of their bounds, whereas capture types employ more intricate boxing mechanisms, which remain unsettled at the time of writing~\cite{xu2023formalizing, whatsinthebox}.
 
 \subsection{Modal effect systems} \label{subsec:overview-modal}
 
-TODO % todo
-
-\subsection{Escape analysis} \label{subsec:overview-escape-analysis}
+Modal effect systems~\cite{tang2025modal}
 
 TODO % todo
-
-% todo coeffects, coeffect style vs effect style
-% todo papers about regions?
-% todo capture calculus boxing
-
 
 
 
 \section{Conclusion and future work} \label{sec:conclusion}
 
-% todo type inference and symilarity with first-class polymorphism
-% todo обобщить текущую систему через дженерики, кайнды и нормальный варианс
-% todo abstraction inference
-% todo bidirectional semantics and higher-order effects
-
-% todo ensure consistent terminology: implicit/contextual
-
-TODO\footnote{\url{https://github.com/penguin-boxx/opo-effect-system}}
-
-TODO % todo
+TODO\footnote{\url{https://github.com/penguin-boxx/opo-effect-system}} % todo
 
 
 %%
@@ -1649,9 +1639,9 @@ TODO % todo
 %% (and NOT an unnumbered section). This ensures the proper
 %% identification of the section in the article metadata, and the
 %% consistent spelling of the heading.
-\begin{acks}
-    TODO % todo
-\end{acks}
+%\begin{acks}
+%    TODO % todo
+%\end{acks}
 
 % TODO appendix с полным исчислением
 
