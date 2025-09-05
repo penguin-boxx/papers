@@ -1629,11 +1629,17 @@ When such a computation is placed within an appropriate context, it is automatic
 From the perspective of tracking free variables, modal types as presented by Tang et al.~\cite{tang2025modal} employ a kind system to distinguish between computations that may capture lexically scoped free variables (kind $Any$) and those that cannot (kind $Abs$).
 When a computation of kind $Any$ is transferred between execution contexts, such as when it is returned from a handler, the type system augments its type with an additional modality.
 In other words, a process akin to the uncapturing of lexically scoped free variables is performed, whereby these variables become unfulfilled contextual requirements once again.
+Thus, this form of escape analysis facilitates control over leaking instead of strictly prohibiting it.
 
 
 \section{Conclusion and future work} \label{sec:conclusion}
 
-TODO\footnote{\url{https://github.com/penguin-boxx/opo-effect-system}} % todo
+In this paper, we have explicitly articulated a conceptual framework for understanding effect systems as a type extension for managing free variables.
+This perspective provided insight into a stepwise approach for the design and construction of an effect system as a combination of two properly-designed language features: implicit parameters and type-based escape analysis.
+We explored the design space of the implicit parameters feature and introduced a novel type-based escape analysis technique that relies exclusively on subtyping and bounded polymorphism.
+Finally, we discussed several approaches that could enhance the practicality of effect systems for mainstream programming languages.
+
+The prototype implementation of the presented effect system is available online.\footnote{\url{https://github.com/penguin-boxx/opo-effect-system}}
 
 
 %%
