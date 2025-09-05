@@ -626,7 +626,7 @@ We summarize the correspondence between these two disciplines in Figure~\ref{fig
         \hline
         Free variables & dynamically scoped & lexically scoped \\
         \hline
-        Represent & unfulfilled context requirements & fulfilled context requirements \\
+        Represent & unfulfilled contextual requirements & fulfilled contextual requirements \\
         Dealt by & implicit parameters & type-based escape analysis \\
         User specifies & more function parameters & a function’s dataflow \\
         \hline
@@ -1623,10 +1623,12 @@ Furthermore, we compute lifetimes of type variables by approximating them with t
 
 \subsection{Modal effect systems} \label{subsec:overview-modal}
 
-Modal effect systems~\cite{tang2025modal}
+Modal effect systems~\cite{zyuzin2021contextual, tang2025modal} use special modal type constructors to represent unfulfilled contextual requirements of a computation.
+When such a computation is placed within an appropriate context, it is automatically unboxed and becomes ready for execution.
 
-TODO % todo
-
+From the perspective of tracking free variables, modal types as presented by Tang et al.~\cite{tang2025modal} employ a kind system to distinguish between computations that may capture lexically scoped free variables (kind $Any$) and those that cannot (kind $Abs$).
+When a computation of kind $Any$ is transferred between execution contexts, such as when it is returned from a handler, the type system augments its type with an additional modality.
+In other words, a process akin to the uncapturing of lexically scoped free variables is performed, whereby these variables become unfulfilled contextual requirements once again.
 
 
 \section{Conclusion and future work} \label{sec:conclusion}
