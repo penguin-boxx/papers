@@ -829,7 +829,7 @@ In a low-level implementation, such a \lstinline[language=colang]{perform} const
             \overline{\Gamma\vdash u_2 : \tau_2}
         }\\
         \infer[Match]{
-            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\} : \eta
+            \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\} : \eta
         }{
             \Gamma\vdash t : T \ap\overline{\tau} &
             \Gamma\vdash K_i : \forall \overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\overline{\alpha} &
@@ -845,7 +845,7 @@ In a low-level implementation, such a \lstinline[language=colang]{perform} const
             \overline{\Gamma\vdash t : \theta\ap\sigma}
         }\\
         \infer[Handle]{
-            \Gamma \vdash handle ~ x : T\ap\overline{\tau}~ with ~ \{\overline{op_i = t_i}\} ~in~u : \eta
+            \Gamma \vdash handle ~ x : T\ap\overline{\tau} ~ \{\overline{op_i = t_i}\} ~in~u : \eta
         }{
             \begin{gathered}
                 x :_c T\ap\overline{\tau}, \Gamma\vdash u : \eta
@@ -1200,7 +1200,7 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure
             \end{array}
         }\\
         \infer[Match]{
-            \Gamma\vdash match ~ t ~with ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l_i'}}^+\ap(\eta_i)}\right)
+            \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l_i'}}^+\ap(\eta_i)}\right)
         }{
             \begin{array}{cc}
                 \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
@@ -1226,7 +1226,7 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure
             \end{array}
         }\\
         \infer[Handle]{
-            \Gamma \vdash handle ~ x : T\ap local\ap\overline{\tau}~ with ~ \{\overline{op_i = t_i}\} ~in~u : \eta
+            \Gamma \vdash handle ~ x : T\ap local\ap\overline{\tau} ~ \{\overline{op_i = t_i}\} ~in~u : \eta
         }{
             \begin{array}{cc}
                 \Sigma(T) = \left< \overline{\alpha}, sig \right>
