@@ -441,11 +441,11 @@ Consequently, these capabilities must not be allowed to escape their correspondi
 For example, if a \lstinline[language=colang]|Handler| value were to escape a corresponding \lstinline[language=colang]|try-catch| block, we would lose the guarantee that all exceptions are handled and, thereby, the effect safety itself:
 \begin{lstlisting}[language=colang]
     fun unsafe() {
-        var f
-        try { // context let h: Handler<SomeException>
-            let g: () -> Nothing = () => throw SomeException() // captures h capability
-            f = g // leak computation capturing capability
-        } catch (e: SomeException) { ... }
+        let f =
+            try { // context let h: Handler<SomeException>
+                let g: () -> Nothing = () => throw SomeException() // captures h
+                g // leak computation capturing capability
+            } catch (e: SomeException) { ... }
         f() // throws SomeException
     }
 \end{lstlisting}
@@ -468,11 +468,11 @@ For instance, the return type of the \lstinline[language=colang]|try-catch| bloc
 Consequently, the following code will be rejected by the type system, as the function’s lifetime is determined by the lifetimes of the captured values:
 \begin{lstlisting}[language=colang]
     fun safe() {
-        var f
-        try { // context let h: Handler<SomeException>'local
-            let g: ()'local -> Nothing = () => throw SomeException()
-            f = g // type error: leaking type includes local
-        } catch (e: SomeException) { ... }
+        let f =
+            try { // context let h: Handler<SomeException>'local
+                let g: ()'local -> Nothing = () => throw SomeException()
+                g // type error: leaking type includes local
+            } catch (e: SomeException) { ... }
         f()
     }
 \end{lstlisting}
