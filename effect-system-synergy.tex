@@ -451,7 +451,7 @@ For example, if a \lstinline[language=colang]|Handler| value were to escape a co
 \end{lstlisting}
 
 To prevent the leakage of capabilities, some form of escape analysis is required~\cite{park1992escape}.
-Given that effect systems operate at the type level, it is natural to employ type-based techniques for escape analysis as well~\cite{xie2022first}.
+Given that effect systems operate at the type level, it is natural to employ type-based techniques for escape analysis as well~\cite{xie2022first}. % todo better understand connection with dataflow algorithms, since they are semantics too
 Furthermore, since this analysis must account for the flow of capabilities across function boundaries, it should be directly reflected in function signatures to be intra-procedural.
 In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
 
@@ -814,7 +814,7 @@ In a low-level implementation, such a \lstinline[language=colang]{perform} const
             }
         \end{array} \\
         \infer[Lam]{
-            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) ~ \overline{\tau_2} \to \sigma
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : \ctx{\overline{\tau_1}} \overline{\tau_2} \to \sigma
         }{
             \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma
         }
@@ -822,7 +822,7 @@ In a low-level implementation, such a \lstinline[language=colang]{perform} const
         \infer[App]{
             \Gamma\vdash t \ap \overline{u_1} \ap \overline{u_2} : \sigma
         } {
-            \Gamma\vdash t : ctx(\overline{\tau_1})~\overline{\tau_2}\to\sigma
+            \Gamma\vdash t : \ctx{\overline{\tau_1}}\overline{\tau_2}\to\sigma
             &
             \overline{\Gamma\vdash u_1 : \tau_1}
             &
@@ -918,7 +918,7 @@ Implicits inference should use these names to refer directly to contextual bindi
     \begin{gather*}
         \mathframebox{\Gamma\vdash t : \tau \step t_{c}} \\
         \infer[Lam]{
-            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) ~ \overline{\tau_2} \to \sigma \step \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t_c
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : \ctx{\overline{\tau_1}} \overline{\tau_2} \to \sigma \step \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t_c
         }{
             \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma \step t_c &
             distinct(\overline{\tau_1})
@@ -1004,7 +1004,7 @@ The relation $\Gamma\vdash t\Leftarrow \tau \step t_c$ applies $\eta$-expansion 
         \infer[App]{
             \Gamma\vdash t\ap\overline{u} : \sigma \step t_c \ap \overline{x} \ap \overline{u_c}
         }{
-            \Gamma\vdash t : ctx(\overline{\tau_1})~\overline{\tau_2}\to \sigma \step t_c
+            \Gamma\vdash t : \ctx{\overline{\tau_1}} \overline{\tau_2}\to \sigma \step t_c
             &
             \overline{\Gamma \vdash_{\tau_1} x}
             &
@@ -1023,9 +1023,9 @@ The relation $\Gamma\vdash t\Leftarrow \tau \step t_c$ applies $\eta$-expansion 
             }
             \\
             \infer[AppArgCtx]{
-                \Gamma \vdash t \Leftarrow ctx(\overline{\tau_1}) ~\overline{\tau_2}\to\sigma\step \lambda \overline{x : \tau_1}~\overline{y : \tau_2}\ldotp t_c\ap \overline{x'}\ap\overline{y}
+                \Gamma \vdash t \Leftarrow \ctx{\overline{\tau_1}} ~\overline{\tau_2}\to\sigma\step \lambda \overline{x : \tau_1}~\overline{y : \tau_2}\ldotp t_c\ap \overline{x'}\ap\overline{y}
             }{
-                \Gamma \vdash t : ctx(\overline{\tau_1'}) ~\overline{\tau_2}\to\sigma \step t_c
+                \Gamma \vdash t : \ctx{\overline{\tau_1'}} \overline{\tau_2}\to\sigma \step t_c
                 &
                 \overline{\overline{x :_c \tau_1} \vdash_{\tau_2'} x'}
                 &
@@ -1176,7 +1176,7 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure
             }
         \end{array} \\
         \infer[Lam]{
-            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) \left(+{lt_{\Gamma\setminus ftv^-(\overline{\tau_1}\cup\overline{\tau_2}) \setminus ftv^+(\sigma)}^+(\overline{s})}\right)~ \overline{\tau_2} \to \sigma
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : \ctx{\overline{\tau_1}} \left(+{lt_{\Gamma\setminus ftv^-(\overline{\tau_1}\cup\overline{\tau_2}) \setminus ftv^+(\sigma)}^+(\overline{s})}\right)~ \overline{\tau_2} \to \sigma
         }{
             \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma
             &
@@ -1406,7 +1406,7 @@ Additionally, the $distinct_{<:}$ operator ensures that least upper bound of eve
     \begin{gather*}
         \mathframebox{\Gamma\vdash t : \tau \step t_{c}} \\
         \infer[Lam]{
-            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : ctx(\overline{\tau_1}) ~ \overline{\tau_2} \to \sigma \step \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t_c
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : \ctx{\overline{\tau_1}} \overline{\tau_2} \to \sigma \step \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t_c
         }{
             \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma \step t_c &
             distinct_{<:}(\overline{\tau_1})
@@ -1589,6 +1589,10 @@ From the perspective of tracking free variables, modal types as presented by Tan
 When a computation of kind $Any$ is transferred between execution contexts, such as when it is returned from a handler, the type system augments its type with an additional modality.
 In other words, a process akin to the uncapturing of lexically scoped free variables is performed, whereby these variables become unfulfilled contextual requirements once again.
 Thus, this form of escape analysis facilitates control over leaking instead of strictly prohibiting it.
+
+
+% todo chapter about escape analysis
+% todo compare with effect systems and other analyses
 
 
 \section{Conclusion} \label{sec:conclusion}

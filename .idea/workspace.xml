@@ -4,9 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="15554d1e-d56c-434a-97ac-1758983892bd" name="Changes" comment="Update 6">
+    <list default="true" id="15554d1e-d56c-434a-97ac-1758983892bd" name="Changes" comment="Update">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bib.bib" beforeDir="false" afterPath="$PROJECT_DIR$/bib.bib" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/effect-system-synergy.tex" beforeDir="false" afterPath="$PROJECT_DIR$/effect-system-synergy.tex" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -83,62 +82,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1729770043791</updated>
-    </task>
-    <task id="LOCAL-00075" summary="Update">
-      <option name="closed" value="true" />
-      <created>1751139595268</created>
-      <option name="number" value="00075" />
-      <option name="presentableId" value="LOCAL-00075" />
-      <option name="project" value="LOCAL" />
-      <updated>1751139595268</updated>
-    </task>
-    <task id="LOCAL-00076" summary="Before `perform` baking">
-      <option name="closed" value="true" />
-      <created>1751206026216</created>
-      <option name="number" value="00076" />
-      <option name="presentableId" value="LOCAL-00076" />
-      <option name="project" value="LOCAL" />
-      <updated>1751206026216</updated>
-    </task>
-    <task id="LOCAL-00077" summary="Update">
-      <option name="closed" value="true" />
-      <created>1751299988495</created>
-      <option name="number" value="00077" />
-      <option name="presentableId" value="LOCAL-00077" />
-      <option name="project" value="LOCAL" />
-      <updated>1751299988495</updated>
-    </task>
-    <task id="LOCAL-00078" summary="Update">
-      <option name="closed" value="true" />
-      <created>1751373155861</created>
-      <option name="number" value="00078" />
-      <option name="presentableId" value="LOCAL-00078" />
-      <option name="project" value="LOCAL" />
-      <updated>1751373155861</updated>
-    </task>
-    <task id="LOCAL-00079" summary="Update">
-      <option name="closed" value="true" />
-      <created>1751379539860</created>
-      <option name="number" value="00079" />
-      <option name="presentableId" value="LOCAL-00079" />
-      <option name="project" value="LOCAL" />
-      <updated>1751379539860</updated>
-    </task>
-    <task id="LOCAL-00080" summary="Update">
-      <option name="closed" value="true" />
-      <created>1751385176081</created>
-      <option name="number" value="00080" />
-      <option name="presentableId" value="LOCAL-00080" />
-      <option name="project" value="LOCAL" />
-      <updated>1751385176081</updated>
-    </task>
-    <task id="LOCAL-00081" summary="Update">
-      <option name="closed" value="true" />
-      <created>1751451844667</created>
-      <option name="number" value="00081" />
-      <option name="presentableId" value="LOCAL-00081" />
-      <option name="project" value="LOCAL" />
-      <updated>1751451844667</updated>
     </task>
     <task id="LOCAL-00082" summary="Update">
       <option name="closed" value="true" />
@@ -476,13 +419,66 @@
       <option name="project" value="LOCAL" />
       <updated>1756991593249</updated>
     </task>
-    <option name="localTasksCounter" value="124" />
+    <task id="LOCAL-00124" summary="Update 7">
+      <option name="closed" value="true" />
+      <created>1757069000663</created>
+      <option name="number" value="00124" />
+      <option name="presentableId" value="LOCAL-00124" />
+      <option name="project" value="LOCAL" />
+      <updated>1757069000663</updated>
+    </task>
+    <task id="LOCAL-00125" summary="Update 7">
+      <option name="closed" value="true" />
+      <created>1757076196088</created>
+      <option name="number" value="00125" />
+      <option name="presentableId" value="LOCAL-00125" />
+      <option name="project" value="LOCAL" />
+      <updated>1757076196089</updated>
+    </task>
+    <task id="LOCAL-00126" summary="Update 8">
+      <option name="closed" value="true" />
+      <created>1757077085622</created>
+      <option name="number" value="00126" />
+      <option name="presentableId" value="LOCAL-00126" />
+      <option name="project" value="LOCAL" />
+      <updated>1757077085622</updated>
+    </task>
+    <task id="LOCAL-00127" summary="Update Grigory">
+      <option name="closed" value="true" />
+      <created>1757089395126</created>
+      <option name="number" value="00127" />
+      <option name="presentableId" value="LOCAL-00127" />
+      <option name="project" value="LOCAL" />
+      <updated>1757089395126</updated>
+    </task>
+    <task id="LOCAL-00128" summary="Update Grigory">
+      <option name="closed" value="true" />
+      <created>1757093595302</created>
+      <option name="number" value="00128" />
+      <option name="presentableId" value="LOCAL-00128" />
+      <option name="project" value="LOCAL" />
+      <updated>1757093595302</updated>
+    </task>
+    <task id="LOCAL-00129" summary="Update">
+      <option name="closed" value="true" />
+      <created>1757165447608</created>
+      <option name="number" value="00129" />
+      <option name="presentableId" value="LOCAL-00129" />
+      <option name="project" value="LOCAL" />
+      <updated>1757165447608</updated>
+    </task>
+    <task id="LOCAL-00130" summary="Update">
+      <option name="closed" value="true" />
+      <created>1757355852339</created>
+      <option name="number" value="00130" />
+      <option name="presentableId" value="LOCAL-00130" />
+      <option name="project" value="LOCAL" />
+      <updated>1757355852339</updated>
+    </task>
+    <option name="localTasksCounter" value="131" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
-    <MESSAGE value="update" />
-    <MESSAGE value="Fix comments iteration 1" />
-    <MESSAGE value="Apply Grammarly" />
     <MESSAGE value="Cleanup first part" />
     <MESSAGE value="Cleanup second part" />
     <MESSAGE value="Cleanup third part" />
@@ -501,10 +497,13 @@
     <MESSAGE value="Perplexitify idea part" />
     <MESSAGE value="Perplexitify core" />
     <MESSAGE value="Perplexitify implicits" />
-    <MESSAGE value="Update" />
     <MESSAGE value="Update 4" />
     <MESSAGE value="Update 5" />
     <MESSAGE value="Update 6" />
-    <option name="LAST_COMMIT_MESSAGE" value="Update 6" />
+    <MESSAGE value="Update 7" />
+    <MESSAGE value="Update 8" />
+    <MESSAGE value="Update Grigory" />
+    <MESSAGE value="Update" />
+    <option name="LAST_COMMIT_MESSAGE" value="Update" />
   </component>
 </project>
