@@ -1,6 +1,6 @@
 %! suppress = MissingLabel
 %%
-%% This is file `effect-system-synergy.tex',
+%% This is file `one-plus-one.tex',
 %% generated with the docstrip utility.
 %%
 %% The original source files were:
@@ -12,7 +12,7 @@
 %% For the copyright see the source file.
 %%
 %% Any modified versions of this file must be renamed
-%% with new filenames distinct from effect-system-synergy.tex.
+%% with new filenames distinct from one-plus-one.tex.
 %%
 %% For distribution of the original source see the terms
 %% for copying and modification in the file samples.dtx.
@@ -1454,6 +1454,7 @@ Examples of such values include tracked resources or capabilities that witness t
 
 To enable this, we can introduce an additional lifetime, $regional$, with the ordering $free <: regional <: local$.
 This $regional$ lifetime differs from $local$ in two key aspects: it can bound generics of effect operations, and it can appear within the parameter types of operations.
+% Note: it is still not possible to store regional in mutable state - for good.
 
 In fact, permitting the passing of arbitrary capabilities to an operation effectively corresponds to representing higher-order effects~\cite{wu2014effect, zhang2020handling, van2022handling}.
 We defer the investigation of this matter to future work.

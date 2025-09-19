@@ -10,7 +10,7 @@
       <envs />
       <expand-macros-in-environment-variables>false</expand-macros-in-environment-variables>
       <before-run-command />
-      <main-file>$PROJECT_DIR$/effect-system-synergy.tex</main-file>
+      <main-file>$PROJECT_DIR$/one-plus-one.tex</main-file>
       <output-path>$PROJECT_DIR$</output-path>
       <auxil-path>{projectDir}/auxil</auxil-path>
       <compile-twice>false</compile-twice>

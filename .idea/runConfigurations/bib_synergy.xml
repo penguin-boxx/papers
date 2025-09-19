@@ -5,7 +5,7 @@
       <compiler-path />
       <compiler-arguments />
       <envs />
-      <main-file>$PROJECT_DIR$/effect-system-synergy.tex</main-file>
+      <main-file>$PROJECT_DIR$/one-plus-one.tex</main-file>
       <aux-dir />
       <latex-distribution>PROJECT_SDK</latex-distribution>
     </texify-bibtex>
