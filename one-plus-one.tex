@@ -1,0 +1,1629 @@
+%! suppress = MissingLabel
+%%
+%% This is file `one-plus-one.tex',
+%% generated with the docstrip utility.
+%%
+%% The original source files were:
+%%
+%% samples.dtx  (with options: `all,journal,bibtex,acmsmall')
+%%
+%% IMPORTANT NOTICE:
+%%
+%% For the copyright see the source file.
+%%
+%% Any modified versions of this file must be renamed
+%% with new filenames distinct from one-plus-one.tex.
+%%
+%% For distribution of the original source see the terms
+%% for copying and modification in the file samples.dtx.
+%%
+%% This generated file may be distributed as long as the
+%% original source files, as listed above, are part of the
+%% same distribution. (The sources need not necessarily be
+%% in the same archive or directory.)
+%%
+%%
+%% Commands for TeXCount
+%TC:macro \cite [option:text,text]
+%TC:macro \citep [option:text,text]
+%TC:macro \citet [option:text,text]
+%TC:envir table 0 1
+%TC:envir table* 0 1
+%TC:envir tabular [ignore] word
+%TC:envir displaymath 0 word
+%TC:envir math 0 word
+%TC:envir comment 0 0
+%%
+%% The first command in your LaTeX source must be the \documentclass
+%% command.
+%%
+%% For submission and review of your manuscript please change the
+%% command to \documentclass[manuscript, screen, review]{acmart}.
+%%
+%% When submitting camera ready or to TAPS, please change the command
+%% to \documentclass[sigconf]{acmart} or whichever template is required
+%% for your publication.
+%%
+%%
+\documentclass[acmsmall,review,screen]{acmart}
+%%
+%% \BibTeX command to typeset BibTeX logo in the docs
+%\AtBeginDocument{%
+%    \providecommand\BibTeX{{%
+%        Bib\TeX}}}
+
+%% Rights management information.  This information is sent to you
+%% when you complete the rights form.  These commands have SAMPLE
+%% values in them; it is your responsibility as an author to replace
+%% the commands and values with those provided to you when you
+%% complete the rights form.
+%\setcopyright{acmlicensed}
+%\copyrightyear{2026}
+%\acmYear{2026}
+%\acmDOI{XXXXXXX.XXXXXXX}
+
+%%
+%% These commands are for a JOURNAL article.
+%\acmJournal{JACM}
+%\acmVolume{37}
+%\acmNumber{4}
+%\acmArticle{111}
+%\acmMonth{1}
+
+%%
+%% Submission ID.
+%% Use this when submitting an article to a sponsored event. You'll
+%% receive a unique submission ID from the organizers
+%% of the event, and this ID should be used as the parameter to this command.
+%%\acmSubmissionID{123-A56-BU3}
+
+%%
+%% For managing citations, it is recommended to use bibliography
+%% files in BibTeX format.
+%%
+%% You can then either use BibTeX with the ACM-Reference-Format style,
+%% or BibLaTeX with the acmnumeric or acmauthoryear sytles, that include
+%% support for advanced citation of software artefact from the
+%% biblatex-software package, also separately available on CTAN.
+%%
+%% Look at the sample-*-biblatex.tex files for templates showcasing
+%% the biblatex styles.
+%%
+
+%%
+%% The majority of ACM publications use numbered citations and
+%% references.  The command \citestyle{authoryear} switches to the
+%% "author year" style.
+%%
+%% If you are preparing content for an event
+%% sponsored by ACM SIGGRAPH, you must use the "author year" style of
+%% citations and references.
+%% Uncommenting
+%% the next command will enable that style.
+%%\citestyle{acmauthoryear}
+
+% Line numbers
+% https://tex.stackexchange.com/questions/16010/number-every-line-of-pages
+%\usepackage{lineno}
+%\usepackage{mathtools}
+%\linenumbers
+% ------------------------------------------------
+
+% https://authors.acm.org/proceedings/production-information/accepted-latex-packages
+\usepackage{multicol} % is not allowed by ACM
+\usepackage{proof}    % is not allowed by ACM
+\usepackage{mathtools}
+
+\usepackage{listings}
+\lstdefinestyle{modern}{
+    basicstyle=\normalfont\ttfamily\footnotesize,     % fixed-width font, smaller size
+    keywordstyle=\color{blue!80!black}\bfseries,  % strong blue keywords
+    stringstyle=\color{red!70!black},      % subtle red for strings
+    commentstyle=\color{green!60!black}\itshape,  % italic green comments
+    numberstyle=\tiny\color{gray!50},      % small, gray line numbers
+    rulecolor=\color{gray!50},            % frame color
+    tabsize=4,                           % tab size of 2 spaces
+    showspaces=false,                   % don't show spaces as underscores
+    showstringspaces=false,             % don't highlight spaces in strings
+    breaklines=false,                    % automatic line breaking
+    breakatwhitespace=false,             % break lines at whitespace
+    captionpos=b,                       % caption at the bottom
+    escapeinside={(*@}{@*)},             % escape to LaTeX inside comments
+    gobble=4,      % skip 4 characters of indentation in code lines
+}
+\lstdefinelanguage{colang}{
+    keywords=[1]{let, var, effect, perform, data, context, fun, where, if, else, throw, try, catch, local, free, op, handle, resume, class, interface, override, init},
+    sensitive=true,
+    comment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+    breaklines=false,
+    tabsize=4,
+    showstringspaces=false,
+}
+\lstdefinelanguage{koka}{
+    keywords=[1]{fun,val,var,if,else,match,with,return,do,handle,throw,try,capture,let,in,open,module,where,import},
+    keywords=[1]{int,float,bool,string,unit,effect,handler,rec,mutable,global},
+    keywords=[2]{println,print},
+    sensitive=true,
+    comment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+    morestring=[b]',
+    alsoletter={!},
+    tabsize=4,
+    breaklines=false,
+    showspaces=false,
+    showstringspaces=false,
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=[3]\color{blue}\bfseries,
+    keywordstyle=[1]\color{teal},
+    keywordstyle=[2]\color{violet}\itshape,
+    commentstyle=\color{green!60!black}\itshape,
+    stringstyle=\color{red!70!black},
+    numberstyle=\tiny\color{gray},
+    numbers=left,
+    numbersep=8pt,
+    frame=single,
+    rulecolor=\color{gray!50},
+    frameround=tttt,
+    captionpos=b,
+    escapeinside={(*@}{@*)},
+}
+\lstset{style=modern}
+
+\newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
+\newcommand{\mathframebox}[1]{\framebox{$\displaystyle #1$}}
+\newcommand{\vor}{~|~}
+\newcommand{\ap}{~}
+\newcommand{\ctx}[1]{ctx\left(#1\right)~}
+\newcommand{\step}{\rightsquigarrow}
+\newcommand{\local}{\top}
+\newcommand{\free}{\bot}
+\newcommand{\keyword}[1]{\mathbf{#1}}
+\newcommand{\identation}{\text{\hspace{2em}}}
+
+%%
+%% end of the preamble, start of the body of the document source.
+%! suppress = TooLargeSection
+\begin{document}
+
+%%
+%% The "title" command has an optional parameter,
+%% allowing the author to define a "short title" to be used in page headers.
+\title{One Plus One: Effect System as a Synergy of Implicit Parameters and Type-Based Escape Analysis}
+
+%%
+%% The "author" command and its associated commands are used to define
+%% the authors and their affiliations.
+%% Of note is the shared affiliation of the first two authors, and the
+%% "authornote" and "authornotemark" commands
+%% used to denote shared contribution to the research.
+%\author{Ben Trovato}
+%\authornote{Both authors contributed equally to this research.}
+%\email{trovato@corporation.com}
+%\orcid{1234-5678-9012}
+%\author{G.K.M. Tobin}
+%\authornotemark[1]
+%\email{webmaster@marysville-ohio.com}
+%\affiliation{%
+%    \institution{Institute for Clarity in Documentation}
+%    \city{Dublin}
+%    \state{Ohio}
+%    \country{USA}
+%}
+%
+%\author{Lars Th{\o}rv{\"a}ld}
+%\affiliation{%
+%    \institution{The Th{\o}rv{\"a}ld Group}
+%    \city{Hekla}
+%    \country{Iceland}}
+%\email{larst@affiliation.org}
+%
+%\author{Valerie B\'eranger}
+%\affiliation{%
+%    \institution{Inria Paris-Rocquencourt}
+%    \city{Rocquencourt}
+%    \country{France}
+%}
+%
+%\author{Aparna Patel}
+%\affiliation{%
+%    \institution{Rajiv Gandhi University}
+%    \city{Doimukh}
+%    \state{Arunachal Pradesh}
+%    \country{India}}
+
+\author{Andrey Stoyan}
+\affiliation{%
+    \institution{HSE University}
+    \city{Saint Petersburg}
+    \country{Russian Federation}}
+\email{a.stoyan@hse.ru}
+
+%%
+%% By default, the full list of authors will be used in the page
+%% headers. Often, this list is too long, and will overlap
+%% other information printed in the page headers. This command allows
+%% the author to define a more concise list
+%% of authors' names for this purpose.
+%\renewcommand{\shortauthors}{Surname et al.}
+\renewcommand{\shortauthors}{Andrey Stoyan}
+
+% todo добавить везде про proof automations
+
+%%
+%% The abstract is a short summary of the work to be presented in the
+%% article.
+\begin{abstract}
+    Effects offer a systematic approach to managing code complexity.
+    Certain responsibilities can be delegated to an execution context, allowing a computation to interact with this context by performing effects and thereby focusing on other aspects of logic.
+    Effect systems elevate information about a program’s side effects to the type level, clarifying abstraction boundaries and enabling static verification of context validity.
+    Despite these advantages, effect systems have not seen widespread adoption, largely due to their alien design and the general unfamiliarity of practitioners with the concept.
+
+    In this paper, we propose a perspective on effect system design as a combination of two properly-designed language features: implicit parameters and type-based escape analysis.
+    We argue that both features can be naturally realized in mainstream programming languages, are already familiar to practitioners, and provide independent utility.
+    We motivate our approach by considering effect systems as mechanism for tracking free variables.
+    We specify the requirements for a proper design of implicit parameters and illustrate these requirements through a formal example.
+    We introduce a novel type-based escape analysis technique based on polymorphic $\lambda$-calculus with subtyping that relies on straightforward programmer-supplied dataflow descriptions.
+    Furthermore, we combine implicit parameters and type-based escape analysis together to provide an example of a minimalistic effect system.
+    Finally, we discuss technical approaches to make an effect system more practical for common programming scenarios.
+\end{abstract}
+
+%%
+%% The code below is generated by the tool at http://dl.acm.org/ccs.cfm.
+%% Please copy and paste the code instead of the example below.
+%%
+%! suppress = EscapeUnderscore
+\begin{CCSXML}
+    <ccs2012>
+    <concept>
+    <concept_id>10011007.10011006.10011008.10011024.10011025</concept_id>
+    <concept_desc>Software and its engineering~Polymorphism</concept_desc>
+    <concept_significance>500</concept_significance>
+    </concept>
+    <concept>
+    <concept_id>10011007.10011006.10011008.10011024.10011027</concept_id>
+    <concept_desc>Software and its engineering~Control structures</concept_desc>
+    <concept_significance>300</concept_significance>
+    </concept>
+    <concept>
+    <concept_id>10003752.10003790.10011740</concept_id>
+    <concept_desc>Theory of computation~Type theory</concept_desc>
+    <concept_significance>500</concept_significance>
+    </concept>
+    </ccs2012>
+\end{CCSXML}
+
+\ccsdesc[500]{Software and its engineering~Polymorphism}
+\ccsdesc[300]{Software and its engineering~Control structures}
+\ccsdesc[500]{Theory of computation~Type theory}
+
+%%
+%% Keywords. The author(s) should pick words that accurately describe
+%% the work being presented. Separate the keywords with commas.
+\keywords{static analysis, type systems, effects, capabilities}
+
+% todo
+%\received{10 July 2025}
+%\received[revised]{12 March 2009}
+%\received[accepted]{5 June 2009}
+
+%%
+%% This command processes the author and affiliation and title
+%% information and builds the first part of the formatted document.
+\maketitle
+
+
+\section{Introduction} \label{sec:intro}
+
+% Introduction makes claims, all of them should be supported later.
+
+The discipline of programming primarily centers on the management of complexity, enabling developers to concentrate on a specific fragment of behavior within any given code segment.
+Abstraction and the separation of concerns are essential strategies in this process: distinct responsibilities are delegated to different program entities, such as functions or modules.
+Frequently, such an entity may be abstractly referred to as the \textit{execution context} of a computation, with \textit{effects} emerging naturally as interactions between the computation and its context~\cite{kiselyov2013extensible}.
+
+An execution context can be characterized by at least one of the following properties:
+\begin{enumerate}
+    \item Interactions with an execution context are observable.
+    For example, the memory management subsystem can be considered as the execution context --- each memory mutation can influence the results of subsequent reads.
+    In that case the context is responsible for bookkeeping of memory cells.
+    \item The activity of an execution context is restricted to a particular scope, such that only code within this scope can interact with the context.
+    For example, an exception handler operates as an execution context confined to the body of a \texttt{try-catch} block; when an exception is thrown, control is transferred to the handler, which manages the exceptional situation.
+    Another case is inversion of control, where an execution context restricts the provision of certain functionality to code within a defined scope, while code outside that scope may interact with a different context and access different functionality.
+\end{enumerate}
+
+An effect system reflects effects of a computation at the type level.
+Following the properties of execution contexts, it serves two primary purposes:
+\begin{enumerate}
+    \item An effect system makes effects explicit in type signatures, allowing functional abstraction boundaries to be specified with greater precision: implementation details are less likely to leak implicitly via context interactions.
+    For example, a function cannot have an unspecified observable behavior such as mutation of external state.
+    \item Furthermore, an effect system provides static enforcement of \textit{effect safety} for a computation’s use by ensuring that computations are only executed within appropriate contexts.
+    So, an effect system must ensure that all exceptions will be handled and all functionality required by inversion of control is available.
+\end{enumerate}
+It is also worth mentioning that effect systems can capture additional properties of computations, such as potential for divergence.
+
+Many promising designs of effect systems were proposed: row-polymorphic types~\cite{leijen2014koka}, capabilities~\cite{brachthauser2022effects, boruch2023capturing}, modal types~\cite{tang2025modal}, etc.
+However, each of these approaches exhibits its own advantages and drawbacks, and the overall configuration of the design space for effect systems remains underexplored.
+At the same time we believe it is important for language designers to have a comprehensive view of the available design options, allowing them to select the most appropriate solution given the specific characteristics and constraints of their target language.
+
+In this paper, we argue that effect systems can be conceptualized as a combination of two simpler and more foundational language features: implicit parameters and type-based escape analysis.
+Viewing effect systems from this perspective introduces axes within the effect system design space: varying the designs of these two features yields different possible instantiations.
+Moreover, this approach facilitates the seamless integration of effect systems into existing mainstream languages, as many of these languages already support at least one of these features, since each of which is independently practical.
+
+We base our work on prior research, predominantly arising from the Scala language~\cite{odersky2021safer, boruch2023capturing}.
+Our primary contribution lies in articulating the idea of effect system decomposition explicitly and leveraging these insights to design a new effect system that is both practical and minimalistic.
+
+Contributions of this paper are summarized as follows:
+\begin{itemize}
+    \item We propose a perspective on effect system design as a combination of two properly-designed language features: implicit parameters and type-based escape analysis; and motivate our approach by looking at effect systems as systems for managing free variables (Section~\ref{sec:idea}).
+    \item We describe required properties of implicit parameters design and provide a suitable one using a formal calculi (Section~\ref{sec:implicits}).
+    \item We provide a novel type-based escape analysis technique that only requires straight-forward dataflow descriptions from a programmer (Section~\ref{sec:escape}).
+    \item We discuss multiple approaches aimed at improving the usability of an effect system, making it more accessible and easier for broad adoption (Section~\ref{sec:mainstream}).
+    \item We compare our approach with previous art and show that other designs can be considered in implicit parameters and escape analysis basis (Section~\ref{sec:related}).
+\end{itemize}
+
+
+\section{Two pieces of an effect system design} \label{sec:idea}
+
+In this section we introduce the central idea of this paper through practical examples.
+Also, we illustrate that the pragmatic motivations for effect systems emerge naturally from common programming scenarios.
+
+\subsection{The road to implicit parameters} \label{subsec:implicits}
+
+Consider our running example, where the business logic function executes an update operation on the database storage.
+The first version establishes its own database connection and executes a query:
+\begin{lstlisting}[language=colang]
+    fun business1() { let db = Db.open(...); db.query("...") }
+\end{lstlisting}
+This approach has several drawbacks.
+Firstly, it hinders testability, as it is not straightforward to replace the database connection with a mock or alternative implementation; consequently, verifying the business logic in isolation becomes challenging.
+Secondly, this function produces observable side effects --- such as performing database operations --- which are an integral part of its external contract.
+Nevertheless, these effects are not reflected in the function’s signature.
+
+The second version provides a notable improvement:
+\begin{lstlisting}[language=colang]
+    fun business2(db: Db) { db.query("...") }
+    fun caller() { let db = Db.open(...); business2(db) }
+\end{lstlisting}
+Here, the business logic function is parameterized over the database connection, enabling the call site to supply a concrete implementation with the desired semantics.
+Furthermore, the observable effects are now made explicit through the \texttt{db} parameter.
+However, this approach incurs the overhead of additional syntactic complexity at the call site, as the administrative effort of explicitly passing parameters increases.
+While this may appear trivial for a single argument, the burden becomes significant if, for example, four such parameters must be threaded through multiple layers of the call stack.
+Best practices intended for widespread adoption should be at least as accessible and convenient as less optimal alternatives.
+
+To reduce boilerplate, the third version replaces ordinary parameter with dynamically scoped free variable \lstinline[language=colang]{db}.
+Such variables acquire their values through lookup within the dynamic scope of the function call.
+\begin{lstlisting}[language=colang]
+    fun business3() { db.query("...") }
+    fun caller() { let db = Db.open(...); business3() }
+\end{lstlisting}
+However, this approach comes at the expense of other benefits: specifically, it sacrifices static typing and the explicit representation of context dependencies.
+
+To regain static type safety, we approximate dynamically scoped free variables using implicit function parameters~\cite{lewis2000implicit}.
+At the declaration site, we introduce a \lstinline[language=colang]|context| keyword to define a group of implicit parameters, which are automatically supplied by the compiler at the call site.
+To make a value available for implicit parameter resolution, we use the \lstinline[language=colang]{context let} declaration syntax.
+\begin{lstlisting}[language=colang]
+    context(db: Db)
+    fun business4() { db.query("...") }
+
+    fun caller() {
+        context let db = Db.open(...)
+        business4()
+    }
+\end{lstlisting}
+
+In terms of effects and contexts, \lstinline[language=colang]|context let| introduces an execution context, whose scope is restricted to the corresponding lexical region, and provides functionality of access to a database storage.
+Implicit parameters express a function's requirements for its context.
+In order to invoke such a function, the context must establish its validity by supplying concrete values for these implicit parameters.
+We refer to these values as \textit{capabilities}, and logically they serve as witnesses of context validity.
+It is important to note, that until this point our discussion was based solely on the mechanism of bindings, and did not require any deep understanding of the abstract notion of effects.
+
+Exceptions and other algebraic operations can be tracked in an analogous manner~\cite{odersky2021safer}.
+For example, a \lstinline[language=colang]|throw SomeException()| construct can be interpreted as calling a function that requires an implicit parameter of type \lstinline[language=colang]|Handler<SomeException>|.
+Correspondingly, constructs that handle exceptions must supply appropriate witness values for these implicit parameters.
+\begin{lstlisting}[language=colang]
+    fun checkingExceptions() {
+        try { // provides a capability of type Handler<SomeException>
+            throw SomeException() // requires a capability of type Handler<SomeException>
+        } catch (e: SomeException) { ... }
+    }
+\end{lstlisting}
+
+Nowadays, several widely used programming languages provide support for implicit parameters, and the inference mechanisms associated with these parameters is well understood~\cite{KEEP-context-parameters, oliveira2010type, lewis2000implicit}.
+Moreover, implicit parameters alone are sufficient as the evidence-passing technique to implement tail-resumptive algebraic operations~\cite{xie2020effect}.
+
+\subsection{Retain effect safety with escape analysis} \label{subsec:escape}
+
+An effect system should ensure that all computations are executed within appropriate contexts --- a property we refer to as \textit{effect safety}.
+In our setting, the context must supply capabilities as evidence of its validity.
+Consequently, these capabilities must not be allowed to escape their corresponding contexts.
+For example, if a \lstinline[language=colang]|Handler| value were to escape a corresponding \lstinline[language=colang]|try-catch| block, we would lose the guarantee that all exceptions are handled and, thereby, the effect safety itself:
+\begin{lstlisting}[language=colang]
+    fun unsafe() {
+        let f =
+            try { // context let h: Handler<SomeException>
+                let g: () -> Nothing = () => throw SomeException() // captures h
+                g // leak computation capturing capability
+            } catch (e: SomeException) { ... }
+        f() // throws SomeException
+    }
+\end{lstlisting}
+
+To prevent the leakage of capabilities, some form of escape analysis is required~\cite{park1992escape}.
+Given that effect systems operate at the type level, it is natural to employ type-based techniques for escape analysis as well~\cite{xie2022first}. % todo better understand connection with dataflow algorithms, since they are semantics too
+Furthermore, since this analysis must account for the flow of capabilities across function boundaries, it should be directly reflected in function signatures to be intra-procedural.
+In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
+
+We refer to values that must not escape a given scope as \textit{tracked}, and likewise, their types are designated as tracked.
+For instance, capabilities are tracked, as are, by default, the types of implicit function parameters.
+To differentiate between tracked and non-tracked types, each type \lstinline[language=colang]|T| is annotated with a special label \lstinline[language=colang]|lab|, referred to as a lifetime:
+\begin{lstlisting}[language=colang]
+    T'lab /* or for function types */ (A)'lab -> B
+\end{lstlisting}
+
+The \lstinline[language=colang]|free| lifetime label designates non-tracked values.
+In contrast, the \lstinline[language=colang]|local| label appears in tracked types and is treated specially by the type system to prevent their escape.
+For instance, the return type of the \lstinline[language=colang]|try-catch| block must not include the \lstinline[language=colang]|local| label.
+Consequently, the following code will be rejected by the type system, as the function’s lifetime is determined by the lifetimes of the captured values:
+\begin{lstlisting}[language=colang]
+    fun safe() {
+        let f =
+            try { // context let h: Handler<SomeException>'local
+                let g: ()'local -> Nothing = () => throw SomeException()
+                g // type error: leaking type includes local
+            } catch (e: SomeException) { ... }
+        f()
+    }
+\end{lstlisting}
+
+Tracked values also cannot be returned from functions.
+Thus, we can specify in type of a higher-order function that it do not leak an argument function.
+For example, the eager \lstinline[language=colang]|map| function calls its argument inplace:\footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}
+\begin{lstlisting}[language=colang]
+    fun map(xs: List<a>, f: (a)'local -> b): List<b>
+\end{lstlisting}
+
+Note that it is safe to pass functions that capture capabilities to \lstinline[language=colang]|map|, and this safety can be verified statically:
+\begin{lstlisting}[language=colang]
+    context(io: IO'local)
+    fun printAll(xs: List<Int>) {
+        map(xs, (x) => io.print(x)) // capability capturing is safe here
+    }
+\end{lstlisting}
+
+In the example, the \lstinline[language=colang]|io| is the lexically scoped free variable for the lambda function.
+The ability to close over capabilities enables the technique known as \textit{contextual polymorphism}~\cite{brachthauser2020effects, brachthauser2022effects}.
+This approach allows higher-order functions to remain fully transparent with respect to effects, eliminating the need for explicit polymorphic type variables that range over effect rows.
+In comparison, the corresponding function type in the Koka language employs row-polymorphic types, where the \lstinline[language=colang]|e| denotes a type variable ranging over effect row types~\cite{leijen2014koka}:
+\begin{lstlisting}[language=colang]
+    fun map(xs: list<a>, f: (a) -> e b): e list<b>
+\end{lstlisting}
+
+To enable a function to propagate its arguments through its result, polymorphism over lifetime labels can be used.
+In essence, this is an explicit specification of the function’s dataflow directly in the type signature.
+For instance, the lazy \lstinline[language=colang]|map| function does not eagerly compute and return the final result; instead, it immediately yields a collection that encapsulates the processing logic.
+This behavior can be captured by assigning the same lifetime variable~\lstinline[language=colang]|l| to both the argument function \lstinline[language=colang]|f| and the result type.
+Consequently, the type system records that any tracked capabilities captured by \lstinline[language=colang]|f| may be retained within the result.
+Thus, such a function continues to support contextual polymorphism, as it can only permit \texttt{f} to escape with the result, and the call site is made aware that the result must not escape its prescribed context:
+\begin{lstlisting}[language=colang]
+    fun lazyMap(xs: LazyList<a>, f: (a)'l -> b): LazyList<b>'l
+
+    context(io: IO'local)
+    fun printAll(xs: LazyList<Int>) {
+        let ys: LazyList<Int>'local = lazyMap(xs, (x) => io.print(x))
+        ys.collect() // force execution
+    }
+\end{lstlisting}
+
+To express the capture of two or more lifetime-polymorphic values, we employ a syntax with plus that denotes the minimum of their lifetimes:
+\begin{lstlisting}[language=colang]
+    fun compose(f: (b)'l1 -> c, g: (a)'l2 -> b): (a)'l1+l2 -> c =
+        (x) => f(g(x))
+\end{lstlisting}
+
+For the sake of simplicity, lifetime polymorphism is not supported for compound datatypes.
+Instead, their lifetimes are computed as the minimum of the lifetimes of their components; the same mechanism is applied to closures.
+Upon destructuring, the lifetimes of the individual components are, in turn, approximated by the lifetime of the original compound datatype.
+\begin{lstlisting}[language=colang]
+    fun makeRepository(file: File'l1, conn: Connection'l2): Repository'l1+l2 =
+        Repository(file, conn)
+
+    context(repo: Repository'local)
+    fun registerUser(user: User) {
+        let conn: Connection'local = repo.conn
+        conn.send(user)
+    }
+\end{lstlisting}
+
+We define subtyping so that non-tracked values may be used in positions where tracked values are expected: \lstinline[language=colang]|free <: local|.
+This design increases the number of safe well-typed programs and facilitates gradual adoption of effect tracking for languages transitioning from untyped effects to the effect system.
+
+We permit tracked types to instantiate polymorphic type parameters, thereby making them first-class citizens in the language.
+To control when tracked types are appropriate for instantiation, we use bounded polymorphism.
+For example, the \lstinline[language=colang]|map| function uses values of type \lstinline[language=colang]|a| inside and returns values of type \lstinline[language=colang]|b| directly to the caller.
+As a result, these type parameters may be instantiated with tracked types:\footnote{We assume that \lstinline[language=colang]|Any| serves as the top element in the type lattice.} \footnote{To preserve backward compatibility, the type \lstinline[language=colang]|Any'free| may be used as the default bound.}
+\begin{lstlisting}[language=colang]
+    fun map(xs: List<a>, f: (a)'l -> b): List<b>'l where a <: Any'local, b <: Any'local
+\end{lstlisting}
+
+Upon capturing, an unknown lifetime of a type argument is approximated by the lifetime of its bound.
+Consider the most permissive type for the \lstinline[language=colang]|lazyMap| function.
+For the parameter \lstinline[language=colang]|a| we use the polymorphic bound \lstinline[language=colang]|la| and include it into the resulting lifetime, since the resulting lazy list captures the initial list.
+The \lstinline[language=colang]|ba| is not used in the result type, because it includes \lstinline[language=colang]|b| itself.
+\begin{lstlisting}[language=colang]
+    fun lazyMap(xs: LazyList<a>, f: (a)'lf -> b): LazyList<b>'lf+la
+            where a <: Any'la, b <: Any'lb
+\end{lstlisting}
+
+Various techniques can be employed to mitigate the boilerplate associated with lifetime polymorphism.
+For instance, the lifetime elision mechanism in the Rust language~\cite{matsakis2014rust} utilizes heuristics to automatically insert lifetime variables, thus reducing the need for explicit annotations.
+This technique, along with dependent typing-like syntactic sugar, will be discussed in Section~\ref{subsec:lifetime-poly-enhancement}.
+\begin{lstlisting}[language=colang]
+    fun lazyMap(xs: LazyList<a>, f: (a)'lf -> b): LazyList<b>'f+xs
+\end{lstlisting}
+
+The utility of type-based escape analysis extends well beyond its role in the construction of effect systems.
+Specifically, it can be leveraged to reduce the number of heap allocations~\cite{lorenzen2024oxidizing}, enable borrowing for the ownership-based resource management~\cite{matsakis2014rust, lorenzen2024oxidizing}, and ensure the safety of non-local returns~\cite{akhin2021kotlin}.
+
+\subsection{Summary} \label{subsec:idea-summary}
+
+An effect system can be regarded as the integration of implicit parameters with type-based escape analysis.
+Consequently, the design of an effect system naturally decomposes into two distinct components and can be developed incrementally in a step-by-step manner.
+
+In fact, our previous discussion has primarily focused on free variables.
+Indeed, a term inherently depends on its context via its free variables, acquiring different semantics depending on the particular context in which it is evaluated or defined.
+So, free variables are the target for effect systems, while bound once are regulated by canonical type systems.
+
+Our perspective on effect systems arises from a fundamental observation: the semantics of free variables can be defined by two principal scoping disciplines~--- dynamic and lexical scoping.
+Adopting one or the other proves advantageous depending on the programming scenario.
+We summarize the correspondence between these two disciplines in Figure~\ref{fig:free-vars} and further discuss the relationship to existing approaches in effect system design in Section~\ref{sec:related}.
+
+\begin{figure}
+    \centering
+    \begin{tabular}{|l|l|l|}
+        \hline
+        Free variables & dynamically scoped & lexically scoped \\
+        \hline
+        Represent & unfulfilled contextual requirements & fulfilled contextual requirements \\
+        Dealt by & implicit parameters & type-based escape analysis \\
+        User specifies & more function parameters & a function’s dataflow \\
+        \hline
+    \end{tabular}
+    \caption{Effect systems are for managing free variables.}
+    \label{fig:free-vars}
+\end{figure}
+
+
+\section{Core calculus} \label{sec:core}
+
+In this section, we introduce an explicitly typed, call-by-value core calculus, denoted as $Core$, which serves as the foundational framework for our study.
+In subsequent sections, we will extend $Core$ with inference of implicits and type-based escape analysis.
+
+\subsection{Effect handlers} \label{subsec:handlers}
+
+In our formal developments, we adopt effect handlers as a universal mechanism for defining effects~\cite{plotkin2003algebraic, plotkin2013handling}, since they are sufficiently expressive to capture all effects of interest.
+This obviates the need to treat individual effects separately.
+Furthermore, in contrast to monad transformers~\cite{liang1995monad, schrijvers2019monad}, the dynamic semantics of effect handlers can be defined independently of any type-directed translation.
+Consequently, this approach imposes no inherent constraints on the design of the effect system, providing us greater flexibility.
+
+We begin by providing a brief introduction to effect handlers and demonstrate how they can be used to implement the effects mentioned in the previous Section~\ref{sec:idea}.
+
+The \lstinline[language=colang]{handle} construct allows to define an execution context for a particular scope by specifying a set of \emph{effect operations}.
+Within this scope, the \lstinline[language=colang]{perform} construct allows code to invoke these operations, facilitating interaction with the execution context managed by the handler.
+The implementation of each operation within a handler is granted access to a delimited continuation of the call site~\cite{dyvbig2007monadic}.
+This continuation can be invoked to resume the computation with an operation's result.
+
+In our setting, we employ lexically scoped handlers, which require that each \lstinline[language=colang]{perform} invocation is associated with a specific handler instance~\cite{biernacki2019binders, brachthauser2020effects}.
+
+For example, consider defining an execution context that supplies a specific constant value to a computation analogous to \lstinline[language=colang]{context let} from Section~\ref{sec:idea}.
+This can be achieved by providing a handler for a \lstinline[language=colang]{Reader} effect, which offers an \lstinline[language=colang]{ask} operation that returns the designated constant.
+As in Koka, the \lstinline[language=colang]{resume} identifier is used to refer to the corresponding delimited continuation.
+The following computation sums the results of two invocations of \lstinline[language=colang]{ask}; with implementation returning the constant 21, the overall result of the computation will be 42:
+\begin{lstlisting}[language=colang]
+    effect Reader<e> { op ask(): e }
+
+    handle r: Reader<Int> { op ask() resume(42) } // like 'context let r = 42'
+    perform r.ask() + perform r.ask()             // like 'r + r'
+\end{lstlisting}
+
+To implement exception handling, the \texttt{throw} operation can be defined to discard the current continuation, effectively aborting the remainder of the computation.
+For instance, the following program returns the first thrown value 1:
+\begin{lstlisting}[language=colang]
+    effect Exception<e> { op raise(e): a }
+
+    handle h: Exception<Int> { op raise(e) e } // like 'catch'
+    perform h.raise(1) + perform h.raise(2)    // like 'throw 1 + throw 2'
+\end{lstlisting}
+
+Other algebraic effects, such as mutable state and nondeterminism, can likewise be implemented using the \texttt{handle} construct~\cite{plotkin2013handling}.
+
+%\begin{equation}
+%    \begin{array}{l}
+%        \keyword{handle}~ h : State\ap Int ~\keyword{with}~ \{\\
+%        \indent get = \lambda k\ldotp\lambda s\ldotp k\ap s\ap s \\
+%        \indent put = \lambda s'~k\ldotp\lambda s\ldotp k\ap ()\ap s' \\
+%        \} ~\keyword{in}~ \\
+%        perform~put~h~42; perform~get~h~42
+%    \end{array}
+%\end{equation}
+
+\subsection{Syntax of $Core$} \label{subsec:syntax-core}
+
+Let us introduce the syntax of $Core$, as illustrated in Figure~\ref{fig:core-syntax}.
+We use an overline to denote a sequence of corresponding entries.
+Constructs highlighted in gray are included solely to support the operational semantics.
+
+For explanatory purposes, we will continue to employ the informally defined surface syntax introduced in Section~\ref{sec:idea}; its correspondence to the formal definitions is straightforward.
+
+The main considerations that have shaped this syntax are as follows:
+\begin{itemize}
+    \item The functional type $\ctx{e}\overline{\tau}\to\sigma$ ensures that implicit parameters are always followed by ordinary parameters to prevent computations from being prematurely triggered by the inference of implicits (the overline denotes a tuple of argument types, with the empty tuple interpreted as the unit type).
+    \item Corresponding to the functional type, at the term level we partition function arguments into two categories: \emph{contextual arguments} (or implicit arguments), which are intended to be inferred automatically in future extensions, and ordinary arguments, which must be provided explicitly by the programmer.
+    \item Capability constructors $K_{cap}$ are used in an operational semantics to represent a capability.
+    \item  The $handle$ construct introduces a capability associated with the newly created handler instance and binds it to a name.
+    The \texttt{perform} construct, in turn, requires a capability in order to perform an effect operation.
+    This approach helps us to naturally build an effect system from the perspective discussed in Section~\ref{sec:idea}.
+    \item For conciseness, we omit \texttt{return} blocks in handlers, since they do not contribute additional expressiveness.
+    \item The $handler_m$ construct acts as a continuation delimiter, identified by a unique marker $m$ for operational semantics purposes.
+    \item The typing context differentiates regular bindings from \emph{contextual bindings}, the latter of which are restricted to monotypes.
+    While separate typing contexts for each binding class would be possible, this would necessitate different variable domains for contextual and ordinary bindings.
+\end{itemize}
+
+\begin{figure}
+    \centering
+    \begin{gather*}
+        \begin{array}{lrll}
+            \text{Variables} & & x, y, z, f, g, op \\
+            \text{Values} &v &\Coloneqq x \vor K \vor \Lambda \overline{\alpha} \ldotp v \\
+            &&\vor K\ap \overline{\tau} \ap \overline{v} \vor \graybox{K_{cap}\ap\overline{\tau}\ap m\ap h} \\
+            &&\vor \lambda \overline{x : \tau}~\overline{y : \sigma}\ldotp t
+            \\
+            \text{Terms} &t, u &\Coloneqq v \vor t\ap\overline{\tau} \vor t \ap \overline{t} \ap \overline{t} \\
+            &&\vor match ~ t ~\{\overline{K \ap \overline{x} \to t}\} \\
+            &&\vor perform ~ op \ap x \ap \overline{\tau} \ap \overline{t} \\
+            &&\vor handle ~ x : T \ap \overline{\tau} ~ \{h\}~in ~t \\
+            &&\vor \graybox{handler_m ~ t}
+            \\
+            \text{Handlers} &h &\Coloneqq \overline{op = t}
+            \\
+            \text{Programs} &p &\Coloneqq \epsilon \vor x : s = t, p
+        \end{array}
+        \begin{array}{lrl}
+            \text{Type variables} && \alpha, \beta \\
+            \text{Type constructors} && T \\
+            \text{Monotypes} & \tau, \sigma, \eta &\Coloneqq \alpha \vor T \ap \overline{\tau} \vor \ctx{e} \overline{\tau} \to \sigma \\
+            \text{Type schemas} & s &\Coloneqq \forall\overline{\alpha}\ldotp \tau \\
+            \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
+            \text{Typing contexts} & \Gamma, G &\Coloneqq \epsilon \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
+            &&\vor K : \forall\overline{\alpha}\ldotp \overline{\tau}\to T\ap \overline{\alpha}, \Gamma \\
+            \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}}\} \\
+            \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{\alpha}\ldotp\overline{\tau}\to\sigma}\} \\
+            \text{Free type variables} & & ftv(\cdot) \\
+        \end{array}\\
+        \begin{array}{ccl}
+            \text{Evaluation context} & E & \Coloneqq \square \vor E \ap \overline{\tau} \vor E \ap \overline{t}\ap \overline{t} \vor v \ap (\overline{v}, E, \overline{t}) \ap \overline{t} \vor v \ap \overline{v} \ap (\overline{v}, E, \overline{t}) \vor K\ap\overline{\tau}\ap(\overline{v}, E, \overline{t}) \\
+            && \vor match\ap E\ap \{\overline{K\ap\overline{x}\to t}\} \vor perform~op~x~\overline{\tau}~(\overline{v}, E, \overline{t}) \vor handler_m ~ E
+        \end{array}
+    \end{gather*}
+    \caption{Syntax for $Core$.}
+    \label{fig:core-syntax}
+\end{figure}
+
+Note that the type of first-class functions contains a list of contextual argument types.
+This enables us to type abstractions over handlers.
+For example, the following function establishes an execution context by introducing a handler for an exception type \lstinline[language=colang]{E}:
+\begin{lstlisting}[language=colang]
+    fun withE(f: context(Handler<E>) () -> r): r =
+        try { f() } catch (e: E) { ... }
+\end{lstlisting}
+
+We assume that the effect context $\Sigma$ is populated by user-defined \lstinline[language=colang]{effect} declarations, analogous to those found in Koka~\cite{leijen2017type}.
+Specifically, for a program containing the following declaration,
+\begin{lstlisting}[language=colang]
+    effect Eff<a> {
+        op id(x: b): b
+        op yield(x: a): Unit
+    }
+\end{lstlisting}
+we have \[\Sigma = \{EffK_{cap} : \forall\alpha\ldotp\{id : \forall\beta\ldotp b\to b, yield : a \to Unit\} \to Eff\ap a\}\]
+There exists a bijection between capability constructors and effect types.
+
+\subsection{Operational semantics of $Core$} \label{subsec:core-operational}
+
+Let us highlight the most significant aspects of our operational semantics, as presented in Figure~\ref{fig:core-operational}:
+\begin{itemize}
+    \item \textbf{(handle)} rule selects the capability constructor associated with the specified effect type $T$ and uses it to create a new capability.
+    Additionally, it allocates a fresh marker $m$ and installs it with the $handler$ construct.
+    \item \textbf{(perform)} rule deconstructs the provided capability, identifies the targeted operation, and invokes it with the current continuation, which is delimited by the associated marker $m$.
+    Since we adopt deep handlers~\cite{hillerstrom2018shallow}, the handler is reinstalled within the continuation.
+\end{itemize}
+
+\begin{figure}
+    \[
+        \begin{array}{llll}
+            \text{(tapp)} &(\Lambda \overline{\alpha}\ldotp t) \ap \overline{\tau} &\longrightarrow &[\overline{\alpha\to\tau}]\ap t
+            \\
+            \text{(app)} &(\lambda \overline{x}~\overline{y}\ldotp t) \ap \overline{v} \ap \overline{v'} &\longrightarrow &[\overline{x\to v}, \overline{y\to v'}]\ap t
+            \\
+            \text{(match)} &match ~K \ap \overline{v} ~ \{ \overline{K_i \ap \overline{x} \to u_i}\} &\longrightarrow &[\overline{x\to v}]\ap u_k, \text{ where } K = K_k
+            \\
+            \text{(handle)} &handle ~ x : T \ap \overline{\tau} ~ \{h\}~in~t &\longrightarrow & handler_m ~[x \to K_{cap} \ap\overline{\tau}\ap m \ap h] \ap t
+            \\
+            &&\text{where} & m \text{ fresh}, {\color{gray}(K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}) \in \Sigma}
+            \\
+            \text{(return)} &handler_m ~v &\longrightarrow & v
+            \\
+            \text{(perform)} &handler_m~E[perform \ap op \ap (K_{cap}\ap\overline{\tau_1}\ap m \ap h)\ap\overline{\tau_2}\ap\overline{v}] &\longrightarrow &t \ap \overline{\tau_2}\ap \overline{v}\ap k
+            \\
+            &&\text{where} & (op = t) \in h, {\color{gray}\theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}],} \\
+            &&& {\color{gray}(K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}) \in \Sigma,} \\
+            &&& {\color{gray}(op : \forall\overline{\beta}\ldotp\overline{\sigma}\to\sigma') \in sig,} \\
+            &&& k = \lambda x : \theta\ap\sigma' \ldotp handler_m~E[x]
+        \end{array}
+    \]
+    \vspace{-3em}
+    \[
+        \hspace{-15em}\infer[\text{(step)}]{E[t]\longrightarrow E[t']}{t\longrightarrow t'}
+    \]
+    \caption{Operational semantics for $Core$.}
+    \label{fig:core-operational}
+\end{figure}
+
+It is important to note that every \lstinline[language=colang]{perform} operation in our system is explicitly directed to a particular handler instance.
+As a result, there is no issue of accidental effect handling, so the effect encapsulation is achieved by default~\cite{lindley2018encapsulating, zhang2016accepting, brachthauser2020effects}.
+
+For instance, consider a function \lstinline[language=colang]{withE1} that installs a handler for exception \lstinline[language=colang]{E1}.
+If a computation \lstinline[language=colang]{f} potentially raises exception \lstinline[language=colang]{E2}, \lstinline[language=colang]{withE1} will not be able to intercept this exception, since it does not provide \lstinline[language=colang]{f} with the corresponding capability for \lstinline[language=colang]{E2}:
+\begin{lstlisting}[language=colang]
+    fun withE1(f: context(Handler<E1>) () -> r): r =
+        try { f() } catch (e: E1) { ... } catch (e: E2) { /* unreachable */ }
+\end{lstlisting}
+
+Since handlers are propagated explicitly to the operation call site, our approach eliminates the need for dynamic handler lookup and the collection of the continuation when the callee operation is tail-resumptive~\cite{xie2020effect}.
+In a low-level implementation, such a \lstinline[language=colang]{perform} construct can thus be compiled to a direct virtual call, further improving efficiency.
+
+\subsection{Typing rules for $Core$} \label{subsec:core-typing}
+
+\begin{itemize}
+    \item The typing rules for $Core$ (see Figure~\ref{fig:core-typing}) are presented in algorithmic form.
+    \item For conciseness, we omit both type well-formedness conditions and the (invariant) effect context~$\Sigma$.
+    \item Each entry in the effect context~$\Sigma$ can be uniquely identified by its capability type; thus, we treat~$\Sigma$ as a mapping: $\Sigma(T) = \left< \overline{\alpha}, sig \right> \iff K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha}\in\Sigma$.
+    \item All variable bindings within the typing context are assumed to be unique with respect to variable names, so rules $Var$ and $CVar$ do not contradict each other.
+\end{itemize}
+
+%! suppress = EscapeAmpersand
+\begin{figure}
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash t : s} \\
+        \begin{array}{ccc}
+            \infer[Var]{\Gamma\vdash x : s}{x : s \in \Gamma} &
+            \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma} &
+            \infer[Ctor]{\Gamma\vdash K : \forall \overline{\alpha}\ldotp \tau\to T\ap\overline{\alpha}}{K : \forall \overline{\alpha}\ldotp \tau\to T\ap\overline{\alpha} \in \Gamma}
+        \end{array} \\
+        \begin{array}{cc}
+            \infer[TLam]{
+                \Gamma\vdash\Lambda\overline{\alpha}\ldotp v : \forall\overline{\alpha}\ldotp\tau
+            }{
+                \Gamma\vdash v : \tau
+            } &
+            \infer[TApp]{
+                \Gamma\vdash t\ap\overline{\tau} : [\overline{\alpha\to\tau}]\ap\sigma
+            }{
+                \Gamma \vdash t : \forall\overline{\alpha}\ldotp \sigma
+            }
+        \end{array} \\
+        \infer[Lam]{
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : \ctx{\overline{\tau_1}} \overline{\tau_2} \to \sigma
+        }{
+            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma
+        }
+        \text{\hspace{2em}}
+        \infer[App]{
+            \Gamma\vdash t \ap \overline{u_1} \ap \overline{u_2} : \sigma
+        } {
+            \Gamma\vdash t : \ctx{\overline{\tau_1}}\overline{\tau_2}\to\sigma
+            &
+            \overline{\Gamma\vdash u_1 : \tau_1}
+            &
+            \overline{\Gamma\vdash u_2 : \tau_2}
+        }\\
+        \infer[Match]{
+            \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\} : \eta
+        }{
+            \Gamma\vdash t : T \ap\overline{\tau} &
+            \Gamma\vdash K_i : \forall \overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\overline{\alpha} &
+            \overline{x_{i} : [\overline{\alpha\to\tau}]\ap \sigma_{i}}, \Gamma \vdash u_i : \eta
+        }\\
+        \infer[Perform]{
+            \Gamma\vdash perform \ap op\ap \overline{\tau_2}\ap x\ap \overline{t} : \theta\ap\eta
+        }{
+            \Gamma\vdash x : T\ap \overline{\tau_1} &
+            \Sigma(T) = \left< \overline{\alpha}, sig \right> &
+            op : \forall\overline{\beta}\ldotp \overline{\sigma}\to\eta \in sig &
+            \theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}] &
+            \overline{\Gamma\vdash t : \theta\ap\sigma}
+        }\\
+        \infer[Handle]{
+            \Gamma \vdash handle ~ x : T\ap\overline{\tau} ~ \{\overline{op_i = t_i}\} ~in~u : \eta
+        }{
+            \begin{gathered}
+                x :_c T\ap\overline{\tau}, \Gamma\vdash u : \eta
+            \end{gathered}
+            &
+            \begin{array}{cc}
+                \Sigma(T) = \left< \overline{\alpha}, sig \right> &
+                op_i : \forall\overline{\beta_i}\ldotp \overline{\sigma_i}\to\sigma'_i \in sig
+                \\
+                \theta = [\overline{\alpha\to\tau}] &
+                \Gamma\vdash\theta\ap t_i : \forall \overline{\beta_i}\ldotp \ctx{}(\overline{\theta\ap\sigma_i}, \theta\ap\sigma_i'\to\eta)\to\eta
+            \end{array}
+        }\\
+        \infer[Cap]{
+            \Gamma\vdash K_{cap}\ap\overline{\tau}\ap m\ap h : T\ap\overline{\tau}
+        }{
+            K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap\overline{\alpha} \in \Sigma
+        }
+        \hspace{2em}
+        \infer[Handler]{
+            \Gamma\vdash handler_m ~t : \tau
+        }{
+            \Gamma\vdash t : \tau
+        }\\
+        \begin{array}{ccc}
+            \mathframebox{\Gamma\vdash p} &
+            \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
+            \infer[Prog]{
+                \Gamma\vdash x : s = t, p
+            }{
+                \Gamma\vdash t : s &
+                ftv(s) = \emptyset &
+                \Gamma\vdash p
+            }
+        \end{array}
+    \end{gather*}
+    \caption{Typing rules for $Core$.}
+    \label{fig:core-typing}
+\end{figure}
+
+\section{Design of implicit parameters} \label{sec:implicits}
+
+In this section we discuss design decisions for implicit parameters feature that enhance its suitability as a component of a practical effect system.
+Throughout the discussion, we introduce a formal calculus with implicit parameters, denoted as $Core^{im}$, which extends the $Core$ calculus.
+
+\subsection{Syntax of $Core^{im}$}
+
+We extend the syntax of $Core$ by introducing \emph{omitting application}, which allows the first block of contextual arguments to be unspecified:
+\[
+    \begin{array}{lcc}
+        \text{Terms} & t, u &\Coloneqq \ldots \vor t\ap\overline{t} \vor \ldots
+    \end{array}
+\]
+
+\subsection{Inference of implicit parameters} \label{subsec:inference}
+
+We define a type-directed translation from $Core^{im}$ to $Core$, as presented in Figure~\ref{fig:core-im-core-implicit-inference}.
+Deriving translation rules for other constructs from the typing rules for $Core$ is straightforward.
+
+The relation $\Gamma\vdash_e \overline{x}$ selects from the typing context those variables that participate in inference with the specified effect types.
+When multiple candidates exist for a type, the leftmost one is selected.
+Since function arguments are uncurried and thus appear logically simultaneously in the context, we require contextual arguments to have distinct types.
+
+Note that, since the typing context maintains only bindings with unique names (see Section\ \ref{subsec:core-typing}), it is possible for a user to shadow a contextual binding with an ordinary one, causing it to be excluded from subsequent inference.
+This issue can be addressed, for example, by representing the typing context as a list that permits duplicating entries and by assigning additional fresh names to contextual bindings.
+Implicits inference should use these names to refer directly to contextual binding avoiding shadowing.
+
+\begin{figure}
+    %! suppress = EscapeAmpersand
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash t : \tau \step t_{c}} \\
+        \infer[Lam]{
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : \ctx{\overline{\tau_1}} \overline{\tau_2} \to \sigma \step \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t_c
+        }{
+            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma \step t_c &
+            distinct(\overline{\tau_1})
+        } \\
+        \infer[CtxApp]{
+            \Gamma\vdash t\ap\overline{u} : \sigma \step t_{c} \ap \overline{x}\ap\overline{u_{c}}
+        }{
+            \Gamma\vdash t : \ctx{\overline{\tau_1}} \overline{\tau_2} \to \sigma \step t_{c} &
+            \overline{\Gamma\vdash_{\tau_1}\overline{x}} &
+            \overline{\Gamma\vdash u : \tau_2 \step u_{c}}
+        } \\
+        \begin{array}{cc}
+            \mathframebox{\Gamma\vdash_\tau x} &
+            \infer[Infer]{
+                G, x :_c \tau, \Gamma\vdash_{\tau} x
+            }{
+                y :_c \tau \not\in G
+            }
+        \end{array}
+    \end{gather*}
+    \caption{Inference of implicit parameters.}
+    \label{fig:core-im-core-implicit-inference}
+\end{figure}
+
+There is a design decision to be made, whether inference should depend solely on types, or additionally rely on variable names.
+The latter approach is more complex, as it necessitates storing variable names in effect rows and, furthermore, precludes the renaming of implicit parameters under $\alpha$-equivalence.
+This restriction can make programs more fragile with respect to renaming.
+On the other hand, this approach permits simultaneous use of multiple effects of the same type.
+
+However, in this work, we use the first approach and argue that, in practical programming, relying on multiple effects of the same type may be undesirable.
+Instead, we advocate for the definition and use of domain-specific effects rather than directly employing general-purpose ones.
+For instance, a domain-specific effect such as \lstinline[language=colang]{UserRepository} offers a higher level of abstraction compared to a general-purpose \lstinline[language=colang]{Database} effect.
+
+Another design decision concerns the timing of inference of implicit parameters: should it occur immediately upon variable mention, or should it be deferred until application?
+This question is analogous to type instantiation in the presence of first-class polymorphism, where type inference determines type parameters~\cite{emrich2020freezeml}.
+We consider that immediate substitution is preferable, because it is convenient when working with contextually polymorphic functions, such as \lstinline[language=colang]{map(xs, f)}~\cite{KEEP-context-parameters}.
+However, in our formal elaboration we use another approach for brevity.
+
+Actually, this choice determines the default behavior, since either approach can be emulated by the other via $\eta$-expansion.
+For instance, let us assume that substitution is performed at application time:
+\begin{lstlisting}[language=colang]
+    context(_: IO) fun f(): Unit
+    fun g(_: () -> Unit): Unit
+    g(() => f()) // captures IO capability
+\end{lstlisting}
+Alternatively, assume that substitution occurs at the point where a function is mentioned:
+\begin{lstlisting}[language=colang]
+    context(_: IO) fun f(): Unit
+    fun g(_: context(IO) () -> Unit): Unit
+    g(context(_: IO) () => f()) // abstracts over contextual parameters
+\end{lstlisting}
+
+\subsection{System $Core^{im+<:}$ with implicit parameters and subtyping on effect rows} \label{subsec:im-sub}
+
+It is desirable to support a form of subtyping on effect rows, as this allows functions with fewer contextual requirements to be used in more permissive contexts in a natural way.
+For example, \lstinline[language=colang]{withStd} is a function that provides default implementation for several effects.
+We should therefore be able to pass to \lstinline[language=colang]{withStd} a function that only utilizes a subset of those effects:
+\begin{lstlisting}[language=colang]
+    fun withStd(f: context(IO, Allocator, Random) () -> r): r
+    withStd(g) // g : context(IO) () -> Unit
+\end{lstlisting}
+
+% todo find literature
+% todo row polymorphism can help somehow?
+% todo cite papers about row types
+% todo what if generate application (like for dictionaries) to reorder effect rows (do inhabitation of some form)?
+% todo Structural Subtyping as Parametric Polymorphism
+Contexts can be modeled as structural record types with width and permutation subtyping.
+However, a straightforward implementation of such records as dictionaries tends to be inefficient in terms of both time and space complexity.
+
+To enable efficient subtyping, we restrict subtyping to be shallow, meaning that one function type is a subtype of another only if their effect rows are in a subtyping relationship, while the argument and return types remain identical:
+\[
+    \infer[FunSub]{\ctx{e} \tau \to \sigma <:_c \ctx{e'} \tau\to\sigma}{e' <: e}
+\]
+
+With this restriction, shallow subtyping can be implemented via $\eta$-expansion (see Figure~\ref{fig:fim-sub-app}).
+The relation $\Gamma\vdash t\Leftarrow \tau \step t_c$ applies $\eta$-expansion to $t$ when a functional type $\tau$ is expected.
+
+\begin{figure}
+    %! suppress = EscapeAmpersand
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash t : \tau \step t_c} \\
+        \infer[App]{
+            \Gamma\vdash t\ap\overline{u} : \sigma \step t_c \ap \overline{x} \ap \overline{u_c}
+        }{
+            \Gamma\vdash t : \ctx{\overline{\tau_1}} \overline{\tau_2}\to \sigma \step t_c
+            &
+            \overline{\Gamma \vdash_{\tau_1} x}
+            &
+            \overline{\Gamma\vdash u : \tau_2'}
+            &
+            \overline{\tau_2' <:_c \tau_2}
+            &
+            \overline{\Gamma\vdash u \Leftarrow \tau_2 \step u_c}
+        } \\
+        \mathframebox{\Gamma\vdash t \Leftarrow \tau \step t_c} \\
+        \begin{array}{c}
+            \infer[AppArg]{
+                \Gamma\vdash t \Leftarrow \tau \step t_c
+            }{
+                \Gamma\vdash t : \tau \step t_c
+            }
+            \\
+            \infer[AppArgCtx]{
+                \Gamma \vdash t \Leftarrow \ctx{\overline{\tau_1}} ~\overline{\tau_2}\to\sigma\step \lambda \overline{x : \tau_1}~\overline{y : \tau_2}\ldotp t_c\ap \overline{x'}\ap\overline{y}
+            }{
+                \Gamma \vdash t : \ctx{\overline{\tau_1'}} \overline{\tau_2}\to\sigma \step t_c
+                &
+                \overline{\overline{x :_c \tau_1} \vdash_{\tau_2'} x'}
+                &
+                \overline{x \text{ fresh}}
+                &
+                \overline{y \text{ fresh}}
+            }
+        \end{array}
+    \end{gather*}
+    \caption{Application rule for $Core^{im + <:}$.}
+    \label{fig:fim-sub-app}
+\end{figure}
+
+\section{Design of type-based escape analysis} \label{sec:escape}
+
+In this section we develop an extension to the previously discussed systems that statically guarantees that no capabilities escape their corresponding handlers.
+The core aspects of this design have already been introduced in Section~\ref{subsec:escape}.
+
+\subsection{Syntax of $Core_\Delta$}
+
+Let us introduce $Core_\Delta$, an extension of $Core$ that incorporates lifetimes, lifetime polymorphism, and bounded polymorphism.
+Modifications to the type syntax are presented in Figure~\ref{fig:core-delta-syntax}, with changes highlighted in gray.
+\begin{itemize}
+    \item Monotypes are now annotated with explicit lifetime labels.
+    The syntax is deliberately chosen to be identical to that of type arguments to emphasize that lifetimes can be regarded as ordinary types, albeit of a distinct kind.
+    \item Type schemas support abstraction over lifetime variables and permit the specification of polymorphic bounds.
+    \item The resulting lifetime associated with data constructors is computed as the minimum of all lifetimes corresponding to those values that may later be extracted~--- that is, lifetimes encountered in positive positions.
+    \item For brevity, we assume $Any\ap local$ as the default constraint for data constructor generics and $Any\ap free$ for capability constructors and effect operations.
+\end{itemize}
+
+%! suppress = MissingLabel
+\begin{figure}
+    \[
+        \begin{array}{lrl}
+            \text{Type variables} && \alpha, \beta \\
+            \text{Type constructors} && T \\
+            \text{Lifetime variables} && \graybox{l} \\
+            \text{Lifetimes} & \graybox{\Delta} &\Coloneqq l \vor local \vor free \vor +\overline{\Delta} \vor \star \\
+            \text{Monotypes} & \tau, \sigma, \eta &\Coloneqq \alpha \vor T \ap \graybox{\Delta} \ap \overline{\tau} \vor \ctx{e} \graybox{\Delta}~\overline{\tau} \to \sigma \\
+            \text{Type schemas} & s &\Coloneqq \forall \graybox{\overline{l}}~\overline{(\alpha \graybox{<: \tau})}\ldotp \sigma \\
+            \text{Position sign} & \graybox{p} & \Coloneqq + \vor - \vor inv \\
+            \text{Free type variables} & & ftv^p(\cdot) \\
+            \text{Lifetimes} & & \graybox{lt_\Gamma^p(\cdot)} \\
+            \text{Free lifetime variables} & & \graybox{flt^p(\cdot)} \\
+            \text{Least upper bound} & & \graybox{lub(\cdot)} \\
+            \text{Eliminate lifetimes} & & \graybox{elim^p_{\Delta, \overline{l}}(\cdot)} \\
+            \text{Effect rows} & e &\Coloneqq \epsilon\vor \tau, e \\
+            \text{Typing contexts} & \Gamma &\Coloneqq \emptyset \vor x : s, \Gamma \vor x :_c \tau, \Gamma \\
+            & & \vor \graybox{l <: \Delta, \Gamma} \vor \graybox{\alpha <: \tau, \Gamma} \\
+            & &\vor K : \forall\graybox{\overline{l}}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\graybox{\left(+\overline{lt_\emptyset^+(\tau)}\right)}\ap \overline{\alpha}, \Gamma \\
+            \text{Effect contexts} & \Sigma &\Coloneqq \{\overline{K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap \graybox{local} \ap\overline{\alpha}}\} \\
+            \text{Effect signatures} & sig &\Coloneqq \{\overline{op : \forall\overline{\alpha}\ldotp\overline{\tau}\to\sigma}\}
+        \end{array}
+    \]
+    \caption{Syntax of types for $Core_\Delta$.}
+    \label{fig:core-delta-syntax}
+\end{figure}
+
+Let us explicitly define some operators.
+The definitions of others are straight-forward.
+The $lt_\Gamma^+(\cdot)$ is defined as follows:
+\[
+    \begin{array}{lll}
+        lt_\Gamma^+(\alpha) & = & lt_\Gamma^+(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise} \\
+        lt_\Gamma^+(T\ap\Delta\ap\overline{\tau}) & = & \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)} \cup \{\Delta\} \\
+        lt_\Gamma^-(T\ap\Delta\ap\overline{\tau}) & = & \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)} \\
+        lt_\Gamma^{+}(\ctx{\overline{\tau}}\Delta~\overline{\sigma}\to\overline{\eta}) & = & \overline{lt_\Gamma^{-}(\tau)} \cup \overline{lt_\Gamma^{-}(\sigma)} \cup \overline{lt_\Gamma^{+}(\eta)} \cup \{\Delta\} \\
+        lt_\Gamma^{-}(\ctx{\overline{\tau}}\Delta~\overline{\sigma}\to\overline{\eta}) & = & \overline{lt_\Gamma^{+}(\tau)} \cup \overline{lt_\Gamma^{+}(\sigma)} \cup \overline{lt_\Gamma^{-}(\eta)}
+    \end{array}
+\]
+The lifetime of a type variable is approximated by the lifetime of its bounding type, if such a bound exists.
+In some cases, we intentionally employ an empty context to exclude the influence of bounds.
+Also, since type constructor parameters are invariant, they are treated as both positive and negative simultaneously.
+
+The lifetime elimination operator $elim_{\Delta, \overline{l}}^p(\cdot)$ approximates the designated existential lifetimes $\overline{l}$ to prevent their leakage outside the scope of the pattern-matching branch.
+It is defined as following:
+\[
+    \begin{array}{lll}
+        elim_{\Delta, \overline{l}}^p(\alpha) & = & \alpha \\
+        elim_{\Delta, \overline{l}}^p(K\ap \Delta\ap\overline{\tau}) & = & K\ap \left( elim_{\Delta, \overline{l}}^p(\Delta) \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{inv}(\tau)} \right) \\
+        elim_{\Delta, \overline{l}}^p(\ctx{\overline{\tau_1}}\Delta~\overline{\tau_2}\to\sigma) & = & \ctx{\overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau_1)}} \left( elim_{\Delta, \overline{l}}^p(\Delta) \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau_2)} \right)\to elim_{\Delta, \overline{l}}^{p}(\sigma) \\
+        elim_{\Delta, \overline{l}}^{p}(l') & = &
+        \begin{array}{llll}
+             l', \text{ if } l' \not\in\overline{l} & \text{ else } &
+             \Delta, \text{ if } p = + & \text{ else }
+        \end{array} \\
+        &&
+        \begin{array}{llll}
+            free, \text{ if } p = - & \text{ else } &
+            \star, \text{ if } p = inv
+        \end{array} \\
+        elim_{\Delta, \overline{l}}^{p}(+\overline{\Delta'}) & = & +\left( \overline{elim_{\Delta, \overline{l}}^{p}(\Delta')} \right)
+    \end{array}
+\]
+When the position is invariant and it is not possible to approximate a lifetime by a concrete bound, we employ the special lifetime $\star$, which denotes an unknown lifetime.
+We consider types with $\star$ lifetime tracked as well.
+% todo java wildcards?
+
+Syntax of terms follows the changes in the syntax of types:
+\[
+    \begin{array}{lll}
+        \text{Values} & v & \Coloneqq \ldots \vor \Lambda \graybox{\overline{l}}\ap\overline{\alpha}\ldotp v \vor K\ap\graybox{\overline{\Delta}}\ap\overline{\tau}\ap\overline{v} \vor \ldots \\
+        \text{Terms} & t, u &\Coloneqq \ldots \vor t\ap\graybox{\overline{\Delta}}\ap\overline{\tau} \vor handle ~ x : T \ap\graybox{local}\ap \overline{\tau} ~with ~h~in ~t \vor \ldots
+    \end{array}
+\]
+
+\subsection{Typing rules for $Core_\Delta$}
+
+Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure\ \ref{fig:core-delta-typing}):
+\begin{itemize}
+    \item \textbf{Lam:} The typing rule for $\lambda$-abstractions guarantees that no tracked value can escape the scope of the function via its return value.
+    Analogous to the treatment of data constructors, the lifetime associated with a function type is determined as the minimum of the lifetimes of all captured variables, excluding those that are present within the function type by themselves.
+    This ensures that the function itself cannot outlive any tracked capabilities it closes over.
+    \item \textbf{Match:}
+    Existential lifetimes of a data constructor are treated as covariant projections bounded by the lifetime of the type. % todo link to covariant projections
+    So, we substitute fresh lifetimes $l'$ in their place.
+    Furthermore, these fresh lifetime variables are eliminated from the resulting type of the branch.
+    \item \textbf{Handle:} The $Handle$ rule plays crucial role in ensuring effect safety.
+    First, it annotates capabilities created within the handler with the lifetime label $local$ and prohibits occurrences of $local$ and $\star$ in positive positions within the result type $\eta$.
+    This restriction prevents capabilities from escaping the handler’s scope via returned values.
+    Second, the rule enforces a well-formedness condition on effect signatures to ensure that no capabilities can be passed passed as arguments to operation calls.
+    Without this constraint, a capability introduced by an inner handler could be propagated to an operation in an outer handler, thus escaping its scope.
+    This restriction can be relaxed under certain conditions; further discussion is provided in Section~\ref{subsec:relax-tracked}.
+    \item \textbf{TypesOf:} This rule extracts the types of designated variables from the typing context without discriminating between ordinary bindings and contextual bindings.
+\end{itemize}
+
+%! suppress = EscapeAmpersand
+\begin{figure}
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash t : s} \\
+        \begin{array}{ccc}
+            \infer[Var]{\Gamma\vdash x : s}{x : s \in \Gamma} &
+            \infer[CVar]{\Gamma\vdash x : \tau}{x :_c \tau \in \Gamma} &
+            \infer[Ctor]{\Gamma\vdash K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset^+(\tau)}\right)\ap \overline{\alpha}}{K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset^+(\tau)}\right)\ap \overline{\alpha} \in \Gamma}
+        \end{array} \\
+        \begin{array}{cc}
+            \infer[TLam]{
+                \Gamma\vdash\Lambda\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp t : \forall\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp\tau
+            }{
+                \overline{\alpha <: \sigma}, \Gamma\vdash t : \tau
+            } &
+            \infer[TApp]{
+                \Gamma\vdash x\ap\overline{\Delta}\ap\overline{\tau'} : [\overline{\alpha\to\tau'}]\ap[\overline{l\to\Delta}]\ap\sigma
+            }{
+                x : \forall\overline{l}\ap(\overline{\alpha <: \tau})\ldotp \sigma \in \Gamma
+                &
+                \overline{\Gamma\vdash\tau' <: [\overline{l\to\Delta}]\ap\tau}
+            }
+        \end{array} \\
+        \infer[Lam]{
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : \ctx{\overline{\tau_1}} \left(+{lt_{\Gamma\setminus ftv^-(\overline{\tau_1}\cup\overline{\tau_2}) \setminus ftv^+(\sigma)}^+(\overline{s})}\right)~ \overline{\tau_2} \to \sigma
+        }{
+            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma
+            &
+            \Gamma\vdash_{fv(t)\setminus \overline{x}\setminus\overline{y}}\overline{s}
+            &
+            local, \star \not\in lt_\emptyset^+(\sigma)
+        } \\
+        \infer[App]{
+            \Gamma\vdash t \ap \overline{u_1} \ap \overline{u_2} : \sigma
+        } {
+            \Gamma\vdash t : \ctx{\overline{\tau_1}} \Delta~\overline{\tau_2}\to\sigma
+            &
+            \begin{array}{c}
+                \overline{\Gamma\vdash u_1 : \tau_1'} \\
+                \overline{\Gamma\vdash\tau_1' <: \tau_1}
+            \end{array}
+            &
+            \begin{array}{c}
+                \overline{\Gamma\vdash u_2 : \tau_2'} \\
+                \overline{\Gamma\vdash\tau_2' <: \tau_2}
+            \end{array}
+        }\\
+        \infer[Match]{
+            \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l_i'}}^+\ap(\eta_i)}\right)
+        }{
+            \begin{array}{cc}
+                \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
+                &
+                \Gamma\vdash K_i : \forall \overline{l_i}~\overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\left(+\overline{lt_\emptyset^+(\sigma_i)}\right)\ap\overline{\alpha}
+                \\
+                \overline{l_i' \text{ fresh}}
+                &
+                \overline{l_i' <: \Delta}, \overline{x_i : [\overline{\alpha\to\tau}]\ap[\overline{l_i\to l_i'}]\ap\sigma_i'}, \Gamma \vdash u_i : \eta_i
+            \end{array}
+        }\\
+        \infer[Perform]{
+            \Gamma\vdash perform \ap op\ap \overline{\tau_2}\ap x\ap \overline{t} : \theta\ap\eta
+        }{
+            \begin{array}{ccc}
+                \Sigma(T) = \left< \overline{\alpha}, sig \right> &
+                \Gamma\vdash x : T\ap \Delta \ap \overline{\tau_1} &
+                \overline{\Gamma\vdash t : \sigma'}
+                \\
+                op : \forall\overline{\beta}\ldotp \overline{\sigma}\to\eta \in sig &
+                \theta = [\overline{\alpha\to\tau_1}, \overline{\beta\to\tau_2}] &
+                \overline{\Gamma\vdash\sigma' <: \theta\ap\sigma}
+            \end{array}
+        }\\
+        \infer[Handle]{
+            \Gamma \vdash handle ~ x : T\ap local\ap\overline{\tau} ~ \{\overline{op_i = t_i}\} ~in~u : \eta
+        }{
+            \begin{array}{cc}
+                \Sigma(T) = \left< \overline{\alpha}, sig \right>
+                &
+                x :_c T\ap local\ap\overline{\tau}, \Gamma\vdash u : \eta
+                \\
+                \theta = [\overline{\alpha\to\tau}]
+                &
+                local, \star \not\in lt_\emptyset^+(\eta)\cup\overline{lt_{\overline{\beta <: \hat{\sigma}}, \Gamma}^+(\theta\ap\sigma_i)}
+                \\
+                \hat{\sigma} = Any\ap free
+                &
+                \Gamma\vdash\theta\ap t_i : \forall \overline{(\beta <: \hat{\sigma})}\ldotp \ctx{} (\overline{\theta\ap\sigma_i}, \theta\ap\sigma_i'\to\eta)\to\eta_i'
+                \\
+                \Gamma\vdash\eta_i' <: \eta
+                &
+                \begin{array}{cc}
+                    \overline{\beta}\cap ftv(\eta_i') = \emptyset
+                    &
+                    op_i : \forall\overline{\beta_i}\ldotp \overline{\sigma_i}\to\sigma'_i \in sig
+                \end{array}
+            \end{array}
+        }\\
+        \infer[Cap]{
+            \Gamma\vdash K_{cap}\ap\overline{\tau}\ap m\ap h : T\ap local \ap\overline{\tau}
+        }{
+            K_{cap} : \forall\overline{\alpha}\ldotp sig\to T\ap local\ap\overline{\alpha} \in \Sigma
+        }
+        \hspace{2em}
+        \infer[Handler]{
+            \Gamma\vdash handler_m ~t : \tau
+        }{
+            \Gamma\vdash t : \tau
+        }\\
+        \begin{array}{ccccc}
+            \mathframebox{\Gamma\vdash_{\overline{x}}\overline{\tau}} &
+            \infer[TypesOf]{\Gamma\vdash_{\overline{x}}\overline{s}}{\overline{x :_\cdot s} \subset \Gamma} &
+            \mathframebox{\Gamma\vdash p} &
+            \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
+            \infer[Prog]{
+                \Gamma\vdash x : s = t, p
+            }{
+                \Gamma\vdash t : s &
+                flt(s)\cup ftv(s) = \emptyset &
+                \Gamma\vdash p
+            }
+        \end{array}
+    \end{gather*}
+    \caption{Typing rules for $Core_{\Delta}$.}
+    \label{fig:core-delta-typing}
+\end{figure}
+
+\begin{figure}
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash \sigma <: \tau} \\
+        \begin{array}{cc}
+            \infer[SubCtx]{\Gamma\vdash \alpha <: \tau}{\alpha <: \tau \in \Gamma} &
+            \infer[SubData]{
+                \Gamma\vdash K'\ap\Delta'\ap\overline{\tau} <: K\ap\Delta\ap\overline{\tau}
+            }{
+                \Gamma\vdash\Delta' <: \Delta
+            }
+        \end{array} \\
+        \begin{array}{cc}
+            \infer[SubAny]{
+                \Gamma\vdash \tau <: Any\ap\Delta
+            }{
+                \Gamma\vdash \Delta'+lt_\Gamma^+(\tau) <: \Delta
+            } &
+            \infer[SubFun]{
+                \Gamma\vdash\ctx{\overline{\tau_1'}}\Delta'~\overline{\tau_2'}\to\sigma' <: \ctx{\overline{\tau_1}}\Delta~\overline{\tau_2}\to\sigma
+            }{
+                \overline{\Gamma\vdash\tau_1 <: \tau_1'} &
+                \Gamma\vdash\Delta' <: \Delta &
+                \overline{\Gamma\vdash\tau_2 <: \tau_2'} &
+                \sigma' <: \sigma
+            }
+        \end{array} \\
+        \mathframebox{\Gamma\vdash\Delta' <: \Delta} \\
+        \begin{array}{cc}
+            \infer[SubFree]{\Gamma\vdash free <: \Delta}{} &
+            \infer[SubLocal]{\Gamma\vdash\Delta <: local}{} \\
+            \infer[SubCtx_\Delta]{
+                \Gamma\vdash l <: \Delta
+            }{
+                l <: \Delta' \in \Gamma & \Gamma\vdash\Delta' <: \Delta
+            } &
+            \infer[Sub+]{
+                \Gamma\vdash+\overline{\Delta'} <: +\overline{\Delta}
+            }{
+                \forall\Delta'\in\overline{\Delta'}\ldotp\exists\Delta\in\overline{\Delta}\ldotp \Gamma\vdash\Delta' <: \Delta
+            }
+        \end{array}
+    \end{gather*}
+    \caption{Subtyping rules for $Core_{\Delta}$.}
+    \label{fig:core-delta-subtyping}
+\end{figure}
+
+% todo careful checks of escaping for handlers (State example)
+
+\subsection{Lifetime tunnelling}
+
+Our system allows tracked types to instantiate type parameters.
+Following the terminology introduced by Boruch-Gruszecki et al.~\cite{boruch2023capturing}, we refer to this mechanism as \emph{lifetime tunnelling}.
+
+Consider, for example, a function that updates the first component of a pair.
+In our approach, it suffices to specify appropriate bounds for the type parameters to ensure that the function correctly operates on tracked types.
+Furthermore, note that if the function is instantiated with untracked types, its result will likewise remain untracked: no superfluous constraints will be imposed.
+\begin{lstlisting}[language=colang]
+    fun mapFirst(p: Pair<a, b>, f: (a) -> c): Pair<c, b>
+            where a <: Any'local, b <: Any'local, c <: Any'local {
+        Pair(f(fst(p)), snd(p))
+    }
+\end{lstlisting}
+
+When capturing, we approximate the lifetimes of type parameters using the
+lifetimes of their bounds.
+To improve precision, polymorphic bounds can
+be specified for lifetimes:
+\begin{lstlisting}[language=colang]
+    fun mapFirst(p: Pair<a, b>): ((a) -> c)'la+lb -> Pair<c, b>
+            where a <: Any'la, b < Any'lb, c <: Any'lc {
+        (f) => Pair(f(fst(p)), snd(p))
+    }
+\end{lstlisting}
+
+%Unlike OCaml modal types~\cite{lorenzen2024oxidizing}, our system permits types annotated with lifetimes to instantiate generic parameters.
+%
+%In the following, we discuss alternative approaches to this problem and provide a comparative analysis. % tod highlighting the benefits and trade-offs of our solution.
+
+% tod лайфтаймами нельзя инстанциировать полиморфные параметры, но конструкторы данных можно
+%A second approach would be to prohibit the instantiation of function type parameters with lifetimes, while still permitting lifetimes to instantiate data constructors.
+%This method does not involve bounded polymorphism; however, it requires that all generic occurrences be explicitly annotated with a lifetime.
+%Additionally, it necessitates support for variance and mandates that the result's lifetime be tracked independently of the argument lifetimes.
+%
+%\begin{lstlisting}[language=colang]
+%    fun mapFirst(
+%        p: Pair<scoped(local) a, scoped(local) b>,
+%        f: (scoped(local) a) -> scoped(local) c
+%    ): Pair<scoped(local) c, scoped(local) b> {
+%        Pair(f(fst(p)), snd(p))
+%    }
+%\end{lstlisting}
+%
+%A third approach would be to propagate lifetimes of generics outside of a type constructor.
+
+%  пропагирование лайфтаймов за конструктор
+
+%  решение с перегрузкой
+
+%  решение с полиморфизмом
+
+%Another approach is to propagate lifetimes of generics outside of a type constructor.
+%This will force us to return a tracked pair, since it will contain components that with lifetime approximated to a constructor's lifetime.
+%Modal OCaml allows to return locals by \texttt{exclave} feature~\cite{lorenzen2024oxidizing}:
+%\begin{minted}{ocaml}
+%    val mapFirst : 'a 'b pair @ local -> ('a @ local -> 'c @ local) -> 'c 'b pair @ local
+%    let mapFirst p f = exclave pair (f (fst p)) (snd p)
+%\end{lstlisting}
+
+% tod reduce amount of boilerplate for polymorphic code
+% tod why tunelling (otherwise too much code duplication on polymorphic code)
+
+\subsection{Integration with implicit parameters}
+
+To extend $Core_\Delta$ with implicit parameters, resulting in $Core_\Delta^{im}$, it is necessary to incorporate omitting application into both the syntax and the translation rules, as described in Section~\ref{sec:implicits}.
+However, several details require careful consideration.
+
+Previously, to select appropriate implicit arguments, we used type equality between the type of the contextual binding and the expected type of the implicit parameter (see Figure\ \ref{fig:core-im-core-implicit-inference}).
+However, since $Core_\Delta$ supports subtyping, we revise these rules as shown in Figure~\ref{fig:core-im-delta-core-implicit-inference}.
+
+The $Infer$ rule selects the nearest appropriate binding that suits as an argument for an implicit parameter of type $\tau$.
+Additionally, the $distinct_{<:}$ operator ensures that least upper bound of every pair of argument types results in $Any$ type constructor.
+
+\begin{figure}
+    %! suppress = EscapeAmpersand
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash t : \tau \step t_{c}} \\
+        \infer[Lam]{
+            \Gamma\vdash \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t : \ctx{\overline{\tau_1}} \overline{\tau_2} \to \sigma \step \lambda \overline{x : \tau_1} ~ \overline{y : \tau_2} \ldotp t_c
+        }{
+            \overline{x :_c \tau_1}, \overline{y : \tau_2}, \Gamma\vdash t : \sigma \step t_c &
+            distinct_{<:}(\overline{\tau_1})
+        } \\
+        \infer[CtxApp]{
+            \Gamma\vdash t\ap\overline{u} : \sigma \step t_{c} \ap \overline{x}\ap\overline{u_{c}}
+        }{
+            \Gamma\vdash t : \ctx{\overline{\tau_1}} \overline{\tau_2} \to \sigma \step t_{c} &
+            \overline{\Gamma\vdash_{\tau_1} x} &
+            \overline{\Gamma\vdash x : \tau_2} &
+            \overline{\Gamma\vdash \tau_2 <: \tau_1} &
+            \overline{\Gamma\vdash u : \tau \step u_{c}}
+        } \\
+        \begin{array}{cc}
+            \mathframebox{\Gamma\vdash_\tau x} &
+            \infer[Infer]{
+                G, x :_c \sigma, \Gamma\vdash_{\tau} x
+            }{
+                \Gamma\vdash\sigma <: \tau &
+                \not\exists \sigma'\ldotp \sigma' <: \sigma \land y :_c \sigma' \in G
+            }
+        \end{array}
+    \end{gather*}
+    \caption{Inference of implicit parameters for $Core_\Delta^{im}$.}
+    \label{fig:core-im-delta-core-implicit-inference}
+\end{figure}
+
+To support subtyping on effect rows via $\eta$-expansion (Section~\ref{subsec:im-sub}), we introduce an additional subtyping relation specifically for the application rule.
+This relation treats functional types by verifying subtyping on effect rows as a whole, rather than performing pointwise subtyping on individual effect types:
+\[
+    %! suppress = EscapeAmpersand
+    \infer[SubFunEff]{
+        \Gamma\vdash \ctx{e'} \Delta' ~ (\overline{\tau'})\to \sigma' <:_c \ctx{e} \Delta ~ (\overline{\tau})\to \sigma
+    }{
+        \Gamma\vdash e <: e' & \overline{\Gamma\vdash \tau <: \tau'} & \Gamma\vdash\Delta' <: \Delta & \Gamma\vdash \eta' <: \eta
+    }
+\]
+
+\subsection{Using effects with tracked values} \label{subsec:relax-tracked}
+
+Note that, at present, it is not possible to pass tracked values to effect operations.
+This limitation arises from the fact that capabilities are tracked, and their usage always requires an associated delimited continuation~--- the corresponding marker becomes invalid outside the scope of the relevant handler.
+However, if the use of a tracked value does not involve a continuation, it is safe to lend it to an operation call.
+Examples of such values include tracked resources or capabilities that witness tail-resumptive operations.
+
+To enable this, we can introduce an additional lifetime, $regional$, with the ordering $free <: regional <: local$.
+This $regional$ lifetime differs from $local$ in two key aspects: it can bound generics of effect operations, and it can appear within the parameter types of operations.
+% Note: it is still not possible to store regional in mutable state - for good.
+
+In fact, permitting the passing of arbitrary capabilities to an operation effectively corresponds to representing higher-order effects~\cite{wu2014effect, zhang2020handling, van2022handling}.
+We defer the investigation of this matter to future work.
+
+% todo implementation section
+% todo equality up to normalization
+% todo (local \in) check respects normalization
+
+
+\section{Adoption in mainstream languages} \label{sec:mainstream}
+
+The adoption of a substantial feature such as an effect system in a mainstream programming language presents a significant challenge.
+The design of the effect system should be straightforward and leverage existing developer expertise.
+Moreover, it must minimize boilerplate and ensure compatibility with widely used language features.
+Lastly, the effect system should support a clear pathway for gradual adoption, alongside providing escape mechanisms that allow complex scenarios to be addressed outside the effect system, with the option for subsequent integration.
+
+In this section, we provide an informal discussion of potential extensions to our effect system design, aimed at improving it with respect to the aforementioned requirements.
+
+\subsection{Simplifying lifetime polymorphism} \label{subsec:lifetime-poly-enhancement}
+
+We consider the lifetime polymorphism the most problematic aspect of our design.
+A user should manually introduce lifetime names and link lifetimes of result with lifetimes of arguments in a relational manner:
+\begin{lstlisting}[language=colang]
+    fun compose
+        <la, lb, lc, lf, lg, a <: Any'la, b <: Any'lb, c <: Any'lc>
+        (f: (b)'lf -> c, g: (a)'lg -> b): (a)'lb+lf+lg -> c
+\end{lstlisting}
+
+One possible solution is to employ the lifetime elision mechanism~\cite{matsakis2014rust}, which automatically inserts lifetimes into type signatures based on heuristics.
+However, these heuristics may not always produce the intended results, necessitating manual lifetime annotations by the user in certain cases.
+In our example, this approach can look like the following (prime requires compiler to elide a lifetime):
+\begin{lstlisting}[language=colang]
+    fun compose<a', b', c'>(f: (b)' -> c, g: (a)' -> b): (a)' -> c
+\end{lstlisting}
+
+An alternative solution is to introduce special syntax in the surface language that enables direct specification of capturing through term variables.
+Although the syntax resembles dependent typing, we expect it to be fully implementable through a straightforward desugaring process that translates the surface language into the core calculus with lifetime polymorphism.
+\begin{lstlisting}[language=colang]
+    fun compose(f: (b) -> c, g: (a) -> b): (a)'f+g -> c
+\end{lstlisting}
+
+This solution may necessitate the introduction of explicit names for generic arguments in order to precisely specify more complex data flows:
+\begin{lstlisting}[language=colang]
+    fun makeRepository(files: Map<String, file: File>): Repository'file
+\end{lstlisting}
+
+In this case, it is crucial that the generated lifetime parameters remain always inferrable.
+We defer a thorough development of this surface syntax and its translation to future work.
+
+\subsection{Gradual adoption of the effect system}
+
+The effect system we present supports gradual adoption.
+We outline the stages of adoption in user code as follows:
+\begin{enumerate}
+    \item No effect system.
+    All standard effects, such as I/O and exceptions, are available globally through untracked capabilities.
+    \item Partial effect system.
+    Capabilities remain untracked and are no longer globally available; instead, they must be explicitly passed via contextual parameters.
+    \item Full effect system.
+    Capabilities are tracked, and functions are required to specify their dataflows explicitly in signatures.
+\end{enumerate}
+
+Furthermore, a practical language design should include an unsafe type cast to untracked types, enabling developers to handle complex scenarios without dealing escape analysis.
+
+In our design, all effects are bound to specific handlers (see Section~\ref{subsec:core-operational}); that is, exceptions are aware of their handlers at the moment they are thrown.
+However, in practice, there are scenarios where code may need to violate effect encapsulation—for example, by intercepting all exceptions, storing them,
+ and rethrowing later.
+Designing such a mechanism in a safe and sound manner presents significant challenges.
+
+\subsection{Working with OOP} \label{subsec:oop}
+
+Object-oriented programming remains a widely adopted paradigm in contemporary software development, presenting notable challenges for effect systems.
+Consider the following example: an interface declares a set of method signatures to which all implementations must conform.
+However, what happens if an implementation needs to throw exceptions beyond those specified in the interface’s signature?
+
+Note that only the code that is aware about the specific implementation type has enough information to properly handle implementation-specific exceptions.
+So, we can capture all needed capabilities on the object constructor call site:
+\begin{lstlisting}[language=colang]
+    interface I { fun f() }
+
+    class Impl : I {
+        context(let e: Handler<SomeException>) init() {} // receive and store capability
+        override fun f() { throw SomeException() } // uses stored capability
+    }
+
+    fun test(i: I'local) { i.f() }
+
+    fun main() {
+        try {
+            let i = Impl() // captures capabilities
+            test(i)
+        } catch (e: SomeException) { ... }
+    }
+\end{lstlisting}
+
+% tod alternatives with associated types
+
+\section{Related work} \label{sec:related}
+
+In this section we give a brief overview of existing solutions, consider them from our perspective on effect systems and provide a competitive analysis of our design.
+For a more comprehensive overview, see~\cite{stoyan2024modern}.
+
+\subsection{Row-polymorphic effect systems} \label{subsec:overview-rows}
+
+Conventional row-based effect systems, first introduced by Lucassen and Gifford~\cite{lucassen1988polymorphic}, represent the most classical approach to effect systems construction.
+Notable implementations of row-based effect systems include the Koka language~\cite{leijen2014koka, leijen2017type} and the Links language~\cite{hillerstrom2016liberating}.
+In addition, Haskell's \texttt{mtl} library\footnote{\url{https://hackage.haskell.org/package/mtl}} emulates row types by using type class constraints to represent lists of effects~\cite{jones1995functional}.
+
+Such effect systems employ effect polymorphism to type higher-order functions, expressing that a function produces at least the same effects as its argument function.
+Although this approach is relatively simple and well-studied, it is often regarded as verbose and somewhat alien to conventional language design.
+It introduces a distinct concept of effects that programmers must consistently consider, which can increase cognitive overhead and reduce accessibility.
+
+Row-based effect systems can be conceptualized as systems that type dynamically bound free variables (i.e., effect operations) in an effect-style manner, analogous to the Reader monad.
+In contrast, our approach leverages implicit parameters, which correspond to a coeffect-style~\cite{petricek2014coeffects}, and supports lexically scoped free variables as well.
+
+\subsection{Capability-based effect systems} \label{subsec:overview-caps}
+
+In capability-based effect systems, instead of directly tracking the use of effect operations, the presence of special objects known as capabilities is monitored; such objects are required to perform effect operations.
+This approach has led to the realization that effect systems are fundamentally concerned with the management of free variables, and has enabled the discovery of contextual polymorphism~\cite{brachthauser2020effects, brachthauser2022effects}.
+
+While implicit parameters generally do not pose significant challenges, the escape analysis of capabilities remains a complex problem.
+One approach employs higher-rank polymorphism to prevent capabilities from escaping~\cite{launchbury1995state, xie2022first}.
+Another notable method is capture checking~\cite{boruch2023capturing} in the Scala language, which facilitates dependent types for escape analysis; in this setting, variable names correspond to concrete lifetimes and the root capability aligns with our \lstinline[language=colang]{local}.
+In contrast, our design does not utilize dependent typing and instead is based on well-understood bounded polymorphism and subtyping.
+Furthermore, we compute lifetimes of type variables by approximating them with the lifetimes of their bounds, whereas capture types employ more intricate boxing mechanisms, which remain unsettled at the time of writing~\cite{xu2023formalizing, xu2025s}.
+
+\subsection{Modal effect systems} \label{subsec:overview-modal}
+
+Modal effect systems~\cite{zyuzin2021contextual, tang2025modal} use special modal type constructors to represent unfulfilled contextual requirements of a computation.
+When such a computation is placed within an appropriate context, it is automatically unboxed and becomes ready for execution.
+
+From the perspective of tracking free variables, modal types as presented by Tang et al.~\cite{tang2025modal} employ a kind system to distinguish between computations that may capture lexically scoped free variables (kind $Any$) and those that cannot (kind $Abs$).
+When a computation of kind $Any$ is transferred between execution contexts, such as when it is returned from a handler, the type system augments its type with an additional modality.
+In other words, a process akin to the uncapturing of lexically scoped free variables is performed, whereby these variables become unfulfilled contextual requirements once again.
+Thus, this form of escape analysis facilitates control over leaking instead of strictly prohibiting it.
+
+
+% todo chapter about escape analysis
+% todo compare with effect systems and other analyses
+
+
+\section{Conclusion} \label{sec:conclusion}
+
+In this paper, we have explicitly articulated a conceptual framework for understanding effect systems as a type extension for managing free variables.
+This perspective provided insight into a stepwise approach for the design and construction of an effect system as a combination of two properly-designed language features: implicit parameters and type-based escape analysis.
+We explored the design space of the implicit parameters feature and introduced a novel type-based escape analysis technique that relies exclusively on subtyping and bounded polymorphism.
+Finally, we discussed several approaches that could enhance the practicality of effect systems for mainstream programming languages.
+
+% todo future work
+
+The prototype implementation of the presented effect system is available online.\footnote{\url{https://github.com/penguin-boxx/opo-effect-system}}
+
+
+%%
+%% The acknowledgments section is defined using the "acks" environment
+%% (and NOT an unnumbered section). This ensures the proper
+%% identification of the section in the article metadata, and the
+%% consistent spelling of the heading.
+%\begin{acks}
+%    TODO % todo
+%\end{acks}
+
+% TODO appendix с полным исчислением
+
+%%
+%% The next two lines define the bibliography style to be used, and
+%% the bibliography file.
+% todo add doi links where possible for convenience of readers
+\bibliographystyle{ACM-Reference-Format}
+\bibliography{bib}
+
+\end{document}
