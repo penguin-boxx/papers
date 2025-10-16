@@ -560,7 +560,7 @@ Various techniques can be employed to mitigate the boilerplate associated with l
 For instance, the lifetime elision mechanism in the Rust language~\cite{matsakis2014rust} utilizes heuristics to automatically insert lifetime variables, thus reducing the need for explicit annotations.
 This technique, along with dependent typing-like syntactic sugar, will be discussed in Section~\ref{subsec:lifetime-poly-enhancement}.
 \begin{lstlisting}[language=colang]
-    fun lazyMap(xs: LazyList<a>, f: (a)'lf -> b): LazyList<b>'f+xs
+    fun lazyMap(xs: LazyList<a>, f: (a) -> b): LazyList<b>'f+xs
 \end{lstlisting}
 
 The utility of type-based escape analysis extends well beyond its role in the construction of effect systems.
@@ -1101,10 +1101,11 @@ In some cases, we intentionally employ an empty context to exclude the influence
 Also, since type constructor parameters are invariant, they are treated as both positive and negative simultaneously.
 
 The lifetime elimination operator $elim_{\Delta, \overline{l}}^p(\cdot)$ approximates the designated existential lifetimes $\overline{l}$ to prevent their leakage outside the scope of the pattern-matching branch.
-It is defined as following:
+It is defined as following: % todo say about other letters
 \[
     \begin{array}{lll}
         elim_{\Delta, \overline{l}}^p(\alpha) & = & \alpha \\
+        % todo \Delta clash
         elim_{\Delta, \overline{l}}^p(K\ap \Delta\ap\overline{\tau}) & = & K\ap \left( elim_{\Delta, \overline{l}}^p(\Delta) \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{inv}(\tau)} \right) \\
         elim_{\Delta, \overline{l}}^p(\ctx{\overline{\tau_1}}\Delta~\overline{\tau_2}\to\sigma) & = & \ctx{\overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau_1)}} \left( elim_{\Delta, \overline{l}}^p(\Delta) \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau_2)} \right)\to elim_{\Delta, \overline{l}}^{p}(\sigma) \\
         elim_{\Delta, \overline{l}}^{p}(l') & = &
