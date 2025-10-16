@@ -5,9 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="15554d1e-d56c-434a-97ac-1758983892bd" name="Changes" comment="Update">
-      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/Escape_Analysis.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/escape-analysis-ivannikov.tex" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/escape-analysis-ivannikov.tex" beforeDir="false" afterPath="$PROJECT_DIR$/escape-analysis-ivannikov.tex" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/one-plus-one.tex" beforeDir="false" afterPath="$PROJECT_DIR$/one-plus-one.tex" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -24,12 +23,12 @@
     &quot;assignee&quot;: &quot;winter-yuki&quot;
   }
 }</component>
-  <component name="GithubPullRequestsUISettings"><![CDATA[{
-  "selectedUrlAndAccountId": {
-    "url": "https://github.com/penguin-boxx/papers.git",
-    "accountId": "83011053-d831-4f32-b330-d7805823d06d"
+  <component name="GithubPullRequestsUISettings">{
+  &quot;selectedUrlAndAccountId&quot;: {
+    &quot;url&quot;: &quot;https://github.com/penguin-boxx/papers.git&quot;,
+    &quot;accountId&quot;: &quot;83011053-d831-4f32-b330-d7805823d06d&quot;
   }
-}]]></component>
+}</component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$PROJECT_DIR$/effect-systems-overview-ivannikov.tex" root0="FORCE_HIGHLIGHTING" />
   </component>
@@ -48,6 +47,7 @@
   </component>
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
+    "BibTeX.bib escape.executor": "Run",
     "BibTeX.bib overview (1).executor": "Run",
     "BibTeX.bib overview.executor": "Run",
     "BibTeX.bib synergy.executor": "Run",
@@ -72,6 +72,7 @@
     <list>
       <item itemvalue="BibTeX.bib overview" />
       <item itemvalue="BibTeX.bib synergy" />
+      <item itemvalue="BibTeX.bib escape" />
       <item itemvalue="LaTeX.Effect Systems Overview" />
       <item itemvalue="LaTeX.Escape Analysis" />
       <item itemvalue="LaTeX.Effect System as a Synergy" />
@@ -85,14 +86,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1729770043791</updated>
-    </task>
-    <task id="LOCAL-00083" summary="Update">
-      <option name="closed" value="true" />
-      <created>1751914249847</created>
-      <option name="number" value="00083" />
-      <option name="presentableId" value="LOCAL-00083" />
-      <option name="project" value="LOCAL" />
-      <updated>1751914249848</updated>
     </task>
     <task id="LOCAL-00084" summary="Update">
       <option name="closed" value="true" />
@@ -478,7 +471,15 @@
       <option name="project" value="LOCAL" />
       <updated>1758032180239</updated>
     </task>
-    <option name="localTasksCounter" value="132" />
+    <task id="LOCAL-00132" summary="Update">
+      <option name="closed" value="true" />
+      <created>1760620639091</created>
+      <option name="number" value="00132" />
+      <option name="presentableId" value="LOCAL-00132" />
+      <option name="project" value="LOCAL" />
+      <updated>1760620639091</updated>
+    </task>
+    <option name="localTasksCounter" value="133" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">

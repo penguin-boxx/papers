@@ -1286,7 +1286,7 @@ Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure
         \begin{array}{cc}
             \infer[SubCtx]{\Gamma\vdash \alpha <: \tau}{\alpha <: \tau \in \Gamma} &
             \infer[SubData]{
-                \Gamma\vdash K'\ap\Delta'\ap\overline{\tau} <: K\ap\Delta\ap\overline{\tau}
+                \Gamma\vdash T\ap\Delta'\ap\overline{\tau} <: T\ap\Delta\ap\overline{\tau}
             }{
                 \Gamma\vdash\Delta' <: \Delta
             }
