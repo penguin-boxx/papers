@@ -39,6 +39,7 @@
   &quot;associatedIndex&quot;: 3
 }</component>
   <component name="ProjectId" id="2nsmE3EbqI6CbPBVyTtmlj7H2wI" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
   <component name="ProjectViewState">
     <option name="abbreviatePackageNames" value="true" />
     <option name="flattenPackages" value="true" />
@@ -57,7 +58,7 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.git.unshallow": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "#1 on main",
+    "git-widget-placeholder": "main",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "/home/huawei/Projs/papers",
     "settings.editor.selected.configurable": "preferences.lookFeel"
@@ -471,15 +472,7 @@
       <option name="project" value="LOCAL" />
       <updated>1758032180239</updated>
     </task>
-    <task id="LOCAL-00132" summary="Update">
-      <option name="closed" value="true" />
-      <created>1760620639091</created>
-      <option name="number" value="00132" />
-      <option name="presentableId" value="LOCAL-00132" />
-      <option name="project" value="LOCAL" />
-      <updated>1760620639091</updated>
-    </task>
-    <option name="localTasksCounter" value="133" />
+    <option name="localTasksCounter" value="132" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
