@@ -1,0 +1,646 @@
+%! suppress = PrimitiveStyle
+%! suppress = DiscouragedUseOfDef
+%! suppress = MissingLabel
+%! suppress = TooLargeSection
+
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+% The preceding line is only needed to identify funding in the first footnote. If that is unneeded, please comment it out.
+%Template version as of 6/27/2024
+
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em
+T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\usepackage{minted}
+\setminted{xleftmargin=\parindent, autogobble, escapeinside=??, numberblanklines=false, fontsize=\small}
+%\usepackage{hyperref} todo comment gives error code on \url
+\usepackage{proof}
+\newcommand{\seq}{;~}
+\newcommand{\ap}{~}
+
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+% https://tex.stackexchange.com/questions/13896/how-to-remove-the-top-horizontal-bar-in-fancyhdr
+\fancyhf{} % sets both header and footer to nothing
+\renewcommand{\headrulewidth}{0pt}
+% https://tex.stackexchange.com/questions/30228/custom-first-page-with-fancyhdr
+\fancypagestyle{firststyle}
+{
+   \fancyhf{}
+   \fancyfoot[L]{\color{gray} 979-8-3315-2602-3/24/\$31.00 \copyright 2024 IEEE}
+   \renewcommand{\headrulewidth}{0pt} % removes horizontal header line
+}
+
+\usepackage{lipsum}
+
+\begin{document}
+
+    \title{Modern Effect Systems Overview
+%    \thanks{Identify applicable funding agency here. If none, delete this.}
+    }
+
+    \author{\IEEEauthorblockN{Andrey Stoyan}
+    \IEEEauthorblockA{\textit{Informatics Department} \\
+    \textit{HSE University}\\
+    Saint Petersburg, Russian Federation \\
+    a.stoyan@hse.ru}
+    }
+
+
+    \maketitle
+    \thispagestyle{firststyle}
+
+
+    \begin{abstract}
+        Effect systems allow one to reason statically about program effects.
+        It helps a lot in building reliable software and clear code abstraction boundaries.
+        However, proper effect system design is quite a challenging task.
+        Only some mainstream programming languages adopt effect systems, and those attempts are considered too complicated or unusable.
+
+        At the same time, many recent papers propose promising approaches to building flexible, safe, and lightweight effect systems.
+        This paper aims to overview selected modern works on this topic to improve the awareness of practical programming language designers and implementors of most perspective solutions.
+    \end{abstract}
+
+
+    \section{Introduction to effects}
+
+    This section briefly introduces computational effects without a deep dive into particular effect models (approaches that give effects dynamic semantics).
+    We hope it provides basic intuition about computational effects and convinces about the cruciality of static control over them.
+
+    We start talking about effects from the opposite, discussing purity.
+    The only observable result of a pure computation is a value.
+    A function is called pure if its result is the same for the same arguments and its application is a pure computation.
+
+    Programming with pure functions is usually considered a good practice because it enjoys lots of valuable properties.
+    The composition of pure functions gives pure functions, code semantics appear clear, and type systems work well, providing partial specification, safety, and clarity of abstraction.
+
+    However, writing and supporting any non-trivial program using only pure computations is complicated.
+    Regardless of that even input/output can be modeled with explicit passing \mintinline{haskell}|World| value around~\cite{peyton1993imperative}:
+
+    \begin{minted}{haskell}
+        getList :: Int -> World -> (World, [Int])
+        getList n w | n == 0 = (w, [])
+                    | otherwise =
+          let (w', x) = getInt w in
+          fmap (x :) (getList (n - 1) w')
+    \end{minted}
+
+    The problem is that with pure functions, everything should be managed explicitly by receiving some parameters and returning something.
+    So, a programmer should keep everything in mind and do bookkeeping manually all over the code.
+    Thus, a tool for managing complexity is necessary: something that sweeps unimportant details under the carpet.
+
+    Computational effects is such a tool.
+    An effect is an interaction of a computation with an execution context responsible for bookkeeping; a computation queries it directly without the many ceremonies that pure code is full of.
+    A context can be a language runtime system that provides OS services, mutable memory cells, advanced control mechanisms, input/output, etc.
+    An effectful operation is a construct that performs an effect.
+    For example, Haskell's monadic machinery and \mintinline{haskell}|do|-syntax allow to abstract over world passing:
+
+    \begin{minted}{haskell}
+        getList :: Int -> IO [Int]
+        getList n | n == 0 = pure []
+                  | otherwise = do
+          x <- getInt
+          fmap (x :) (getList (n - 1))
+    \end{minted}
+
+    Some approaches allow programmers to define custom effects and execution contexts as library code.
+    Namely, effect handlers is a promising effect model that proves itself beyond the pure functional languages community~\cite{plotkin2013handling, chandrasekaran2018algebraic}.
+%    Example below demonstrates simple state effect implementation.
+
+%    \begin{minted}{haskell}
+%        data State s comp = Get (s -> comp)
+%                          | Put s comp
+%        data Eff effs a = Pure a
+%                        | Impure (effs (Eff effs a))
+%
+%        handleState :: Eff (State s) a -> s -> a
+%        handleState comp st = case comp of
+%          Pure result -> result
+%          Impure (Get k) -> handleState (k st) st
+%          Impure (Put newSt k) -> handleState k newSt
+%    \end{minted}
+
+    Moreover, effect handlers separate effect signatures and implementation, making the effects' nature more apparent.
+    Expressions can be seen as clients that evaluate either to a pure result or to a request to a server (execution context, effect handler)~\cite{kiselyov2013extensible}.
+    A server processes a request and resumes expression evaluation with a result of an effectful operation.
+    A handler defines a scope in which specific effectful operations are possible; it interprets them as a pure value and effects of an enclosing scope.
+    For example, a handler of the state effect receives a computation that can perform state operations and produces a computation that does not require state effect anymore:
+    \begin{minted}{haskell}
+        handleState :: Eff (State s :+: effs) a
+                    -> s -> Eff effs (s, a)
+    \end{minted}
+%    So effectful operations differ from pure functions in the following ways:
+%    \begin{itemize}
+%        \item Effectful operation implementation may preserve some state between invocations, so previous invocations may affect next ones;
+%        \item Effectful operation may take control over first-class delimited continuation of the call-site (e.g.\ to be able to feature cooperative concurrency);
+%        \item Semantics of effecful operation is defined in a particular scope of an effect handler, operation may have different semantics in different scopes.
+%    \end{itemize}
+
+    Custom effects are a tool for creating embedded domain-specific languages (eDSL).
+    For example, one could define a coroutine effect that implements a specific scheduling strategy and then use it as if the coroutine feature was built in a host language itself~\cite{leijen2017structured}.
+    A host language could only support custom effects when all other features are implemented as eDSL libraries.
+    Various effect models compete in expressiveness, performance, and ease of composing different effects together, defined separately~\cite{liang1995monad, kiselyov2013extensible, schrijvers2019monad, van2024framework}.
+
+    The use of many effectful operations is valid only in a limited scope.
+    For example, an exception can be thrown (effect performed) only in the context of the corresponding handler.
+    A mutable memory cell can be allocated on the stack, and nobody should refer to it after the end of the function execution.
+    Static control over the use of such operations can prevent many errors in the runtime, increasing the program's reliability.
+
+    Effects are all about implicitness on the term level, which is why they can be so challenging to reason about.
+    At the same time, real-world programs are full of effects, so some degree of explicitness, e.g.,\ in types, is demanded.
+    It helps to define clear functional abstractions and prevent implementation details from leaking unnoticed as context interactions.
+    Specifically, we should be able to ensure that every function, mutating external state, declares that explicitly:
+    \begin{minted}{haskell}
+        f :: Int -> Eff (State Int) Int
+    \end{minted}
+
+
+    \section{Effect systems in general}
+
+    In this section, we will describe the basic idea behind all effect systems and outline their core properties to describe and compare different effect systems later.
+    Also, we sketch the main challenges of effect systems design and conclude with brief historical notes.
+
+    To explain general ideas, we use an informal notation based on System F~\cite{girard1971extension}, extending it with the necessary constructs.
+    We will explain these constructs along the way.
+
+    We consider only call-by-value languages because call-by-name languages are less widespread, and results of interest can usually be adapted to the monadic setting~\cite{wadler2003marriage}.
+    Thus, effects may arise only from function applications, and we do not need monads for sequencing, so we can use direct-style effects.
+
+
+    Classical type systems control the shape of input arguments and a function return result.
+    For example, we can say that a function maps naturals to naturals:
+    \[\lambda x\ldotp x + 1 : nat\to nat\]
+
+    However, as discussed before, more than tracking the pure aspect of computations is required.
+    We would also like to track what function does when running and how it interacts with an execution context, i.e., what effects it might perform.
+%    Since functions are the only unevaluated computations in call-by-value language, carrying information about effects with arrow type is natural.
+    For example, we can attach an effect label to the arrow itself:
+%    We will see different concrete solutions for syntax and semantics of effect types later.
+    \[\lambda x\ldotp print \ap x\seq x + 1 : nat\to^{print} nat\]
+
+    Specifically, an effect system tracks effects for each term but only for abstraction effects present explicitly in type.
+    It is because, in a call-by-value language, abstraction is the only way to delay computations from being evaluated immediately.
+    Such delayed computation can be passed around, potentially escaping the original computational context.
+    So, analysis becomes dataflow-sensitive, and it is much easier to track effects explicitly, providing users some control and flexibility.
+    We will discuss this problem in the upcoming sections~\ref{sec:capabilities} and~\ref{sec:modal}.
+
+
+    Let us outline the desired properties of effect systems for future accurate discussion.
+    Nevertheless, many effect systems compromise some of them for simplicity.
+
+    \textbf{Effect safety}.
+    Every effect can only be performed in a context that supports it.
+    Otherwise, an effect system should reject such a program.
+    Specifically, every exception should be caught, or generally, every effect should be handled.
+%    Safety implies that the type system should never forget effects: if a function may perform some effect, it should be mentioned in the function's type.
+
+    \textbf{Effect negation}.
+    An effect system should provide a way to prove the external purity of a computation.
+    Namely, some effects are used inside and do not affect externally observable behavior, so computation is pure considering such effects.
+    At the same time, some other effects may still be observable from the outside, so an effect system should preserve them.
+    For example, the following function in the Koka language~\cite{leijen2014koka, leijen2017type} catches exceptions of provided computation, propagating other effects unchanged (we will discuss the syntax later):
+    \[catch : \forall \mu\ap a\ldotp (unit\to^{\{exn|\mu\}} a, exception \to^{\mu} a) \to^\mu a\]
+
+    \textbf{Effect encapsulation}~\cite{lindley2018encapsulating}.
+    Imagine a higher-order function that throws and catches exceptions for its internal purposes.
+    Without an effect system, such a function can catch exceptions from parameter function invocation while the user expects them to be propagated to the call site (nothing made him think the other way).
+    For example, the following Scala function will silently intercept \mintinline{scala}|FileException| thrown in \texttt{f}:
+    \begin{minted}{scala}
+        def withContent(f: String => Unit) =
+          try {
+            val content = readFile(path)
+            f(content) // may throw
+            deleteFile(path)
+          } catch (e: FileException) {}
+    \end{minted}
+
+    We consider two aspects of encapsulation.
+    Firstly, an effect system should prevent accidental handling, i.e.,\ it should explicitly track information that particular effects will be handled, e.g.,\ in the previous example, \texttt{f} type should mention \mintinline{scala}|FileException|.
+    Secondly, there should be a way to mask implementation detail effects from being handled by an innermost handler \mintinline{scala}|mask(f(content))| (in this case, no additional type information is needed).
+
+    \textbf{Subeffecting}.
+    It should be possible to use an effectful function in a more permissive context than it requires.
+    It is an essential property for flexibility and convenience.
+    So, there should be a subtyping relation on effect types, which may impose additional challenges on effect type inference.
+
+
+    Effects are inherently transitive along the edges of the dynamic call-graph, i.e.,\ a function's effects include the effects of all the functions it calls transitively~\cite{odersky2022scoped}.
+    This observation highlights the most challenging aspect of the system's usability.
+    An effect system should answer this challenge somehow.
+    Some of the possible solutions are:
+    \begin{itemize}
+        \item Allow to list effect labels in type;
+        \item Make effect labels pack unordered for reusability;
+        \item Make effect labels pack a first-class type to support effect polymorphism for higher-order functions and type synonym declarations;
+        \item Provide robust inference of effect types;
+        \item Support automatic user-defined conversions of effects.
+    \end{itemize}
+
+
+    The first effect system was proposed to statically discover scheduling constraints in parallel programming for expressions with side effects~\cite{lucassen1988polymorphic}.
+    They extended the type system with effect labels and regions (which describe the affected area of the store).
+    Later, Wadler and Thiemann showed~\cite{wadler2003marriage} that programming with monads~\cite{moggi1988computational, wadler1995monads} can subsume early effect systems like the one proposed by Lucassen and Gifford~\cite{lucassen1988polymorphic}.
+    We are not considering this branch of research because monads have proved to be a non-composable solution~\cite{liang1995monad, kiselyov2013extensible}, and they are not necessarily needed to model effects in call-by-value languages.
+
+    Many advanced effect systems have been proposed and implemented in the literature.
+    However, most of them lack usability and flexibility~\cite{odersky2022scoped}.
+    In this overview, we concentrate on designs that were supposed to be practical rather than very expressive and advanced.
+
+
+    \section{Conventional row-based systems} \label{sec:rows}
+
+    Most effect systems use row types~\cite{gaster1996polymorphic} to represent a pack of effects.
+    In this section, we consider conventional row-based effect systems, which differ from others by storing information about all functions' effects in row types.
+    Later, we will discuss systems that place only some information in row types.
+
+
+    Row-based effect systems represent all effects of a function with a row of effect labels.
+    Labels are the names of effects (the source language may allow many effect operations to have the same effect name), potentially applied to type arguments.
+    Row type is an unordered pack of labels.
+    For example, the following function in System F, extended with row types, performs two effects listed in type (we choose neutral syntax with braces for row types):
+    \begin{multline*}
+        \lambda xs\ldotp map \ap (\lambda x\ldotp print\ap x\seq yield\ap x) \ap xs \\ : list\ap nat \to^{\{print, ~yield \ap nat\}} list \ap unit
+    \end{multline*}
+
+    Higher-order functions produce at least the same effects as functions argument do.
+    Row-based effect systems use row polymorphism to express it~\cite{gaster1996polymorphic}.
+    Type variables can also stand for row types and can be spliced into other row types.
+    We use a vertical line to extend a row type by row type variable $\mu$:
+    \begin{multline*}
+        printMap : \forall \mu \ap a \ap b\ldotp (a \to^\mu b) \to list \ap a \to^{\{print|\mu\}} list \ap b
+    \end{multline*}
+
+    Ideally, every higher-order function should be parametrized over the effects of functions argument, which makes smooth migration to the effect system impossible and introduces significant code syntactic pollution, complicating the creation of code abstractions.
+
+
+    Checked exceptions in Java~\cite{gosling2000java} are an example of a row-based effect system.
+    Java statically verifies that all checked exceptions are caught.
+    The programmer should either catch a checked exception or declare explicitly in a method signature that he propagates it to the call site.
+
+    Checked exceptions are a famously unliked feature of Java because they are highly underdesigned and lack flexibility in many use cases~\cite{checked-exceptions}.
+    For example, the exception row is an ad hoc construct, and the user cannot parametrize the function with it.
+    Thus, writing higher-order methods propagating an arbitrary number of checked exceptions to the call site is impossible.
+
+    \begin{minted}{java}
+        static <A, B, E extends Throwable> List<B>
+            map(List<A> xs, Func<A, B, E> f)
+            throws FileNotFoundException, E {...}
+
+        Util.<String, Void, IOException>map(xs,
+            (String s) -> throw new IOException(s))
+    \end{minted}
+
+
+    Many research languages are implementing conventional row-based effect systems.
+    At the same time, the necessity of subtyping and the effect negation mechanism (to subtract handled effects) usually leads to overcomplications when trying to fit a Hindley-Milner type inference style~\cite{hindley1969principal, milner1978theory}.
+    Specifically, the effect system of the Links language supports presence annotations and presence polymorphism, which describe whether a particular effect label should or should not be present in an effect row~\cite{hillerstrom2016liberating}.
+    We will focus on the Koka language effect system, which is simple yet powerful enough~\cite{leijen2014koka, leijen2017type}.
+
+    Koka distinguishes duplicated effect labels in rows $\{l,l\}\neq \{l\}$, following the idea of scoped labels designed for record types~\cite{leijen2005extensible}.
+    It allows Koka to achieve several goals at once.
+    In particular, effect handling forms are straightforward: we discard \texttt{exn} in a final effect \texttt{e}, while the handler is allowed to use exceptions as well since then the type of \texttt{f} can be inferred to \texttt{() -> <exn,exn|e'> a} (Koka uses angle brackets after the function arrow for row types).
+    \begin{minted}{haskell}
+        fun catch(f : () -> <exn|e> a,
+                  h : err -> <|e> a) : <|e> a
+    \end{minted}
+
+    Koka will prevent accidental handling by inferring the proper type, which informs the programmer that a particular effect will be handled.
+    At the same time, Koka provides a \texttt{mask} operation that hides a particular effect from the innermost handler and, therefore, encapsulates this effect.
+    The type of \texttt{mask} is \texttt{(() -> <|e> a) -> <l|e> a}.
+    In the following example, \texttt{exn} effect is masked for \texttt{f} invocation, so \texttt{f} does not contain it in type.
+    \begin{minted}{haskell}
+        fun test(f : () -> <|e> int) : <|e> int
+          catch(fn () mask<exn> { f() }, handle)
+    \end{minted}
+
+    Finally, the Koka language's effect typing fits the Hindley-Milner type inference style.
+    Subtyping on row types is handled by adding additional polymorphic variables $\{exn|\mu\}$.
+
+
+    Some methods allow the emulation of row types with other language features when not directly supported.
+    Haskell \texttt{mtl} library\footnote{\url{https://hackage.haskell.org/package/mtl}} uses type class constraints to list effects~\cite{jones1995functional}.
+    Since constraints are unordered and support subtyping, we can see them as ad-hoc row types.
+    Effect handler libraries in Haskell also use type classes to express open unions similar to row-types~\cite{swierstra2008data}.
+    Another approach is to emulate row types with intersection types~\cite{xie2020row}.
+    The Scala ZIO\footnote{\url{https://zio.dev/}} library can be seen as a practical example of the idea.
+
+    Conventional row-based effect systems is the most straightforward approach, so new languages usually choose it as a baseline.
+    However, such effect systems track too much information, which leads to excessive verbosity.
+    For example, consider a function in Koka that transforms a generator:
+    \begin{minted}{haskell}
+        fun reyield(
+          f : (int) -> <yield|e> int,
+          g : () -> <yield,yield|e> ()
+        ) : <yield|e> ()
+          with handler ctl yield(x)
+            yield(f(x))
+            resume(())
+          g()
+    \end{minted}
+
+
+    \section{Systems based on capabilities} \label{sec:capabilities}
+
+    Previously, we saw effects as calls of ``special'' functions, e.g., \texttt{print}, and listed all corresponding effect labels in types.
+    This understanding leads us to quite verbose systems\footnote{We use underlining for highlighting purposes.}.
+    \[\lambda x\ldotp \underline{print}\ap x\seq x + 1 : nat \to^{\{print\}} nat\]
+
+    In this section, we will look at effects tracking from a different point of view.
+    We assume that there are ``special'' objects in a program called capabilities.
+    Effects can be performed only through them, so an effect system can track such objects instead of the effectful operations.
+    Capabilities can be seen as permissions, given by the context, to perform particular effects.
+    For example, $console$ capability provides us a printing ability (we use syntax with dot to use a capability):
+    \[\lambda x\ldotp \underline{console}.print\ap x\seq x + 1 : nat \to^{\{console\}} nat\]
+
+
+    A function can obtain capabilities in several ways.
+    Firstly, a function can receive them as arguments.
+    Therefore, with capabilities, programmers can reason about effects the same way as they reason about bindings~\cite{brachthauser2022effects}.
+    We can desugar the code with an explicit parameter instead of an effect type:
+    \[\lambda \underline{console} \ap x \ldotp console.print\ap x\seq x + 1 : Console \to nat \to nat\]
+
+    Explicit passing of capabilities as function arguments will be messy (which is precisely the problem we are trying to solve with effects).
+    So, a language should provide some implicit parameter-passing support.
+    In this perspective, we can see effect systems as a tool for tracking free, dynamically bound variables~\cite{odersky2022scoped}.
+    This view complements the picture: a type system controls bounded variables, while an effect system tracks free ones.
+
+    Furthermore, a function can receive capabilities as being captured by first-class functions.
+    This way, capabilities offer a lightweight alternative to classical effect polymorphism called contextual effect polymorphism~\cite{brachthauser2022effects}.
+    So we can give $map$ function a familiar type without any explicit presence of effect polymorphism (effect safety aspect will be discussed later):
+    \[map = \Lambda a \ap b\ldotp \lambda f\ap xs\ldotp \ldots : \forall a \ap b\ldotp \underline{(a \to b)} \to list \ap a \to list \ap b \]
+
+    Finally, there could be other ways to obtain capabilities, which are design choices to be made.
+    For example, global definitions could be allowed to be used as capabilities, e.g.,\ to simplify migration to effect system~\cite{brachthauser2022effects, odersky2022scoped}.
+    Handlers of effects are a natural way to obtain capabilities~\cite{brachthauser2020effects} as well.
+
+
+    Note that capability-based effect systems can be emulated in languages without built-in support using a specific programming style.
+    More precisely, functions should avoid using global definitions to perform effects.
+    Instead, they should receive capability objects as parameters (usually called services) and use method calls on them to perform effects.
+    We demonstrate the idea using Scala with implicits feature~\cite{odersky2004scala}.
+    The language is evolving to support exception checking case natively with \mintinline{scala}|CanThrow| magical capability~\cite{odersky2021safer}.
+    \begin{minted}{scala}
+        trait FileError {
+          def reportNotFound: Nothing
+        }
+
+        def process()(implicit fe: FileError) =
+          fe.reportNotFound // use the capability
+
+        // define scope and capability
+        def withFileError[R](f: FileError => R): R =
+          try {
+            f(new FileError {
+              override def reportNotFound: Nothing =
+                throw FileNotFoundException()
+            })
+          } catch (_: FileNotFoundException) {}
+    \end{minted}
+
+
+    Unfortunately, capability-based effect systems require additional efforts to be safe, which complicates them significantly.
+    Thus, the unsafe middle ground of the discussed programming style with some syntactic language support may seem like a satisfying compromise.
+
+    A capability-based effect system is safe when it prevents capabilities from leaking out of dedicated scope.
+    Exceptions are the most straightforward example: they should never be thrown outside the corresponding \mintinline{scala}|try-catch|.
+    However, we can easily leak exception capability using the code above:
+    \begin{minted}{scala}
+        withFileError(error => error).reportNotFound
+    \end{minted}
+
+    We can obtain similar examples for other kinds of effects.
+    For instance, an effect of persistent application storage uses a file handle, which eventually will be invalidated.
+    Here, we can see similarities in the concepts of resources and capabilities: both have limited lifetimes.
+    For example, a file handle is essentially a capability for working with a file.
+
+    We need to distinguish between first-class values that can be passed around freely and second-class values with limited scope.
+    One solution is to explicitly classify values on type level and restrict second-class values by the following rules~\cite{osvald2016gentrification}:
+    \begin{enumerate}
+        \item Capabilities are second-class;
+        \item First-class functions cannot refer to second-class values through free variables;
+        \item Functions can return only first-class values;
+        \item Only first-class values can be stored in object fields or mutable variables.
+    \end{enumerate}
+
+    For example, a file handle capability is a second-class value that cannot be returned.
+    Also, the functional type is marked as second-class to be able to capture capabilities since it does not leak.
+    We use extended Scala as proposed in~\cite{osvald2016gentrification}.
+    The example will produce an error because inner lambda captures capabilities, so it is a second-class value, while outer lambda tries to return it, which is prohibited.
+    \begin{minted}{scala}
+        def withFile[R](
+            f: @local (@local File) => R): R
+
+        withFile(newFile => () => old.copyTo(newFile))
+    \end{minted}
+
+    This approach is quite inflexible.
+    Imagine a curried map function that is popular for building data processing pipelines.
+    There is no way to work with capabilities in this settings, since a curried function will try to return a second class function.
+    Problems arise with inheritance as well, e.g.,\ it is non-trivial to make a unified interface for lazy and eager collections~\cite{osvald2016gentrification}.
+
+    Capabilities should not necessarily be explicit values.
+    For instance, Effekt language\footnote{\url{https://effekt-lang.org/}} uses implicit passing of capabilities on the source level while being translated to calculus with explicit passing implementing lexically scoped effect handlers~\cite{brachthauser2020effects}.
+    This approach requires effect handlers feature support and distances the effect system from direct control over resource use (which may be the point that resources should never be used directly, only via high-level domain-specific APIs).
+
+    Effekt language uses row types as well.
+    However, they have different semantics from those discussed in the previous section~\ref{sec:rows}.
+    Namely, effect rows do not denote all effects of the context anymore.
+    The semantics of such an effect system can be formulated as context readings of type signatures:
+    \begin{minted}{scala}
+        def buildString(ident: Int)
+          // function block argument
+          { f: () => () / {Yield[String]} }
+          // capabilities ?\big\uparrow? buildString provides
+          : String / {Format}
+          // capabilities ?\big\uparrow? buildString requires
+    \end{minted}
+
+    Note that in this setting, effect encapsulation works by default.
+    Effekt uses type-directed translation and will not provide capabilities to an function argument if it does not explicitly request them in type.
+    So, explicit masking at the term level is not needed.
+
+    With implicit capabilities, we worry not about the leak of capability objects themselves but delayed computations capturing capabilities.
+    However, the effect system does not track all effects in a functional type, so it cannot check if the call site's context is valid.
+    Effekt language solved this issue by making all functions second-class blocks~\cite{brachthauser2020effects}.
+
+    Nevertheless, supporting only second-class blocks is too restrictive, as discussed before.
+    There should be a way to explicate effects back in types to lift the second-class restriction.
+    For this purpose, explicit boxing was proposed:
+    \texttt{box} construct takes implicit capability requirements of a term and makes them explicit,
+    \texttt{unbox} makes effect system check that boxed value can be used in current computational context~\cite{hannan1998type, brachthauser2022effects}.
+    So, second-class values can be boxed, leaked from the current context, carried to another context, and unboxed if this new context is appropriate.
+    \begin{gather*}
+        \infer[BoxIntro]{\Gamma \vdash \mathbf{box}\ap b : \sigma~ \mathbf{at}\ap C ~|~ \{\}}{\Gamma \vdash b : \sigma ~|~ C}
+        \\
+        \infer[BoxElim]{\Gamma \vdash \mathbf{unbox}\ap e : \sigma ~|~ C}{\Gamma \vdash e : \sigma ~\mathbf{at}~C ~|~ \{\}}
+    \end{gather*}
+
+    Since types of boxed values again list all effects, some form of effect polymorphism should be supported.
+    Therefore, Effekt features capability polymorphism, which expresses that a boxed value closes over the same capabilities captured by a particular value~\cite{brachthauser2022effects}.
+    To do this, Effekt turned to explicit capability passing and tracking capability objects by references instead of by types.
+    For example, now it is possible to write down a curried \texttt{map} function that returns a boxed block, capturing \texttt{f}, and, transitively, all capabilities captured by \texttt{f}.
+    \begin{minted}{scala}
+        def map[T, R] { f: T => R }
+          : List<T> => R at {f}
+          { box { xs => go(f, xs) } }
+
+        map { x => console.print(x) }
+          : List<T> => Unit at {console}
+    \end{minted}
+
+    Boxing provides some flexibility as well as new restrictions.
+    Specifically, without explicit effect variables support, boxed values cannot be freely composed: one boxed value cannot be unboxed inside another since there is no way to describe on type level that the second should inherit the first's capabilities.
+    So, a boxed value should be unboxed before capturing; however, unboxing performs capability checks, which are unnecessary for reboxing.
+
+    Much recent work in Scala language has investigated capture checking type systems that track for each value, which capabilities it captures~\cite{odersky2022scoped, boruch2023capturing}.
+    The proposed approach is better integrated with subtyping and does not separate first- and second-class values so strictly.
+    In the rest of the section, we will describe this approach.
+    Experimental implementation is already available in Scala\footnote{\url{https://docs.scala-lang.org/scala3/reference/experimental/cc.html}}.
+
+    We can ascribe every value of type \mintinline{scala}|T| with a type of the form \mintinline{scala}|T^{cap}| (or \mintinline{scala}|T^| for short), which indicates that this value is a capability and its use should be restricted.
+    Namely, it cannot be returned from functions, and generics cannot be instantiated with its type.
+    These values are like the second-class values described before, but the restriction of capability capturing is dropped: the type system accurately tracks capturing instead.
+    For example, lazy list may capture \texttt{file} and \texttt{service} capabilities:
+    \begin{minted}{scala}
+        LazyList.fromFile(file)
+                .map((line) => service.send(line))
+          : LazyList[Int]^{file, service}
+    \end{minted}
+
+    Since contextual polymorphism is supported, functional types are capabilities as well.
+    Specifically, \mintinline{scala}|=>| type is a syntactic sugar for \mintinline{scala}|->^{cap}| type (thin arrow is a type of pure functions).
+    So, impure functions can capture capabilities and should obey capability restrictions.
+    For example, \texttt{map} function (uncurried and curried versions) can be typed as follows:
+    \begin{minted}{scala}
+        def map[A,B](f: A => B, xs: List[A]): List[B]
+        def map[A,B](f: A => B): List[A] ->^{f} List[B]
+    \end{minted}
+
+    Capabilities form subcapturing hierarchy: one capture set can be safely used instead of others.
+    $C_1 <: C_2$ if $C_1$ is covered by $C_2$.
+    For instance, universal capability \mintinline{scala}|^{cap}| covers every other capability $C <: \{cap\}$; if some \mintinline{scala}|f| captures only capabilities \mintinline{scala}|c1| and \mintinline{scala}|c2|, then $\{f\} <: \{c1, c2\}$.
+
+    Let us consider a non-trivial example.
+    We define \mintinline{scala}|Logger| class that depends on \mintinline{scala}|File| capability by receiving it in the primary constructor.
+    \mintinline{scala}|test| function creates logger out of provided \mintinline{scala}|File|.
+    \mintinline{scala}|map| on \mintinline{scala}|LazyList| returns a new list that remembers the provided lambda function, so this new list object captures the capabilities mentioned in the function's body.
+    Note that types reflect all the capturing we describe.
+    Finally, Scala checks that \mintinline{scala}|LazyList[Int]^{l}| is subtype of \mintinline{scala}|LazyList[Int]^{file}|.
+    Indeed, it is true because one capture set covers another $\{l\} <: \{file\}$.
+    \begin{minted}[escapeinside=##]{scala}
+        class Logger(file: File^):
+          def log(s: String): Unit = ???
+
+        def test(file: File^): LazyList[Int]^{file} =
+          val l: Logger^{file} = Logger(file)
+          l.log("hello world!")
+          val newList: LazyList[Int]^{l} =
+            LazyList.from(1).map { i =>
+              l.log(s"computing elem # $i")
+              i * i
+            }
+          newList
+    \end{minted}
+
+    Note that the amount of syntactic pollution with the capture-checking approach seems quite reasonable.
+    Users need to carry the syntactic burden only when leaking capabilities or computations out of scope; otherwise, capability inference should do the job.
+    However, average programmers are generally not familiar with dependent types, which may complicate the adoption of this feature.
+
+    In conclusion, capabilities offer a simple way of reasoning about effects as about ``special'' objects passed from outside as arguments (explicit or implicit) or being captured by first-class functions.
+    Context polymorphism allows to omit effect tracking ceremonies for simple cases.
+    At the same time, establishing safety is non-trivial and requires class separation of values or dependent types.
+
+
+    \section{Modal effect types} \label{sec:modal}
+
+    Capabilities offered us a way to describe only parts of the ambient computational context: only capabilities directly required by a computation were explicated.
+    The main difficulty was tracking implicitly captured capabilities, where all approaches were too restrictive or required dependent types.
+    In this section, we will discuss an effect system that still tries to explicate as few parts of an execution context as possible while remaining fully on the type level.
+
+    Originally, Frank language proposed abilities and adjustments, second-class constructs that serve as a syntactic sugar for row polymorphism~\cite{lindley2017do, convent2020doo}.
+    Later, a standalone modal effect system was proposed, making novel constructs first-class rather than ad-hoc~\cite{tang2024modal}.
+    It follows the idea to use contextual modal type theory to track algebraic effects~\cite{zyuzin2021contextual}.
+    The core insight is that modality type constructors should mark transitions between effect contexts, rather then repeating the full effect context.
+
+    The modal effect system uses two modality type constructors, which may be parametrized by effect labels.
+    These type constructors are first-class: corresponding values can be stored in data structures and passed around freely.
+    The general idea is to box computations and ascribe them with a particular modality type constructor describing a required computational context.
+    In an appropriate computational context, computations will be automatically unboxed and ready to use.
+
+    The absolute modality type constructor is represented by square brackets.
+    It describes the whole effect context required by a computation.
+    A computation boxed by the absolute modality needs context that supports at least enumerated effects to be unboxed.
+    For example, \texttt{map} function does not place any restrictions to a context (and cannot be unboxed freely), but \texttt{gen} function requires \texttt{yield} effect:
+    \begin{minted}{haskell}
+        map : []((a -> b) -> List a -> List b)
+
+        gen : [yield](List Int -> 1)
+        gen xs = map (fun x -> do yield x); ()
+    \end{minted}
+
+    The relative modality type constructor is represented by angle brackets.
+    It describes relative context requirements.
+    Boxed computation can use all the effects provided by an ambient context as well as listed in type.
+    For example, \texttt{asList} handles \texttt{yield} effect, so it receives a computation \texttt{m} that may perform \texttt{yield} effect among others and transfers it to the proper context where \texttt{yield} is supported.
+    We could use absolute modality here, but in this case, it would mean that a computation can only perform the \texttt{yield} effect.
+    \begin{minted}{haskell}
+        asList : <yield>(1 -> 1) -> List Int
+        asList m = handle m () with
+          return () -> []
+          yield x r -> x :: r ()
+    \end{minted}
+
+    Two constructs in the language are supposed to transform computational context.
+    Effect handlers add supported effects; masking subtracts effects.
+    Relative modalities track context transformations having general form \texttt{<L|R>}, where the left part is a row of masked effects and the right part is a row of effects that extend an ambient context.
+
+    There is a rule that a variable should be used in a context compatible with the one under which it was bound.
+    The rule guarantees both effect safety and effect encapsulation.
+    For example, consider a \texttt{filter} function that traverses a list, yields elements that satisfy a predicate, and then reconstructs a list.
+    Computation \texttt{p} is transferred under the handler of \texttt{asList}, i.e., to the different context.
+    To satisfy the rule, we need to subtract \texttt{yield} from the context using \texttt{mask}.
+    \begin{minted}{haskell}
+        filter : (Int -> Bool) -> List Int -> List Int
+        filter p xs = asList (fun _ -> map (fun x ->
+          if mask<yield>(p x) then do yield x else ())
+          xs)
+    \end{minted}
+
+    However, we did not use masking for \texttt{xs}.
+    It is because there is a kind system that checks whether a value is a computation.
+    If not, it can freely pass context boundaries.
+
+    The resulting system is expressive enough to encode programs from conventional row-based effect systems as long as effect variables on function arrows always refer to the lexically closest one.
+    At the same time, adding effect variables support, e.g., to express higher-order effects~\cite{wu2014effect}, is possible.
+
+    In conclusion, the modal effect system features great expressiveness even without explicit effect polymorphism.
+    It still requires a lot of explicit annotations from users, i.e.,\ boxing, masking, and freezing~\cite{emrich2020freezeml}.
+    The kind system overcomplicates the situation as well.
+
+
+    \section{Conclusion}
+
+    We argued that static control over effects is important for program reliability and building clear abstraction boundaries.
+    Then, we described the general idea behind effect systems and provided some criteria to compare different effect systems.
+    We outlined three approaches to effect system construction: explicate all effects using row types and row polymorphism; track capturing of capability objects; mark computational context transitions using modal type constructors.
+    We discussed the pros and cons of different approaches.
+
+    We hope that effect systems will achieve the needed simplicity and reduce the number of auxiliary ceremonies required for adoption in mainstream programming languages.
+
+
+    \section*{Acknowledgment}
+
+    We would like to thank Sergey Kovaltsov, Mikhail Belyaev, Denis Moskvin for the helpful discussion and the anonymous reviewers for their constructive feedback.
+
+
+    % https://stackoverflow.com/questions/2149854/how-to-manually-equalize-columns-in-an-ieee-paper-if-using-bibtex
+    \bibliographystyle{ieeetran}
+    \bibliography{bib}
+
+\end{document}
