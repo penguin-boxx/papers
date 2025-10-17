@@ -283,6 +283,7 @@
 
     \clearpage
 
+
     \section{Formalization}
 
     We formalize or approach as a call-by-value calculus $Core_{\Delta}$, which is basically a polymorphic $\lambda$-calculus extended with data constructors, subtyping and lifetime labels.
@@ -409,11 +410,14 @@
 
     The subtyping relation (Figure\ \ref{fig:core-subtyping}) on lifetimes forms a bounded lattice with $local$ as the top and $free$ as the bottom.
     Thus, the minimum of lifetimes is the least upper bound on this lattice.
+    If $\Delta' <: \Delta$ we say that $\Delta$ outlives $\Delta'$.
 
-    The operation $lt_\Gamma^p(\cdot)$ collects all lifetimes from the monotype on positions with sign $p$ (which can be $+$ or $-$) assuming typing context $\Gamma$:
+    The operation $lt_\Gamma^p(\cdot)$ collects all lifetimes from the monotype on positions with sign $p$ (which can be $+$ or $-$) assuming typing context $\Gamma$.
+    It is defined as the following:
     \[
         \begin{array}{lll}
-            lt_\Gamma^+(\alpha)                                       & = & lt_\Gamma^+(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise}                                     \\ % todo negative case
+            lt_\Gamma^+(\alpha)                                       & = & lt_\Gamma^+(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise}                                     \\
+            lt_\Gamma^-(\alpha)                                       & = & \emptyset \\ % todo negative case
             lt_\Gamma^+(T\ap\Delta\ap\overline{\tau})                 & = & \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)} \cup \{\Delta\}                                           \\
             lt_\Gamma^-(T\ap\Delta\ap\overline{\tau})                 & = & \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)}                                                           \\
             lt_\Gamma^{+}(\overline{\sigma}~\Delta\to\overline{\eta}) & = & \overline{lt_\Gamma^{-}(\tau)} \cup \overline{lt_\Gamma^{-}(\sigma)} \cup \overline{lt_\Gamma^{+}(\eta)} \cup \{\Delta\} \\
@@ -423,6 +427,9 @@
     The lifetime of a type variable is approximated by the lifetime of its bounding type, if such a bound exists.
     In some cases, we intentionally employ an empty context to exclude the influence of bounds.
     Also, since type constructor parameters are invariant, overapproximating, they are treated as both positive and negative simultaneously. % todo example
+
+    So, the rule $SubAny$ says that a special $Any'\Delta$ type is a supertype if the minimum of all lifetimes in $\tau$ is greater then $\Delta$.
+    In other words, $\Delta$ outlives all components of $\tau$.
 
     \subsection{Typing basics of $Core_\Delta$}
 
@@ -474,34 +481,57 @@
     \end{figure}
 
     Let us discuss the $Lam$ rule (Figure\ \ref{fig:core-functions}) in detail.
-    It prevents leaking tracked values by prohibiting types with $local$ and $\star$ lifetimes present in the return type.
+    Firstly, it prevents leaking tracked values by prohibiting types with $local$ and $\star$ lifetimes present in the return type.
+    Secondly, the closure should not be able to outlive the data it closes over.
+    So, the rule determines the lifetime associated with a function type as the minimum of the lifetimes of all captured variables $\overline{s}$, excluding those that are present within the function type by themselves. % todo example
 
-    The closure should not be able to outlive the data it captures.
-    So, the rule extracts types of free variables $\overline{s}$ and add minimum of their lifetimes to the function type.
+    \subsection{Typing data of $Core_\Delta$}
 
+    %! suppress = EscapeAmpersand
+    \begin{figure}
+        \begin{gather*}
+            \mathframebox{\Gamma\vdash t : s} \\[0.5em]
+            \infer[Ctor]{\Gamma\vdash K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset^+(\tau)}\right)\ap \overline{\alpha}}{K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset^+(\tau)}\right)\ap \overline{\alpha} \in \Gamma} \\[0.5em]
+            \infer[Match]{
+                \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l'}_i}^+\ap(\eta_i)}\right)
+            }{
+                \begin{array}{cc}
+                    \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
+                    &
+                    \Gamma\vdash K_i : \forall \overline{l}_i~\overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\left(+\overline{lt_\emptyset^+(\sigma_i)}\right)\ap\overline{\alpha}
+                    \\[0.4em]
+                    \overline{l_i' \text{ fresh}}
+                    &
+                    \overline{l_i' <: \Delta}, \overline{x_i : [\overline{\alpha\to\tau}]\ap[\overline{l_i\to l_i'}]\ap\sigma_i}, \Gamma \vdash u_i : \eta_i
+                \end{array}
+            }
+        \end{gather*}
+        \caption{Typing data of $Core_{\Delta}$.}
+        \label{fig:core-data-typing}
+    \end{figure}
 
+    Similar to functions, lifetime of a data constructor is approximated with minimum of lifetimes of all the data types it contains (Figure\ \ref{fig:core-data-typing}).
+    So the lifetime parameters of a data constructor do not present directly in the resulting type, which makes them similar to existential types. % todo cite
 
+    Work with existential lifetimes requires special care in the $Match$ rule.
+    For each data constructor $K_i$ and its existential lifetimes $\overline{l}_i$ we generate fresh lifetimes $\overline{l'}_i$ and approximate their bound with the lifetime of the whole data structure.
 
-
-
-
-%    The typing rule for $\lambda$-abstractions guarantees that no tracked value can escape the scope of the function via its return value.
-%    The lifetime associated with a function type is determined as the minimum of the lifetimes of all captured variables, excluding those that are present within the function type by themselves.
-%    This ensures that the function itself cannot outlive any tracked capabilities it closes over.
-
-%    \subsection{Typing $Core_\Delta$}
-%
-%    The lifetime elimination operator $elim_{\Delta, \overline{l}}^p(\cdot)$ approximates the designated existential lifetimes $\overline{l}$ to prevent their leakage outside the scope of the pattern-matching branch.
-%    It is defined as following: % todo say about other letters
-%    \[
-%        \begin{array}{lll}
-%            elim_{\Delta, \overline{l}}^p(\alpha) & = & \alpha \\
-%            % todo \Delta clash
-%            elim_{\Delta, \overline{l}}^p(K\ap \Delta\ap\overline{\tau}) & = & K\ap \left( elim_{\Delta, \overline{l}}^p(\Delta) \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{inv}(\tau)} \right) \\
-%            elim_{\Delta, \overline{l}}^p(\ctx{\overline{\tau_1}}\Delta~\overline{\tau_2}\to\sigma) & = & \ctx{\overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau_1)}} \left( elim_{\Delta, \overline{l}}^p(\Delta) \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau_2)} \right)\to elim_{\Delta, \overline{l}}^{p}(\sigma) \\
-%            elim_{\Delta, \overline{l}}^{p}(l') & = &
+    For each pattern-matching branch we need to eliminate fresh lifetimes from the resulting type, since they are not bound outside. % todo cite
+    The $elim_{\Delta, \overline{l}}^p(\cdot)$ function eliminates lifetimes $\overline{l}$, considering the lower bound $\Delta$, considering position $p$ ranging over $+, -$ and $inv$ ($p^{-1} = + \text{ if } p = - \text{ and } - \text{ if } p = +$):
+    \[
+        \begin{array}{lll}
+            elim_{\Delta, \overline{l}}^p(\alpha) & = & \alpha \\
+            elim_{\Delta, \overline{l}}^p(K\ap \Delta'\ap\overline{\tau}) & = & K\ap \left( elim_{\Delta, \overline{l}}^p(\Delta') \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{inv}(\tau)} \right) \\
+            elim_{\Delta, \overline{l}}^p(\overline{\tau}~\Delta'\to\sigma) & = & \left( \overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau)} \right)~\left( elim_{\Delta, \overline{l}}^p(\Delta') \right)\to elim_{\Delta, \overline{l}}^{p}(\sigma) \\
+            elim_{\Delta, \overline{l}}^{p}(l') & = &
+            \begin{cases}
+                l'     & \text{if } l' \not\in\overline{l} \\
+                \Delta & \text{if } l' \in \overline{l} \land p = + \\
+                free   & \text{if } l' \in \overline{l} \land p = - \\
+                \star  & \text{if } l' \in \overline{l} \land p = inv
+            \end{cases} \\
 %            \begin{array}{llll}
-%                l', \text{ if } l' \not\in\overline{l} & \text{ else } &
+%                , \text{ if }  & \text{ else } &
 %                \Delta, \text{ if } p = + & \text{ else }
 %            \end{array} \\
 %            & &
@@ -509,59 +539,27 @@
 %                free, \text{ if } p = - & \text{ else } &
 %                \star, \text{ if } p = inv
 %            \end{array} \\
-%            elim_{\Delta, \overline{l}}^{p}(+\overline{\Delta'}) & = & +\left( \overline{elim_{\Delta, \overline{l}}^{p}(\Delta')} \right)
-%        \end{array}
-%    \]
+            elim_{\Delta, \overline{l}}^{p}(+\overline{\Delta'}) & = & +\left( \overline{elim_{\Delta, \overline{l}}^{p}(\Delta')} \right)
+        \end{array}
+    \]
+    % todo
+
+
+%    \subsection{Typing $Core_\Delta$}
+%
+%    The lifetime elimination operator $elim_{\Delta, \overline{l}}^p(\cdot)$ approximates the designated existential lifetimes $\overline{l}$ to prevent their leakage outside the scope of the pattern-matching branch.
+%    It is defined as following: % todo say about other letters
+
 %    When the position is invariant and it is not possible to approximate a lifetime by a concrete bound, we employ the special lifetime $\star$, which denotes an unknown lifetime.
 %    We consider types with $\star$ lifetime tracked as well.
 %
 %    Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure\ \ref{fig:core-delta-typing}):
 %    \begin{itemize}
-%        \item \textbf{Lam:} The typing rule for $\lambda$-abstractions guarantees that no tracked value can escape the scope of the function via its return value.
-%        Analogous to the treatment of data constructors, the lifetime associated with a function type is determined as the minimum of the lifetimes of all captured variables, excluding those that are present within the function type by themselves.
-%        This ensures that the function itself cannot outlive any tracked capabilities it closes over.
 %        \item \textbf{Match:}
 %        Existential lifetimes of a data constructor are treated as covariant projections bounded by the lifetime of the type. % todo link to covariant projections
 %        So, we substitute fresh lifetimes $l'$ in their place.
 %        Furthermore, these fresh lifetime variables are eliminated from the resulting type of the branch.
-%        \item \textbf{TypesOf:} This rule extracts the types of designated variables from the typing context without discriminating between ordinary bindings and contextual bindings.
 %    \end{itemize}
-%
-%    %! suppress = EscapeAmpersand
-%    \begin{figure}
-%        \begin{gather*}
-%            \mathframebox{\Gamma\vdash t : s} \\
-%            \infer[Ctor]{\Gamma\vdash K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset^+(\tau)}\right)\ap \overline{\alpha}}{K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset^+(\tau)}\right)\ap \overline{\alpha} \in \Gamma}
-%            \infer[Match]{
-%                \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l_i'}}^+\ap(\eta_i)}\right)
-%            }{
-%                \begin{array}{cc}
-%                    \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
-%                    &
-%                    \Gamma\vdash K_i : \forall \overline{l_i}~\overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\left(+\overline{lt_\emptyset^+(\sigma_i)}\right)\ap\overline{\alpha}
-%                    \\
-%                    \overline{l_i' \text{ fresh}}
-%                    &
-%                    \overline{l_i' <: \Delta}, \overline{x_i : [\overline{\alpha\to\tau}]\ap[\overline{l_i\to l_i'}]\ap\sigma_i'}, \Gamma \vdash u_i : \eta_i
-%                \end{array}
-%            }\\
-%%            \begin{array}{ccccc}
-%%                \mathframebox{\Gamma\vdash_{\overline{x}}\overline{\tau}} &
-%%                \infer[TypesOf]{\Gamma\vdash_{\overline{x}}\overline{s}}{\overline{x :_\cdot s} \subset \Gamma} &
-%%                \mathframebox{\Gamma\vdash p} &
-%%                \infer[\epsilon Prog]{\Gamma\vdash\epsilon}{} &
-%%                \infer[Prog]{
-%%                    \Gamma\vdash x : s = t, p
-%%                }{
-%%                    \Gamma\vdash t : s &
-%%                    flt(s)\cup ftv(s) = \emptyset &
-%%                    \Gamma\vdash p
-%%                }
-%%            \end{array}
-%        \end{gather*}
-%        \caption{Typing rules for $Core_{\Delta}$.}
-%        \label{fig:core-delta-typing}
-%    \end{figure}
 %
 %
 %    \section{Implementation}
