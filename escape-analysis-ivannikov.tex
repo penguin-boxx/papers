@@ -402,9 +402,9 @@
 
     The subtyping relation (Figure\ \ref{fig:core-subtyping}) on lifetimes forms a bounded lattice with $local$ as the top and $free$ as the bottom.
     Thus, the minimum of lifetimes is the least upper bound on this lattice.
-    If $\Delta' <: \Delta$ we say that $\Delta$ outlives $\Delta'$.
+    If $\Delta' <: \Delta$ we say that $\Delta'$ outlives $\Delta$.
 
-    The operation $lt_\Gamma(\cdot)$ collects all lifetimes assuming typing context $\Gamma$.
+    We use the operation $lt_\Gamma(\cdot)$ to collect all lifetimes from the type that define its overall lifetime.
     It is defined as the following:
     \[
         \begin{array}{lll}
@@ -415,12 +415,26 @@
     \]
     The lifetime of a type variable is approximated by the lifetime of its bounding type, if such a bound exists.
     In some cases, we intentionally employ an empty context to exclude the influence of bounds.
-%    fun(k) k(File())  : ((File'local) -> Unit) -> Unit
-%    fun(k) k(file)    : ((File'local) -> Unit)'local -> Unit
-    % todo negative are not needed
 
     So, the rule $SubAny$ says that a special $Any'\Delta$ type is a supertype if the minimum of all lifetimes in $\tau$ is greater then $\Delta$.
     In other words, $\Delta$ outlives all components of $\tau$.
+
+    Notice that negative positions are not considered.
+    A function can leak a tracked value via an argument function in two situations:
+    \begin{itemize}
+        \item Firstly, this tracked value is freshly created, and its use will be restricted to the scope of an argument function.
+        In the example, \lstinline[language=colang]{withFile} is definitely untracked:
+        \begin{lstlisting}[language=colang]
+        fun withFile(path: Path, f: (File'local) -> r): r {
+            return f(File(path))
+        }
+        \end{lstlisting}
+        \item Secondly, this tracked value is captured by a closure, but in this case, it's lifetime will already be encountered in the closure's lifetime:
+        \begin{lstlisting}[language=colang]
+        (k: (File'local) -> r) => k(file)
+            : ((File'local) -> r)'local -> r
+        \end{lstlisting}
+    \end{itemize}
 
     \subsection{Typing basics of $Core_\Delta$}
 
@@ -475,8 +489,6 @@
     Firstly, it prevents leaking tracked values by prohibiting types with $local$ lifetime present in the return type.
     Secondly, the closure should not be able to outlive the data it closes over.
     So, the rule determines the lifetime associated with a function type as the minimum of the lifetimes of all captured variables $\overline{s}$, excluding those that are present within the function type by themselves. % todo example
-
-    % todo it's ok to lend local things to argument functions ((File'local) -> r) -> r
 
     \subsection{Typing data of $Core_\Delta$} \label{subsec:typing-data}
 
