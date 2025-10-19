@@ -316,27 +316,19 @@
 
     The type-level syntax of $Core_\Delta$ is given on the Figure\ \ref{fig:core-types}.
     We will use $+$ on lifetimes in prefix position when taking the minimum of a bunch of lifetimes (like $+\overline{\Delta}$) and in infix position for the given lifetimes (like $\Delta_1 + \Delta_2$).
-    The $\star$ lifetime will be covered in detail later. % todo ref
     Type schemas contain lifetime parameters and bounded type parameters.
 
     %! suppress = MissingLabel
     \begin{figure}
-        % todo пофиксить скобочки
         \[
             \begin{array}{lrl}
-                \text{Type variables}           &                    & \alpha, \beta                                                                                                      \\
-                \text{Type constructors}        &                    & T                                                                                                                  \\
-                \text{Lifetime variables}       &                    & l                                                                                                                  \\
-                \text{Lifetimes}                & \Delta             & \Coloneqq l \vor local \vor free \vor +\overline{\Delta} \vor \star                                                \\
-                \text{Monotypes}                & \tau, \sigma, \eta & \Coloneqq \alpha \vor T \ap \Delta \ap \overline{\tau} \vor \overline{\tau}~\Delta \to \sigma                      \\
-                \text{Type schemas}             & s                  & \Coloneqq \forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp \sigma                                            \\
-%                \text{Position sign} & p & \Coloneqq + \vor - \vor inv \\
-%                \text{Free type variables} & & ftv^p(\cdot) \\
-%                \text{Lifetimes} & & lt_\Gamma^p(\cdot) \\
-%                \text{Free lifetime variables} & & flt^p(\cdot) \\
-%                \text{Least upper bound} & & lub(\cdot) \\
-%                \text{Eliminate lifetimes} & & elim^p_{\Delta, \overline{l}}(\cdot) \\
-                \text{Typing contexts}          & \Gamma             & \Coloneqq \emptyset \vor x : s, \Gamma \vor l <: \Delta, \Gamma \vor \alpha <: \tau, \Gamma                        \\
+                \text{Type variables}     &                    & \alpha, \beta                                                                                                      \\
+                \text{Type constructors}  &                    & T                                                                                                                  \\
+                \text{Lifetime variables} &                    & l                                                                                                                  \\
+                \text{Lifetimes}          & \Delta             & \Coloneqq l \vor local \vor free \vor +\overline{\Delta}                                                           \\
+                \text{Monotypes}          & \tau, \sigma, \eta & \Coloneqq \alpha \vor T \ap \Delta \ap \overline{\tau} \vor \overline{\tau}~\Delta \to \sigma                      \\
+                \text{Type schemas}       & s                  & \Coloneqq \forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp \sigma                                            \\
+                \text{Typing contexts}    & \Gamma             & \Coloneqq \emptyset \vor x : s, \Gamma \vor l <: \Delta, \Gamma \vor \alpha <: \tau, \Gamma                        \\
                 &                    & \vor K : \forall \overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\Delta\ap \overline{\alpha}, \Gamma
             \end{array}
         \]
@@ -393,7 +385,7 @@
                 \infer[SubAny]{
                     \Gamma\vdash \tau <: Any\ap\Delta
                 }{
-                    \Gamma\vdash +lt_\Gamma^+(\tau) <: \Delta
+                    \Gamma\vdash +lt_\Gamma(\tau) <: \Delta
                 } &
                 \infer[SubFun]{
                     \Gamma\vdash\overline{\tau'}~\Delta'\to\sigma' <: \overline{\tau}~\Delta\to\sigma
@@ -412,21 +404,20 @@
     Thus, the minimum of lifetimes is the least upper bound on this lattice.
     If $\Delta' <: \Delta$ we say that $\Delta$ outlives $\Delta'$.
 
-    The operation $lt_\Gamma^p(\cdot)$ collects all lifetimes from the monotype on positions with sign $p$ (which can be $+$ or $-$) assuming typing context $\Gamma$.
+    The operation $lt_\Gamma(\cdot)$ collects all lifetimes assuming typing context $\Gamma$.
     It is defined as the following:
     \[
         \begin{array}{lll}
-            lt_\Gamma^+(\alpha)                                       & = & lt_\Gamma^+(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise}                                     \\
-            lt_\Gamma^-(\alpha)                                       & = & \emptyset \\ % todo negative case
-            lt_\Gamma^+(T\ap\Delta\ap\overline{\tau})                 & = & \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)} \cup \{\Delta\}                                           \\
-            lt_\Gamma^-(T\ap\Delta\ap\overline{\tau})                 & = & \overline{lt_\Gamma^+(\tau)} \cup \overline{lt_\Gamma^-(\tau)}                                                           \\
-            lt_\Gamma^{+}(\overline{\sigma}~\Delta\to\overline{\eta}) & = & \overline{lt_\Gamma^{-}(\tau)} \cup \overline{lt_\Gamma^{-}(\sigma)} \cup \overline{lt_\Gamma^{+}(\eta)} \cup \{\Delta\} \\
-            lt_\Gamma^{-}(\overline{\sigma}~\Delta\to\overline{\eta}) & = & \overline{lt_\Gamma^{+}(\tau)} \cup \overline{lt_\Gamma^{+}(\sigma)} \cup \overline{lt_\Gamma^{-}(\eta)}
+            lt_\Gamma(\alpha)                                     & = & lt_\Gamma(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise} \\
+            lt_\Gamma(T\ap\Delta\ap\overline{\tau})               & = & \overline{lt_\Gamma(\tau)} \cup \{\Delta\}                                         \\
+            lt_\Gamma(\overline{\tau}~\Delta\to\overline{\sigma}) & = & \overline{lt_\Gamma(\sigma)} \cup \{\Delta\}
         \end{array}
     \]
     The lifetime of a type variable is approximated by the lifetime of its bounding type, if such a bound exists.
     In some cases, we intentionally employ an empty context to exclude the influence of bounds.
-    Also, since type constructor parameters are invariant, overapproximating, they are treated as both positive and negative simultaneously. % todo example
+%    fun(k) k(File())  : ((File'local) -> Unit) -> Unit
+%    fun(k) k(file)    : ((File'local) -> Unit)'local -> Unit
+    % todo negative are not needed
 
     So, the rule $SubAny$ says that a special $Any'\Delta$ type is a supertype if the minimum of all lifetimes in $\tau$ is greater then $\Delta$.
     In other words, $\Delta$ outlives all components of $\tau$.
@@ -453,13 +444,13 @@
             \end{array} \\[0.5em]
             \begin{array}{cc}
                 \infer[Lam]{
-                    \Gamma\vdash \lambda \overline{x : \tau} \ldotp t :  \overline{\tau}~ \left(+\overline{lt_{\Gamma\setminus ftv^-(\overline{\tau}) \setminus ftv^+(\sigma)}^+(s)}\right) \to \sigma
+                    \Gamma\vdash \lambda \overline{x : \tau} \ldotp t :  \overline{\tau}~ \left(+\overline{lt_{\Gamma\setminus ftv^-(\overline{\tau}) \setminus ftv^+(\sigma)}(s)}\right) \to \sigma
                 }{
                     \overline{x : \tau}, \Gamma\vdash t : \sigma
                     &
                     \Gamma\vdash_{fv(t)\setminus \overline{x}}\overline{s}
                     &
-                    local, \star \not\in lt_\emptyset^+(\sigma)
+                    local \not\in lt_\emptyset(\sigma)
                 } &
                 \infer[App]{
                     \Gamma\vdash t \ap \overline{u} : \sigma
@@ -481,24 +472,26 @@
     \end{figure}
 
     Let us discuss the $Lam$ rule (Figure\ \ref{fig:core-functions}) in detail.
-    Firstly, it prevents leaking tracked values by prohibiting types with $local$ and $\star$ lifetimes present in the return type.
+    Firstly, it prevents leaking tracked values by prohibiting types with $local$ lifetime present in the return type.
     Secondly, the closure should not be able to outlive the data it closes over.
     So, the rule determines the lifetime associated with a function type as the minimum of the lifetimes of all captured variables $\overline{s}$, excluding those that are present within the function type by themselves. % todo example
 
-    \subsection{Typing data of $Core_\Delta$}
+    % todo it's ok to lend local things to argument functions ((File'local) -> r) -> r
+
+    \subsection{Typing data of $Core_\Delta$} \label{subsec:typing-data}
 
     %! suppress = EscapeAmpersand
     \begin{figure}
         \begin{gather*}
             \mathframebox{\Gamma\vdash t : s} \\[0.5em]
-            \infer[Ctor]{\Gamma\vdash K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset^+(\tau)}\right)\ap \overline{\alpha}}{K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset^+(\tau)}\right)\ap \overline{\alpha} \in \Gamma} \\[0.5em]
+            \infer[Ctor]{\Gamma\vdash K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset(\tau)}\right)\ap \overline{\alpha}}{K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset(\tau)}\right)\ap \overline{\alpha} \in \Gamma} \\[0.5em]
             \infer[Match]{
-                \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l'}_i}^+\ap(\eta_i)}\right)
+                \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l'}_i}\ap(\eta_i)}\right)
             }{
                 \begin{array}{cc}
                     \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
                     &
-                    \Gamma\vdash K_i : \forall \overline{l}_i~\overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\left(+\overline{lt_\emptyset^+(\sigma_i)}\right)\ap\overline{\alpha}
+                    \Gamma\vdash K_i : \forall \overline{l}_i~\overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\left(+\overline{lt_\emptyset(\sigma_i)}\right)\ap\overline{\alpha}
                     \\[0.4em]
                     \overline{l_i' \text{ fresh}}
                     &
@@ -517,7 +510,7 @@
     For each data constructor $K_i$ and its existential lifetimes $\overline{l}_i$ we generate fresh lifetimes $\overline{l'}_i$ and approximate their bound with the lifetime of the whole data structure.
 
     For each pattern-matching branch we need to eliminate fresh lifetimes from the resulting type, since they are not bound outside. % todo cite
-    The $elim_{\Delta, \overline{l}}^p(\cdot)$ function eliminates lifetimes $\overline{l}$, considering the lower bound $\Delta$, considering position $p$ ranging over $+, -$ and $inv$ ($p^{-1} = + \text{ if } p = - \text{ and } - \text{ if } p = +$):
+    The $elim_{\Delta, \overline{l}}^p(\cdot)$ function eliminates lifetimes $\overline{l}$, considering the lower bound $\Delta$, considering position $p$ ranging over $+, -$ and $inv$ (let $p^{-1} = + \text{ if } p = - \text{ and } - \text{ if } p = + \text{ and } inv \text{ if } p = inv$):
     \[
         \begin{array}{lll}
             elim_{\Delta, \overline{l}}^p(\alpha) & = & \alpha \\
@@ -528,53 +521,33 @@
                 l'     & \text{if } l' \not\in\overline{l} \\
                 \Delta & \text{if } l' \in \overline{l} \land p = + \\
                 free   & \text{if } l' \in \overline{l} \land p = - \\
-                \star  & \text{if } l' \in \overline{l} \land p = inv
+                \text{error}  & \text{if } l' \in \overline{l} \land p = inv
             \end{cases} \\
-%            \begin{array}{llll}
-%                , \text{ if }  & \text{ else } &
-%                \Delta, \text{ if } p = + & \text{ else }
-%            \end{array} \\
-%            & &
-%            \begin{array}{llll}
-%                free, \text{ if } p = - & \text{ else } &
-%                \star, \text{ if } p = inv
-%            \end{array} \\
-            elim_{\Delta, \overline{l}}^{p}(+\overline{\Delta'}) & = & +\left( \overline{elim_{\Delta, \overline{l}}^{p}(\Delta')} \right)
+            elim_{\Delta, \overline{l}}^{p}(+\overline{\Delta'}) & = & +\left( \overline{elim_{\Delta, \overline{l}}^{p}(\Delta')} \right) \\
+            elim_{\Delta, \overline{l}}^{p}(\Delta') & = & \Delta'
         \end{array}
-    \]
-    % todo
+    \] % todo remove negative clauses
+    When an existential lifetime occurs in invariant position, it cannot be safely approximated to the lower or the upper bound, thus, the error is reported.
+    Otherwise, this situation can be solved by introducing bivariant projection, but we dedicate this to the future work. % todo citations
+
+    The result type of the whole pattern-matching expression is computed as the least upper bound ($lub$) of branch types with eliminated lifetimes.
+
+    % todo examples
 
 
-%    \subsection{Typing $Core_\Delta$}
-%
-%    The lifetime elimination operator $elim_{\Delta, \overline{l}}^p(\cdot)$ approximates the designated existential lifetimes $\overline{l}$ to prevent their leakage outside the scope of the pattern-matching branch.
-%    It is defined as following: % todo say about other letters
+    \section{Implementation}
 
-%    When the position is invariant and it is not possible to approximate a lifetime by a concrete bound, we employ the special lifetime $\star$, which denotes an unknown lifetime.
-%    We consider types with $\star$ lifetime tracked as well.
-%
-%    Let us explain several key aspects of the typing rules for $Core_\Delta$ (Figure\ \ref{fig:core-delta-typing}):
-%    \begin{itemize}
-%        \item \textbf{Match:}
-%        Existential lifetimes of a data constructor are treated as covariant projections bounded by the lifetime of the type. % todo link to covariant projections
-%        So, we substitute fresh lifetimes $l'$ in their place.
-%        Furthermore, these fresh lifetime variables are eliminated from the resulting type of the branch.
-%    \end{itemize}
-%
-%
-%    \section{Implementation}
-%
-%    TODO % todo
-%
-%
-%    \section{Related work}
-%
-%    TODO % todo
-%
-%
-%    \section{Conclusion}
-%
-%    TODO % todo
+    TODO % todo
+
+
+    \section{Related work}
+
+    TODO % todo
+
+
+    \section{Conclusion}
+
+    TODO % todo
 
     \bibliographystyle{plain}
     \bibliography{bib}
