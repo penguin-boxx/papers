@@ -77,7 +77,7 @@
 
     \begin{center}
         \LARGE
-        Type-based escape analysis with existential lifetimes
+        Type-based escape analysis with unions
 
         \small
         Andrey Stoyan
@@ -92,33 +92,35 @@
     To achieve higher precision, particularly in interprocedural contexts, this analysis is often implemented on the type level.
     However, type-level escape analyses tend to be rigid and may impose excessive annotation requirements on programmers.
 
-    In this paper, we introduce a novel type-based escape analysis approach that simplifies lifetime tracking for data types through the use of existential lifetimes.
-    Additionally, our approach incorporates a minimum operation on lifetimes, enabling user-provided type annotations accurately capture a function’s data flow, thereby making them simpler and more intuitive to write.
+    In this paper, we introduce a novel type-based escape analysis approach that incorporates a minimum (union) operation on lifetimes, enabling user-provided type annotations accurately capture a function’s data flow, thereby making them simpler and more intuitive to write.
+    Additionally, our approach simplifies lifetime tracking for data types through the use of existential lifetimes.
     Finally, we provide a prototype implementation of the corresponding type-checking algorithm.
 
 
     \section{Introduction}
 
+    Type-based escape analysis augment types with special labels commonly called lifetimes.
+    Then it checks, whether an expression in some context is allowed to type with a particular lifetime or not.
 
-%    Escape analysis is an important part of every optimizing compiler.
-%    For example, if an object do not escape, it may be allocated on the stack rather than on the heap, reducing GC pressure and increasing overall program performance. % todo java paper reference
+    % todo problem by example
 
-
-%    So, in the following code with the knowledge that the \lstinline[language=colang]{map} function do not escape its argument function, \lstinline[language=colang]{(x) => x + d} closure can be allocated on the stack:
-%    \begin{lstlisting}[language=colang]
-%        fun addToAll(xs: List<Int>, d: Int): List<Int> {
-%            return map(xs, (x) => x + d)
+%    Usually, compound data types are problematic for such approaches as there are situations in which they require types to be polymorphic over all lifetimes of components.
+%    For example, consider the following Rust~\cite{matsakis2014rust} structure that encapsulates references to data sources:
+%    \begin{lstlisting}[language=Rust]
+%        struct Repository<'a, 'b> {
+%            files: Vec<&'a File>,
+%            connection: &'b Connection
 %        }
 %    \end{lstlisting}
-%
-%    Furthermore, escape analysis can be utilized by various language features to prove their safety: if a first-class function do not leak, it is safe to perform non-local return from it;
-%    For example, if a first-class function do not leak, it is safe to perform non-local return from it. % todo kotlin reference
-%    Ownership-based resource management approach often features borrowing ability that allows to use a resource without an ownership transfer within some limited scope. % todo cite Ilia Sergey and Rust
-%    Moreover, escape analysis can be used to ensure safety of contextual polymorphism in capability-based effect systems. % todo cite Me, Odersky
+
+    Escape analysis is an important part of every optimizing compiler.
+    For example, if an object do not escape, it may be allocated on the stack rather than on the heap, reducing GC pressure and increasing overall program performance~\cite{blanchet1999escape}.
+    Furthermore, escape analysis can be utilized by various language features to prove their safety: if a first-class function do not leak, it is safe to perform non-local return from it~\cite{akhin2021kotlin}; ownership-based resource management approach often features borrowing ability that allows to use a resource without an ownership transfer within some limited scope~\cite{matsakis2014rust, lorenzen2024oxidizing}. % todo cite ilia sergey
+    Moreover, escape analysis can be used to ensure safety of contextual polymorphism in capability-based effect systems~\cite{odersky2022scoped, boruch2023capturing}.
 
 %    Classical approaches to escape analysis based on monotone frameworks face precision and efficiency issues in interprocedural scenarios. % todo links
 %    Moreover, they generally fail if some function's source code is not available due to translation unit boundaries or virtual calls.
-%
+
 %    At the same time type-based escape analysis approaches offer a way to express a function's dataflow in a signature.
 %    This makes interprocedural escape analysis local: a particular declaration can be analysed independently of other declarations, since all needed information is available in signatures.
 %    For example, the following Rust function specifies that it returns the reference that lives at least as long as the first argument:
@@ -126,9 +128,12 @@
 %        fn first<'a, 'b>(r1: &'a i64, r2: &'b i64): &'a i64
 %    \end{lstlisting}
 
-    % todo наглядно про проблему
 
-    % todo что я предлагаю
+    % todo it is an interesting problem
+
+    % todo it is unsolved problem
+
+    % todo contributions
 
 %    Contributions of this paper are summarized as follows:
 %    \begin{itemize} % todo ещё один контрибушен
@@ -136,152 +141,80 @@
 %        \item Finally, we provide a prototype implementation of the type checker and discuss technical decision we made.
 %    \end{itemize}
 
-    % todo running example
-
 
     \section{Solution overview}
 
-%    In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
-%
-%    We refer to values that must not escape a given scope as \textit{tracked}, and likewise, their types are designated as tracked.
-%    To differentiate between tracked and non-tracked types, each type \lstinline[language=colang]|T| is annotated with a special label \lstinline[language=colang]|lab|, referred to as a lifetime:
-%    \begin{lstlisting}[language=colang]
-%        T'lab /* or for function types */ (A)'lab -> B
-%    \end{lstlisting}
-%
-%    The \lstinline[language=colang]|free| lifetime label designates non-tracked values.
-%    In contrast, the \lstinline[language=colang]|local| label appears in tracked types and is treated specially by the type system to prevent their escape.
-%    Namely, tracked values also cannot be returned from functions.
-%    Thus, we can specify in type of a higher-order function that it do not leak an argument function.
-%    For example, the eager \lstinline[language=colang]|map| function calls its argument inplace:\footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}
-%    \begin{lstlisting}[language=colang]
-%        fun map(xs: List<a>, f: (a)'local -> b): List<b>
-%    \end{lstlisting}
-%
-%    To enable a function to propagate its arguments through its result, polymorphism over lifetime labels can be used.
-%    In essence, this is an explicit specification of the function’s dataflow directly in the type signature.
-%    For instance, the lazy \lstinline[language=colang]|map| function does not eagerly compute and return the final result; instead, it immediately yields a collection that encapsulates the processing logic.
-%    This behavior can be captured by assigning the same lifetime variable~\lstinline[language=colang]|l| to both the argument function \lstinline[language=colang]|f| and the result type.
-%    Consequently, the type system records that any tracked capabilities captured by \lstinline[language=colang]|f| may be retained within the result.
-%    Thus, such a function continues to support contextual polymorphism, as it can only permit \texttt{f} to escape with the result, and the call site is made aware that the result must not escape its prescribed context:
-%    \begin{lstlisting}[language=colang]
-%        fun lazyMap(xs: LazyList<a>, f: (a)'l -> b): LazyList<b>'l
-%
-%        fun printAll(file: File'local, xs: LazyList<Int>) {
-%            let ys: LazyList<Int>'local = lazyMap(xs, (x) => file.write(x))
-%            ys.collect() // force execution
-%        }
-%    \end{lstlisting}
-%
-%    To express the capture of two or more lifetime-polymorphic values, we employ a syntax with plus that denotes the minimum of their lifetimes:
-%    \begin{lstlisting}[language=colang]
-%        fun compose(f: (b)'l1 -> c, g: (a)'l2 -> b): (a)'l1+l2 -> c =
-%            (x) => f(g(x))
-%    \end{lstlisting}
-%
-%    For the sake of simplicity, lifetime polymorphism is not supported for compound datatypes.
-%    Instead, their lifetimes are computed as the minimum of the lifetimes of their components; the same mechanism is applied to closures.
-%    Upon destructuring, the lifetimes of the individual components are, in turn, approximated by the lifetime of the original compound datatype.
-%    \begin{lstlisting}[language=colang]
-%        fun makeRepository(file: File'l1, conn: Connection'l2): Repository'l1+l2 =
-%            Repository(file, conn)
-%
-%        context(repo: Repository'local)
-%        fun registerUser(user: User) {
-%            let conn: Connection'local = repo.conn
-%            conn.send(user)
-%        }
-%    \end{lstlisting}
-%
-%    We define subtyping so that non-tracked values may be used in positions where tracked values are expected: \lstinline[language=colang]|free <: local|. % todo covariance
-%
-%    We permit tracked types to instantiate polymorphic type parameters, thereby making them first-class citizens in the language.
-%    To control when tracked types are appropriate for instantiation, we use bounded polymorphism.
-%    For example, the \lstinline[language=colang]|map| function uses values of type \lstinline[language=colang]|a| inside and returns values of type \lstinline[language=colang]|b| directly to the caller.
-%    As a result, these type parameters may be instantiated with tracked types:\footnote{We assume that \lstinline[language=colang]|Any| serves as the top element in the type lattice.} \footnote{To preserve backward compatibility, the type \lstinline[language=colang]|Any'free| may be used as the default bound.}
-%    \begin{lstlisting}[language=colang]
-%        fun map(xs: List<a>, f: (a)'l -> b): List<b>'l
-%                where a <: Any'local, b <: Any'local
-%    \end{lstlisting}
-%
-%    Upon capturing, an unknown lifetime of a type argument is approximated by the lifetime of its bound.
-%    Consider the most permissive type for the \lstinline[language=colang]|lazyMap| function.
-%    For the parameter \lstinline[language=colang]|a| we use the polymorphic bound \lstinline[language=colang]|la| and include it into the resulting lifetime, since the resulting lazy list captures the initial list.
-%    The \lstinline[language=colang]|ba| is not used in the result type, because it includes \lstinline[language=colang]|b| itself.
-%    \begin{lstlisting}[language=colang]
-%        fun lazyMap(xs: LazyList<a>, f: (a)'lf -> b): LazyList<b>'lf+la
-%                where a <: Any'la, b <: Any'lb
-%    \end{lstlisting}
-%
-%    Various techniques can be employed to mitigate the boilerplate associated with lifetime polymorphism.
-%    For instance, the lifetime elision mechanism in the Rust language~\cite{matsakis2014rust} utilizes heuristics to automatically insert lifetime variables, thus reducing the need for explicit annotations.
-%    This technique, along with dependent typing-like syntactic sugar, will be discussed in Section~\ref{subsec:lifetime-poly-enhancement}.
-%    \begin{lstlisting}[language=colang]
-%    fun lazyMap(xs: LazyList<a>, f: (a) -> b): LazyList<b>'f+xs
-%    \end{lstlisting}
+    In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
 
-    % todo
+    We refer to values that must not escape a given scope as \textit{tracked}, and likewise, their types are designated as tracked.
+    To differentiate between tracked and non-tracked types, each type \lstinline[language=colang]|T| is annotated with a special label \lstinline[language=colang]|lab|, referred to as a lifetime:
+    \begin{lstlisting}[language=colang]
+        T'lab /* or for function types */ (A)'lab -> B
+    \end{lstlisting}
 
-%    \subsection{Lifetime tunnelling}
-%
-%    Our system allows tracked types to instantiate type parameters.
-%    Following the terminology introduced by Boruch-Gruszecki et al.~\cite{boruch2023capturing}, we refer to this mechanism as \emph{lifetime tunnelling}.
-%
-%    Consider, for example, a function that updates the first component of a pair.
-%    In our approach, it suffices to specify appropriate bounds for the type parameters to ensure that the function correctly operates on tracked types.
-%    Furthermore, note that if the function is instantiated with untracked types, its result will likewise remain untracked: no superfluous constraints will be imposed.
-%    \begin{lstlisting}[language=colang]
-%        fun mapFirst(p: Pair<a, b>, f: (a) -> c): Pair<c, b>
-%                where a <: Any'local, b <: Any'local, c <: Any'local {
-%            Pair(f(fst(p)), snd(p))
-%        }
-%    \end{lstlisting}
-%
-%    When capturing, we approximate the lifetimes of type parameters using the
-%    lifetimes of their bounds.
-%    To improve precision, polymorphic bounds can
-%    be specified for lifetimes:
-%    \begin{lstlisting}[language=colang]
-%        fun mapFirst(p: Pair<a, b>): ((a) -> c)'la+lb -> Pair<c, b>
-%                where a <: Any'la, b < Any'lb, c <: Any'lc {
-%            (f) => Pair(f(fst(p)), snd(p))
-%        }
-%    \end{lstlisting}
-%
-%    \subsection{Simplifying lifetime polymorphism} \label{subsec:lifetime-poly-enhancement}
-%
-%    We consider the lifetime polymorphism the most problematic aspect of our design.
-%    A user should manually introduce lifetime names and link lifetimes of result with lifetimes of arguments in a relational manner:
-%    \begin{lstlisting}[language=colang]
-%        fun compose
-%            <la, lb, lc, lf, lg, a <: Any'la, b <: Any'lb, c <: Any'lc>
-%            (f: (b)'lf -> c, g: (a)'lg -> b): (a)'lb+lf+lg -> c
-%    \end{lstlisting}
-%
-%    One possible solution is to employ the lifetime elision mechanism~\cite{matsakis2014rust}, which automatically inserts lifetimes into type signatures based on heuristics.
-%    However, these heuristics may not always produce the intended results, necessitating manual lifetime annotations by the user in certain cases.
-%    In our example, this approach can look like the following (prime requires compiler to elide a lifetime):
-%    \begin{lstlisting}[language=colang]
-%        fun compose<a', b', c'>(f: (b)' -> c, g: (a)' -> b): (a)' -> c
-%    \end{lstlisting}
-%
-%    An alternative solution is to introduce special syntax in the surface language that enables direct specification of capturing through term variables.
-%    Although the syntax resembles dependent typing, we expect it to be fully implementable through a straightforward desugaring process that translates the surface language into the core calculus with lifetime polymorphism.
-%    \begin{lstlisting}[language=colang]
-%        fun compose(f: (b) -> c, g: (a) -> b): (a)'f+g -> c
-%    \end{lstlisting}
-%
-%    This solution may necessitate the introduction of explicit names for generic arguments in order to precisely specify more complex data flows:
-%    \begin{lstlisting}[language=colang]
-%        fun makeRepository(files: Map<String, file: File>): Repository'file
-%    \end{lstlisting}
-%
-%    In this case, it is crucial that the generated lifetime parameters remain always inferrable.
-%    We defer a thorough development of this surface syntax and its translation to future work.
-%
-%    TODO % todo
+    The \lstinline[language=colang]|free| lifetime label designates non-tracked values.
+    In contrast, the \lstinline[language=colang]|local| label appears in tracked types and is treated specially by the type system to prevent their escape.
+    Namely, tracked values also cannot be returned from functions.
+    Thus, we can specify in type of a higher-order function that it do not leak an argument function.
+    For example, the eager \lstinline[language=colang]|map| function calls its argument inplace:\footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}
+    \begin{lstlisting}[language=colang]
+        fun map(xs: List<a>, f: (a)'local -> b): List<b>
+    \end{lstlisting}
 
-    \clearpage
+    To enable a function to propagate its arguments through its result, polymorphism over lifetime labels can be used.
+    In essence, this is an explicit specification of the function’s dataflow directly in the type signature.
+    For instance, the lazy \lstinline[language=colang]|map| function does not eagerly compute and return the final result; instead, it immediately yields a collection that encapsulates the processing logic.
+    This behavior can be captured by assigning the same lifetime variable~\lstinline[language=colang]|l| to both the argument function \lstinline[language=colang]|f| and the result type.
+    Consequently, the type system records that any tracked capabilities captured by \lstinline[language=colang]|f| may be retained within the result.
+    Thus, such a function continues to support contextual polymorphism, as it can only permit \texttt{f} to escape with the result, and the call site is made aware that the result must not escape its prescribed context:
+    \begin{lstlisting}[language=colang]
+        fun lazyMap(xs: LazyList<a>, f: (a)'l -> b): LazyList<b>'l
+
+        fun printAll(file: File'local, xs: LazyList<Int>) {
+            let ys: LazyList<Int>'local = lazyMap(xs, (x) => file.write(x))
+            ys.collect() // force execution
+        }
+    \end{lstlisting}
+
+    To express the capture of two or more lifetime-polymorphic values, we employ a syntax with plus that denotes the minimum of their lifetimes:
+    \begin{lstlisting}[language=colang]
+        fun compose(f: (b)'lf -> c, g: (a)'lg -> b): (a)'lf+lg -> c =
+            (x) => f(g(x))
+    \end{lstlisting}
+
+    For the sake of simplicity, lifetime polymorphism is not supported for compound datatypes.
+    Instead, their lifetimes are computed as the minimum of the lifetimes of their components; the same mechanism is applied to closures.
+    Upon destructuring, the lifetimes of the individual components are, in turn, approximated by the lifetime of the original compound datatype.
+    \begin{lstlisting}[language=colang]
+        fun makeRepository(file: File'lf, conn: Connection'lc): Repository'lf+lc =
+            Repository(file, conn)
+
+        context(repo: Repository'local)
+        fun registerUser(user: User) {
+            let conn: Connection'local = repo.conn
+            conn.send(user)
+        }
+    \end{lstlisting}
+
+    We define subtyping so that non-tracked values may be used in positions where tracked values are expected: \lstinline[language=colang]|free <: local|.
+    Moreover, for simplicity, all type constructors are covariant with respect to their lifetimes.
+    So, at the destruction site we consider stored lifetimes as covariant projections (see\ \ref{subsec:typing-data}). % todo cite ross tate
+
+    Following~\cite{boruch2023capturing}, we permit tracked types to instantiate polymorphic type parameters, thereby making them first-class citizens in the language.
+    To control when tracked types are appropriate for instantiation, we use bounded polymorphism.
+    For example, the \lstinline[language=colang]|map| function uses values of type \lstinline[language=colang]|a| inside and returns values of type \lstinline[language=colang]|b| directly to the caller.
+    As a result, these type parameters may be instantiated with tracked types:\footnote{We assume that \lstinline[language=colang]|Any| type serves as the top element in the type lattice.} \footnote{To preserve backward compatibility, the type \lstinline[language=colang]|Any'free| may be used as the default bound.}
+    \begin{lstlisting}[language=colang]
+        fun map(xs: List<a>, f: (a)'l -> b): List<b>'l
+                where a <: Any'local, b <: Any'local
+    \end{lstlisting}
+
+    Upon capturing, an unknown lifetime of a type argument is approximated by the lifetime of its bound.
+    Consider the most permissive type for the \lstinline[language=colang]|lazyMap| function:
+    \begin{lstlisting}[language=colang]
+        fun lazyMap(xs: LazyList<a>, f: (a)'lf -> b): LazyList<b>'lf+la
+                where a <: Any'la, b <: Any'lb
+    \end{lstlisting}
 
 
     \section{Formalization}
@@ -458,7 +391,7 @@
             \end{array} \\[0.5em]
             \begin{array}{cc}
                 \infer[Lam]{
-                    \Gamma\vdash \lambda \overline{x : \tau} \ldotp t :  \overline{\tau}~ \left(+\overline{lt_\Gamma}\right) \to \sigma
+                    \Gamma\vdash \lambda \overline{x : \tau} \ldotp t :  \overline{\tau}~ \left(+\overline{lt_\Gamma(s)}\right) \to \sigma
                 }{
                     \overline{x : \tau}, \Gamma\vdash t : \sigma
                     &
