@@ -304,8 +304,6 @@
                 \\
                 \text{Terms} & t, u & \Coloneqq v \vor t\ap\overline{\Delta}\ap\overline{\tau} \vor t\ap \overline{t} \vor match ~ t ~\{\overline{K \ap \overline{x} \to t}\}
                 \\
-%                \text{Programs} & p & \Coloneqq \epsilon \vor x : s = t, p
-%                \\
                 \text{Evaluation context} & E & \Coloneqq \square \vor E \ap\overline{\Delta}\ap \overline{\tau} \vor E \ap \overline{t} \vor v \ap (\overline{v}, E, \overline{t})    \\
                 &   & \vor K\ap\overline{\Delta}\ap\overline{\tau}\ap(\overline{v}, E, \overline{t}) \vor match\ap E\ap \{\overline{K\ap\overline{x}\to t}\}
             \end{array}
@@ -316,6 +314,7 @@
 
     The type-level syntax of $Core_\Delta$ is given on the Figure\ \ref{fig:core-types}.
     We will use $+$ on lifetimes in prefix position when taking the minimum of a bunch of lifetimes (like $+\overline{\Delta}$) and in infix position for the given lifetimes (like $\Delta_1 + \Delta_2$).
+    All monotypes are annotated with lifetimes.
     Type schemas contain lifetime parameters and bounded type parameters.
 
     %! suppress = MissingLabel
@@ -404,37 +403,38 @@
     Thus, the minimum of lifetimes is the least upper bound on this lattice.
     If $\Delta' <: \Delta$ we say that $\Delta'$ outlives $\Delta$.
 
-    We use the operation $lt_\Gamma(\cdot)$ to collect all lifetimes from the type that define its overall lifetime.
+    We use the operation $lt_\Gamma(\cdot)$ to collect all lifetime restrictions from a type.
+%    Actually, it formally defines, what is the tracked type.
     It is defined as the following:
     \[
         \begin{array}{lll}
             lt_\Gamma(\alpha)                                     & = & lt_\Gamma(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise} \\
             lt_\Gamma(T\ap\Delta\ap\overline{\tau})               & = & \overline{lt_\Gamma(\tau)} \cup \{\Delta\}                                         \\
-            lt_\Gamma(\overline{\tau}~\Delta\to\overline{\sigma}) & = & \overline{lt_\Gamma(\sigma)} \cup \{\Delta\}
+            lt_\Gamma(\overline{\tau}~\Delta\to\overline{\sigma}) & = & \{\Delta\} \\
+            lt_{\Gamma}(\forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp\sigma) & = & lt_{\Gamma\setminus\overline{l}\setminus\overline{\alpha}}(\sigma) \setminus \overline{l}
         \end{array}
     \]
     The lifetime of a type variable is approximated by the lifetime of its bounding type, if such a bound exists.
     In some cases, we intentionally employ an empty context to exclude the influence of bounds.
 
-    So, the rule $SubAny$ says that a special $Any'\Delta$ type is a supertype if the minimum of all lifetimes in $\tau$ is greater then $\Delta$.
-    In other words, $\Delta$ outlives all components of $\tau$.
+    The rule $SubAny$ says that a special $Any'\Delta$ type is a supertype of $\tau$ if all components of $\tau$ outlive $\Delta$.
 
-    Notice that negative positions are not considered.
-    A function can leak a tracked value via an argument function in two situations:
-    \begin{itemize}
-        \item Firstly, this tracked value is freshly created, and its use will be restricted to the scope of an argument function.
-        In the example, \lstinline[language=colang]{withFile} is definitely untracked:
-        \begin{lstlisting}[language=colang]
-        fun withFile(path: Path, f: (File'local) -> r): r {
-            return f(File(path))
-        }
-        \end{lstlisting}
-        \item Secondly, this tracked value is captured by a closure, but in this case, it's lifetime will already be encountered in the closure's lifetime:
-        \begin{lstlisting}[language=colang]
-        (k: (File'local) -> r) => k(file)
-            : ((File'local) -> r)'local -> r
-        \end{lstlisting}
-    \end{itemize}
+%    Notice that negative positions are not considered.
+%    A function can leak a tracked value via an argument function in two situations:
+%    \begin{itemize}
+%        \item Firstly, this tracked value is freshly created, and its use will be restricted to the scope of an argument function.
+%        In the example, \lstinline[language=colang]{withFile} is definitely untracked:
+%        \begin{lstlisting}[language=colang]
+%        fun withFile(path: Path, f: (File'local) -> r): r {
+%            return f(File(path))
+%        }
+%        \end{lstlisting}
+%        \item Secondly, this tracked value is captured by a closure, but in this case, it's lifetime will already be encountered in the closure's lifetime:
+%        \begin{lstlisting}[language=colang]
+%        (k: (File'local) -> r) => k(file)
+%            : ((File'local) -> r)'local -> r
+%        \end{lstlisting}
+%    \end{itemize}
 
     \subsection{Typing basics of $Core_\Delta$}
 
@@ -458,7 +458,7 @@
             \end{array} \\[0.5em]
             \begin{array}{cc}
                 \infer[Lam]{
-                    \Gamma\vdash \lambda \overline{x : \tau} \ldotp t :  \overline{\tau}~ \left(+\overline{lt_{\Gamma\setminus ftv^-(\overline{\tau}) \setminus ftv^+(\sigma)}(s)}\right) \to \sigma
+                    \Gamma\vdash \lambda \overline{x : \tau} \ldotp t :  \overline{\tau}~ \left(+\overline{lt_\Gamma}\right) \to \sigma
                 }{
                     \overline{x : \tau}, \Gamma\vdash t : \sigma
                     &
@@ -485,10 +485,8 @@
         \label{fig:core-functions}
     \end{figure}
 
-    Let us discuss the $Lam$ rule (Figure\ \ref{fig:core-functions}) in detail.
-    Firstly, it prevents leaking tracked values by prohibiting types with $local$ lifetime present in the return type.
-    Secondly, the closure should not be able to outlive the data it closes over.
-    So, the rule determines the lifetime associated with a function type as the minimum of the lifetimes of all captured variables $\overline{s}$, excluding those that are present within the function type by themselves. % todo example
+    The $Lam$ rule (Figure\ \ref{fig:core-functions}) is crucial for our escape analysis as it prevents leaking of tracked values by prohibiting types with $local$ lifetime present in the return type.
+    Also, it defines that a lifetime of a function is determined by lifetimes of all captured values.
 
     \subsection{Typing data of $Core_\Delta$} \label{subsec:typing-data}
 
@@ -516,7 +514,7 @@
     \end{figure}
 
     Similar to functions, lifetime of a data constructor is approximated with minimum of lifetimes of all the data types it contains (Figure\ \ref{fig:core-data-typing}).
-    So the lifetime parameters of a data constructor do not present directly in the resulting type, which makes them similar to existential types. % todo cite
+    So the lifetime parameters of a data constructor do not present directly in the resulting type, which makes them existential types. % todo cite
 
     Work with existential lifetimes requires special care in the $Match$ rule.
     For each data constructor $K_i$ and its existential lifetimes $\overline{l}_i$ we generate fresh lifetimes $\overline{l'}_i$ and approximate their bound with the lifetime of the whole data structure.
@@ -538,13 +536,11 @@
             elim_{\Delta, \overline{l}}^{p}(+\overline{\Delta'}) & = & +\left( \overline{elim_{\Delta, \overline{l}}^{p}(\Delta')} \right) \\
             elim_{\Delta, \overline{l}}^{p}(\Delta') & = & \Delta'
         \end{array}
-    \] % todo remove negative clauses
+    \]
     When an existential lifetime occurs in invariant position, it cannot be safely approximated to the lower or the upper bound, thus, the error is reported.
     Otherwise, this situation can be solved by introducing bivariant projection, but we dedicate this to the future work. % todo citations
 
     The result type of the whole pattern-matching expression is computed as the least upper bound ($lub$) of branch types with eliminated lifetimes.
-
-    % todo examples
 
 
     \section{Implementation}
