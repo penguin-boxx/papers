@@ -461,19 +461,28 @@
         \end{array}
     \]
     When an existential lifetime occurs in invariant position, it cannot be safely approximated to the lower or the upper bound, thus, the error is reported.
-    Otherwise, this situation can be solved by introducing bivariant projection, but we dedicate this to the future work. % todo citations
+    Otherwise, this situation can be solved by introducing bivariant projection, but we dedicate this to the future work~\cite{tate2013mixed}.
 
     The result type of the whole pattern-matching expression is computed as the least upper bound ($lub$) of branch types with eliminated lifetimes.
 
 
     \section{Implementation} \label{sec:implementation}
 
-    TODO % todo
+    We provide the type-checker prototype implementation written in Haskell.
+    The core logic of the type-checker is quite minimalistic and takes two hundred lines of code.
+    Mostly, it straight-forwardly follows the rules described in Section~\ref{sec:formalization}, except that lifetimes are represented in normalized form:
+    \begin{lstlisting}[language=Haskell]
+        data Lt = LtLocal | LtMin (Set LtName)
+    \end{lstlisting}
+    Here empty set denotes \lstinline[language=Haskell]{free} lifetime.
 
 
     \section{Related work} \label{sec:related-work}
 
-    The original work on type-based escape analysis~\cite{hannan1998type}
+
+
+
+%    The original work on type-based escape analysis~\cite{hannan1998type}
 
     % todo Rust
     % todo ocaml
