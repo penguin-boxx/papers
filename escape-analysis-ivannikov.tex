@@ -12,6 +12,7 @@
 \usepackage{multicol}
 \usepackage{proof}
 \usepackage{mathtools}
+\usepackage{hyperref}
 
 \usepackage{geometry}
 \geometry{top=25mm}
@@ -21,6 +22,9 @@
 
 \usepackage{enumitem}
 \setlist{noitemsep}
+
+\usepackage{lineno}
+\linenumbers
 
 \newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
 \newcommand{\mathframebox}[1]{\framebox{$\displaystyle #1$}}
@@ -77,12 +81,12 @@
 
     \begin{center}
         \LARGE
-        Type-based escape analysis with unions
+        Draft: Type-based escape analysis with unions
 
         \small
-        Andrey Stoyan
-
-        National Research University Higher School of Economics, Saint Petersburg, Russian Federation
+%        Andrey Stoyan
+%
+%        National Research University Higher School of Economics, Saint Petersburg, Russian Federation
 
         Keywords: type systems, escape analysis, subtyping.
     \end{center}
@@ -99,50 +103,35 @@
 
     \section{Introduction}
 
-    Type-based escape analysis augment types with special labels commonly called lifetimes.
-    Then it checks, whether an expression in some context is allowed to type with a particular lifetime or not.
+%    Type-based escape analysis augment types with special labels commonly called lifetimes.
+%    Then it checks, whether an expression in some context is allowed to be typed with a particular lifetime or not.
+%    Presence of these labels in type signatures makes the analysis local
 
-    % todo problem by example
+    Escape analysis is a fundamental technique used by optimizing compilers.
+    Specifically, when an object does not escape the scope in which it is allocated, it can be safely placed on the stack instead of the heap, thereby reducing garbage collection overhead and improving overall program performance~\cite{blanchet1999escape}.
+    Moreover, escape analysis plays a crucial role in verifying the safety of various language features.
+    For instance, if a first-class function does not leak beyond its intended scope, non-local returns are guaranteed to be safe~\cite{akhin2021kotlin}.
+    In addition, ownership-based resource management mechanisms often utilize borrowing, permitting the use of resources without requiring ownership transfer within confined scopes~\cite{matsakis2014rust, lorenzen2024oxidizing}.  % todo cite ilia sergey
+    Furthermore, escape analysis can be leveraged to enforce safety in contextual polymorphism within capability-based effect systems~\cite{brachthauser2020effects, boruch2023capturing}.
 
-%    Usually, compound data types are problematic for such approaches as there are situations in which they require types to be polymorphic over all lifetimes of components.
-%    For example, consider the following Rust~\cite{matsakis2014rust} structure that encapsulates references to data sources:
-%    \begin{lstlisting}[language=Rust]
-%        struct Repository<'a, 'b> {
-%            files: Vec<&'a File>,
-%            connection: &'b Connection
-%        }
-%    \end{lstlisting}
+    Despite it's usefulness and interprocedural abilities, languages often avoid using type-based escape analysis, preferring classical approaches based on monotone framework~\cite{blanchet1999escape}. % todo cite monotone framework
+    This preference stems primarily from the inherent rigidity or complexity of the resulting type systems.
+    For example, the Rust programming language’s lifetime system necessitates support for variance inference, lifetime polymorphism for compound data types, and lifetime constraints~\cite{matsakis2014rust}.
+    Together, these requirements contribute to a sophisticated but challenging model both for implementers and users.
 
-    Escape analysis is an important part of every optimizing compiler.
-    For example, if an object do not escape, it may be allocated on the stack rather than on the heap, reducing GC pressure and increasing overall program performance~\cite{blanchet1999escape}.
-    Furthermore, escape analysis can be utilized by various language features to prove their safety: if a first-class function do not leak, it is safe to perform non-local return from it~\cite{akhin2021kotlin}; ownership-based resource management approach often features borrowing ability that allows to use a resource without an ownership transfer within some limited scope~\cite{matsakis2014rust, lorenzen2024oxidizing}. % todo cite ilia sergey
-    Moreover, escape analysis can be used to ensure safety of contextual polymorphism in capability-based effect systems~\cite{odersky2022scoped, boruch2023capturing}.
+    In this work, we present a simplified type-based escape analysis that intentionally trades off some expressivity to simplify user-provided type annotations.
+    Specifically, we assume lifetimes of data types are always covariant, while still preserving safety guarantees.
+    Additionally, we introduce existential lifetimes to automate the handling of data type lifetimes.
+    Finally, our approach incorporates union types, which make type signatures transparently and describe a function's dataflow.
 
-%    Classical approaches to escape analysis based on monotone frameworks face precision and efficiency issues in interprocedural scenarios. % todo links
-%    Moreover, they generally fail if some function's source code is not available due to translation unit boundaries or virtual calls.
-
-%    At the same time type-based escape analysis approaches offer a way to express a function's dataflow in a signature.
-%    This makes interprocedural escape analysis local: a particular declaration can be analysed independently of other declarations, since all needed information is available in signatures.
-%    For example, the following Rust function specifies that it returns the reference that lives at least as long as the first argument:
-%    \begin{lstlisting}[language=rust]
-%        fn first<'a, 'b>(r1: &'a i64, r2: &'b i64): &'a i64
-%    \end{lstlisting}
+    The remainder of this paper is organized as follows.
+    Section~\ref{sec:overview} provides an informal introduction to our escape analysis approach, illustrated through practical examples.
+    In Section~\ref{sec:formalization}, we present a formalization of our system using a rigorous formal calculus.
+    Section~\ref{sec:implementation} discusses details of our prototype implementation.
+    Finally, Section~\ref{sec:related-work} compares our design with existing approaches.
 
 
-    % todo it is an interesting problem
-
-    % todo it is unsolved problem
-
-    % todo contributions
-
-%    Contributions of this paper are summarized as follows:
-%    \begin{itemize} % todo ещё один контрибушен
-%        \item We introduce a novel type-based escape analysis technique, that simplifies type annotations by utilizing existential lifetimes and union typing.
-%        \item Finally, we provide a prototype implementation of the type checker and discuss technical decision we made.
-%    \end{itemize}
-
-
-    \section{Solution overview}
+    \section{Solution overview} \label{sec:overview}
 
     In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
 
@@ -156,7 +145,9 @@
     In contrast, the \lstinline[language=colang]|local| label appears in tracked types and is treated specially by the type system to prevent their escape.
     Namely, tracked values also cannot be returned from functions.
     Thus, we can specify in type of a higher-order function that it do not leak an argument function.
-    For example, the eager \lstinline[language=colang]|map| function calls its argument inplace:\footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}
+    For example, the eager \lstinline[language=colang]|map| function calls its argument inplace:%
+    \footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}%
+    \footnote{When we omit the explicit lifetime annotation, we assume the \lstinline[language=colang]|free| lifetime.}
     \begin{lstlisting}[language=colang]
         fun map(xs: List<a>, f: (a)'local -> b): List<b>
     \end{lstlisting}
@@ -189,8 +180,7 @@
         fun makeRepository(file: File'lf, conn: Connection'lc): Repository'lf+lc =
             Repository(file, conn)
 
-        context(repo: Repository'local)
-        fun registerUser(user: User) {
+        fun registerUser(repo: Repository'local, user: User) {
             let conn: Connection'local = repo.conn
             conn.send(user)
         }
@@ -217,7 +207,7 @@
     \end{lstlisting}
 
 
-    \section{Formalization}
+    \section{Formalization} \label{sec:formalization}
 
     We formalize or approach as a call-by-value calculus $Core_{\Delta}$, which is basically a polymorphic $\lambda$-calculus extended with data constructors, subtyping and lifetime labels.
 
@@ -344,7 +334,7 @@
             lt_\Gamma(\alpha)                                     & = & lt_\Gamma(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise} \\
             lt_\Gamma(T\ap\Delta\ap\overline{\tau})               & = & \overline{lt_\Gamma(\tau)} \cup \{\Delta\}                                         \\
             lt_\Gamma(\overline{\tau}~\Delta\to\overline{\sigma}) & = & \{\Delta\} \\
-            lt_{\Gamma}(\forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp\sigma) & = & lt_{\Gamma\setminus\overline{l}\setminus\overline{\alpha}}(\sigma) \setminus \overline{l}
+            lt_{\Gamma}(\forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp\sigma) & = & lt_{\Gamma\setminus\overline{l}\setminus\overline{\alpha}}(\sigma) \setminus \overline{l} % todo тут глубокий минус на множествах
         \end{array}
     \]
     The lifetime of a type variable is approximated by the lifetime of its bounding type, if such a bound exists.
@@ -476,12 +466,19 @@
     The result type of the whole pattern-matching expression is computed as the least upper bound ($lub$) of branch types with eliminated lifetimes.
 
 
-    \section{Implementation}
+    \section{Implementation} \label{sec:implementation}
 
     TODO % todo
 
 
-    \section{Related work}
+    \section{Related work} \label{sec:related-work}
+
+    The original work on type-based escape analysis~\cite{hannan1998type}
+
+    % todo Rust
+    % todo ocaml
+    % todo capabilities
+    % todo first class names for handlers
 
     TODO % todo
 
