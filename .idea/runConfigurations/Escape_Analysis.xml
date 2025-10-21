@@ -1,15 +1,16 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Effect Systems Overview" type="LATEX_RUN_CONFIGURATION" factoryName="LaTeX configuration factory">
+  <configuration default="false" name="Escape Analysis" type="LATEX_RUN_CONFIGURATION" factoryName="LaTeX configuration factory">
     <texify>
       <compiler>PDFLATEX</compiler>
       <compiler-path />
-      <sumatra-path />
-      <pdf-viewer>BUILT-IN-PDF-VIEWER</pdf-viewer>
+      <pdf-viewer>none</pdf-viewer>
+      <require-focus>true</require-focus>
       <viewer-command />
       <compiler-arguments>-shell-escape</compiler-arguments>
       <envs />
+      <expand-macros-in-environment-variables>false</expand-macros-in-environment-variables>
       <before-run-command />
-      <main-file>$PROJECT_DIR$/effect-systems-overview-ivannikov.tex</main-file>
+      <main-file>$PROJECT_DIR$/escape-analysis-ivannikov.tex</main-file>
       <output-path>$PROJECT_DIR$</output-path>
       <auxil-path>{projectDir}/auxil</auxil-path>
       <compile-twice>false</compile-twice>

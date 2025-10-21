@@ -1,0 +1,500 @@
+%! suppress = EscapeAmpersand
+%! suppress = TooLargeSection
+%! suppress = MissingLabel
+
+% Preamble
+\documentclass[11pt]{article}
+
+% Packages
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{multicol}
+\usepackage{proof}
+\usepackage{mathtools}
+\usepackage{hyperref}
+
+\usepackage{geometry}
+\geometry{top=25mm}
+\geometry{bottom=35mm}
+\geometry{left=20mm}
+\geometry{right=20mm}
+
+\usepackage{enumitem}
+\setlist{noitemsep}
+
+\usepackage{lineno}
+\linenumbers
+
+\newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
+\newcommand{\mathframebox}[1]{\framebox{$\displaystyle #1$}}
+\newcommand{\vor}{~|~}
+\newcommand{\ap}{~}
+\newcommand{\ctx}[1]{ctx\left(#1\right)~}
+\newcommand{\step}{\rightsquigarrow}
+\newcommand{\local}{\top}
+\newcommand{\free}{\bot}
+\newcommand{\keyword}[1]{\mathbf{#1}}
+\newcommand{\identation}{\text{\hspace{2em}}}
+
+\usepackage{listings}
+\lstdefinestyle{modern}{
+    basicstyle=\normalfont\ttfamily\small,     % fixed-width font, smaller size
+    keywordstyle=\color{blue!80!black}\bfseries,  % strong blue keywords
+    stringstyle=\color{red!70!black},      % subtle red for strings
+    commentstyle=\color{green!60!black}\itshape,  % italic green comments
+    numberstyle=\tiny\color{gray!50},      % small, gray line numbers
+    rulecolor=\color{gray!50},            % frame color
+    tabsize=4,                           % tab size of 2 spaces
+    showspaces=false,                   % don't show spaces as underscores
+    showstringspaces=false,             % don't highlight spaces in strings
+    breaklines=false,                    % automatic line breaking
+    breakatwhitespace=false,             % break lines at whitespace
+    captionpos=b,                       % caption at the bottom
+    escapeinside={(*@}{@*)},             % escape to LaTeX inside comments
+    gobble=8,      % skip 4 characters of indentation in code lines
+}
+\lstdefinelanguage{colang}{
+    keywords=[1]{let, var, effect, perform, data, context, fun, where, if, else, throw, try, catch, local, free, op, handle, resume, class, interface, override, init, return},
+    sensitive=true,
+    comment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+    breaklines=false,
+    tabsize=4,
+    showstringspaces=false,
+}
+\lstdefinelanguage{rust}{
+    keywords={
+        as, break, const, continue, crate, else, enum, extern, false, fn, for, if, impl, in,
+        let, loop, match, mod, move, mut, pub, ref, return, self, Self, static, struct, super,
+        trait, true, type, unsafe, use, where, while, async, await, dyn
+    },
+    comment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]",
+}
+\lstset{style=modern}
+
+% Document
+\begin{document}
+
+    \begin{center}
+        \LARGE
+        Draft: Type-based escape analysis with unions
+
+        \small
+%        Andrey Stoyan
+%
+%        National Research University Higher School of Economics, Saint Petersburg, Russian Federation
+
+        Keywords: type systems, escape analysis, subtyping.
+    \end{center}
+
+    \textbf{Abstract.}
+    Programming languages frequently utilize escape analysis techniques to ensure the safety of compiler optimizations and language features such as borrowing and effect systems.
+    To achieve higher precision, particularly in interprocedural contexts, this analysis is often implemented on the type level.
+    However, type-level escape analyses tend to be rigid and may impose excessive annotation requirements on programmers.
+
+    In this paper, we introduce a novel type-based escape analysis approach that incorporates a minimum (union) operation on lifetimes, enabling user-provided type annotations accurately capture a function’s data flow, thereby making them simpler and more intuitive to write.
+    Additionally, our approach simplifies lifetime tracking for data types through the use of existential lifetimes.
+    Finally, we provide a prototype implementation of the corresponding type-checking algorithm.
+
+
+    \section{Introduction}
+
+%    Type-based escape analysis augment types with special labels commonly called lifetimes.
+%    Then it checks, whether an expression in some context is allowed to be typed with a particular lifetime or not.
+%    Presence of these labels in type signatures makes the analysis local
+
+    Escape analysis is a fundamental technique used by optimizing compilers.
+    Specifically, when an object does not escape the scope in which it is allocated, it can be safely placed on the stack instead of the heap, thereby reducing garbage collection overhead and improving overall program performance~\cite{blanchet1999escape}.
+    Moreover, escape analysis plays a crucial role in verifying the safety of various language features.
+    For instance, if a first-class function does not leak beyond its intended scope, non-local returns are guaranteed to be safe~\cite{akhin2021kotlin}.
+    In addition, ownership-based resource management mechanisms often utilize borrowing, permitting the use of resources without requiring ownership transfer within confined scopes~\cite{matsakis2014rust, lorenzen2024oxidizing}.  % todo cite ilia sergey
+    Furthermore, escape analysis can be leveraged to enforce safety in contextual polymorphism within capability-based effect systems~\cite{brachthauser2020effects, boruch2023capturing}.
+
+    Despite it's usefulness and interprocedural abilities, languages often avoid using type-based escape analysis, preferring classical approaches based on monotone framework~\cite{blanchet1999escape}. % todo cite monotone framework
+    This preference stems primarily from the inherent rigidity or complexity of the resulting type systems.
+    For example, the Rust programming language’s lifetime system necessitates support for variance inference, lifetime polymorphism for compound data types, and lifetime constraints~\cite{matsakis2014rust}.
+    Together, these requirements contribute to a sophisticated but challenging model both for implementers and users.
+
+    In this work, we present a simplified type-based escape analysis that intentionally trades off some expressivity to simplify user-provided type annotations.
+    Specifically, we assume lifetimes of data types are always covariant, while still preserving safety guarantees.
+    Additionally, we introduce existential lifetimes to automate the handling of data type lifetimes.
+    Finally, our approach incorporates union types, which make type signatures transparently and describe a function's dataflow.
+
+    The remainder of this paper is organized as follows.
+    Section~\ref{sec:overview} provides an informal introduction to our escape analysis approach, illustrated through practical examples.
+    In Section~\ref{sec:formalization}, we present a formalization of our system using a rigorous formal calculus.
+    Section~\ref{sec:implementation} discusses details of our prototype implementation.
+    Finally, Section~\ref{sec:related-work} compares our design with existing approaches.
+
+
+    \section{Solution overview} \label{sec:overview}
+
+    In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
+
+    We refer to values that must not escape a given scope as \textit{tracked}, and likewise, their types are designated as tracked.
+    To differentiate between tracked and non-tracked types, each type \lstinline[language=colang]|T| is annotated with a special label \lstinline[language=colang]|lab|, referred to as a lifetime:
+    \begin{lstlisting}[language=colang]
+        T'lab /* or for function types */ (A)'lab -> B
+    \end{lstlisting}
+
+    The \lstinline[language=colang]|free| lifetime label designates non-tracked values.
+    In contrast, the \lstinline[language=colang]|local| label appears in tracked types and is treated specially by the type system to prevent their escape.
+    Namely, tracked values also cannot be returned from functions.
+    Thus, we can specify in type of a higher-order function that it do not leak an argument function.
+    For example, the eager \lstinline[language=colang]|map| function calls its argument inplace:%
+    \footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}%
+    \footnote{When we omit the explicit lifetime annotation, we assume the \lstinline[language=colang]|free| lifetime.}
+    \begin{lstlisting}[language=colang]
+        fun map(xs: List<a>, f: (a)'local -> b): List<b>
+    \end{lstlisting}
+
+    To enable a function to propagate its arguments through its result, polymorphism over lifetime labels can be used.
+    In essence, this is an explicit specification of the function’s dataflow directly in the type signature.
+    For instance, the lazy \lstinline[language=colang]|map| function does not eagerly compute and return the final result; instead, it immediately yields a collection that encapsulates the processing logic.
+    This behavior can be captured by assigning the same lifetime variable~\lstinline[language=colang]|l| to both the argument function \lstinline[language=colang]|f| and the result type.
+    Consequently, the type system records that any tracked capabilities captured by \lstinline[language=colang]|f| may be retained within the result.
+    Thus, such a function continues to support contextual polymorphism, as it can only permit \texttt{f} to escape with the result, and the call site is made aware that the result must not escape its prescribed context:
+    \begin{lstlisting}[language=colang]
+        fun lazyMap(xs: LazyList<a>, f: (a)'l -> b): LazyList<b>'l
+
+        fun printAll(file: File'local, xs: LazyList<Int>) {
+            let ys: LazyList<Int>'local = lazyMap(xs, (x) => file.write(x))
+            ys.collect() // force execution
+        }
+    \end{lstlisting}
+
+    To express the capture of two or more lifetime-polymorphic values, we employ a syntax with plus that denotes the minimum of their lifetimes:
+    \begin{lstlisting}[language=colang]
+        fun compose(f: (b)'lf -> c, g: (a)'lg -> b): (a)'lf+lg -> c =
+            (x) => f(g(x))
+    \end{lstlisting}
+
+    For the sake of simplicity, lifetime polymorphism is not supported for compound datatypes.
+    Instead, their lifetimes are computed as the minimum of the lifetimes of their components; the same mechanism is applied to closures.
+    Upon destructuring, the lifetimes of the individual components are, in turn, approximated by the lifetime of the original compound datatype.
+    \begin{lstlisting}[language=colang]
+        fun makeRepository(file: File'lf, conn: Connection'lc): Repository'lf+lc =
+            Repository(file, conn)
+
+        fun registerUser(repo: Repository'local, user: User) {
+            let conn: Connection'local = repo.conn
+            conn.send(user)
+        }
+    \end{lstlisting}
+
+    We define subtyping so that non-tracked values may be used in positions where tracked values are expected: \lstinline[language=colang]|free <: local|.
+    Moreover, for simplicity, all type constructors are covariant with respect to their lifetimes.
+    So, at the destruction site we consider stored lifetimes as covariant projections (see\ \ref{subsec:typing-data}). % todo cite ross tate
+
+    Following~\cite{boruch2023capturing}, we permit tracked types to instantiate polymorphic type parameters, thereby making them first-class citizens in the language.
+    To control when tracked types are appropriate for instantiation, we use bounded polymorphism.
+    For example, the \lstinline[language=colang]|map| function uses values of type \lstinline[language=colang]|a| inside and returns values of type \lstinline[language=colang]|b| directly to the caller.
+    As a result, these type parameters may be instantiated with tracked types:\footnote{We assume that \lstinline[language=colang]|Any| type serves as the top element in the type lattice.} \footnote{To preserve backward compatibility, the type \lstinline[language=colang]|Any'free| may be used as the default bound.}
+    \begin{lstlisting}[language=colang]
+        fun map(xs: List<a>, f: (a)'l -> b): List<b>'l
+                where a <: Any'local, b <: Any'local
+    \end{lstlisting}
+
+    Upon capturing, an unknown lifetime of a type argument is approximated by the lifetime of its bound.
+    Consider the most permissive type for the \lstinline[language=colang]|lazyMap| function:
+    \begin{lstlisting}[language=colang]
+        fun lazyMap(xs: LazyList<a>, f: (a)'lf -> b): LazyList<b>'lf+la
+                where a <: Any'la, b <: Any'lb
+    \end{lstlisting}
+
+
+    \section{Formalization} \label{sec:formalization}
+
+    We formalize or approach as a call-by-value calculus $Core_{\Delta}$, which is basically a polymorphic $\lambda$-calculus extended with data constructors, subtyping and lifetime labels.
+
+    \subsection{Syntax and semantics of $Core_\Delta$}
+
+    The term-level syntax of the $Core_\Delta$ is given on the Figure~\ref{fig:core-syntax}.
+    The overline denotes a bunch of corresponding entities.
+    Type application and type abstraction have two groups of arguments: lifetimes and types.
+
+    \begin{figure}
+        \centering
+        \[
+            \begin{array}{lrl}
+                \text{Variables}          &   & x, y, z, f, g                                                                                                                          \\
+                \text{Data constructors}  &   & K                                                                                                                                      \\
+                \text{Values} & v & \Coloneqq x \vor K \vor \Lambda \overline{l}~\overline{\alpha} \ldotp v \vor K\ap\overline{\Delta}\ap \overline{\tau} \ap \overline{v} \vor \lambda \overline{x : \tau}\ldotp t
+                \\
+                \text{Terms} & t, u & \Coloneqq v \vor t\ap\overline{\Delta}\ap\overline{\tau} \vor t\ap \overline{t} \vor match ~ t ~\{\overline{K \ap \overline{x} \to t}\}
+                \\
+                \text{Evaluation context} & E & \Coloneqq \square \vor E \ap\overline{\Delta}\ap \overline{\tau} \vor E \ap \overline{t} \vor v \ap (\overline{v}, E, \overline{t})    \\
+                &   & \vor K\ap\overline{\Delta}\ap\overline{\tau}\ap(\overline{v}, E, \overline{t}) \vor match\ap E\ap \{\overline{K\ap\overline{x}\to t}\}
+            \end{array}
+        \]
+        \caption{Syntax of $Core_\Delta$.}
+        \label{fig:core-syntax}
+    \end{figure}
+
+    The type-level syntax of $Core_\Delta$ is given on the Figure\ \ref{fig:core-types}.
+    We will use $+$ on lifetimes in prefix position when taking the minimum of a bunch of lifetimes (like $+\overline{\Delta}$) and in infix position for the given lifetimes (like $\Delta_1 + \Delta_2$).
+    All monotypes are annotated with lifetimes.
+    Type schemas contain lifetime parameters and bounded type parameters.
+
+    %! suppress = MissingLabel
+    \begin{figure}
+        \[
+            \begin{array}{lrl}
+                \text{Type variables}     &                    & \alpha, \beta                                                                                                      \\
+                \text{Type constructors}  &                    & T                                                                                                                  \\
+                \text{Lifetime variables} &                    & l                                                                                                                  \\
+                \text{Lifetimes}          & \Delta             & \Coloneqq l \vor local \vor free \vor +\overline{\Delta}                                                           \\
+                \text{Monotypes}          & \tau, \sigma, \eta & \Coloneqq \alpha \vor T \ap \Delta \ap \overline{\tau} \vor \overline{\tau}~\Delta \to \sigma                      \\
+                \text{Type schemas}       & s                  & \Coloneqq \forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp \sigma                                            \\
+                \text{Typing contexts}    & \Gamma             & \Coloneqq \emptyset \vor x : s, \Gamma \vor l <: \Delta, \Gamma \vor \alpha <: \tau, \Gamma                        \\
+                &                    & \vor K : \forall \overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\Delta\ap \overline{\alpha}, \Gamma
+            \end{array}
+        \]
+        \caption{Syntax of types of $Core_\Delta$.}
+        \label{fig:core-types}
+    \end{figure}
+
+    The reduction semantics of $Core_\Delta$ is given on the Figure\ \ref{fig:core-operational}.
+
+    \begin{figure}
+        \begin{gather*}
+            \begin{array}{llll}
+                \text{(tapp)} & (\Lambda \overline{l}~\overline{\alpha}\ldotp t)\ap \overline{\Delta} \ap \overline{\tau} & \longrightarrow & [\overline{l \to \Delta}, \overline{\alpha\to\tau}]\ap t
+                \\
+                \text{(app)} & (\lambda \overline{x}\ldotp t) \ap \overline{v} & \longrightarrow & [\overline{x\to v}]\ap t
+                \\
+                \text{(match)} & match ~K \ap\Delta\ap\overline{\tau}\ap \overline{v} ~ \{ \overline{K_i \ap \overline{x}_i \to u_i}\} & \longrightarrow & [\overline{x_k\to v}]\ap u_k, \text{ where } K = K_k
+            \end{array}\\
+            \hspace{-15em}\infer[\text{(step)}]{E[t]\longrightarrow E[t']}{t\longrightarrow t'}
+        \end{gather*}
+        \caption{Operational semantics of $Core_\Delta$.}
+        \label{fig:core-operational}
+    \end{figure}
+
+    \subsection{Subtyping relation}
+
+    \begin{figure}
+        \begin{gather*}
+            \mathframebox{\Gamma\vdash\Delta' <: \Delta} \\[0.5em]
+            \begin{array}{cc}
+                \infer[SubFree]{\Gamma\vdash free <: \Delta}{} &
+                \infer[SubLocal]{\Gamma\vdash\Delta <: local}{} \\[0.5em]
+                \infer[SubCtx_\Delta]{
+                    \Gamma\vdash l <: \Delta
+                }{
+                    l <: \Delta \in \Gamma
+                } &
+                \infer[Sub+]{
+                    \Gamma\vdash+\overline{\Delta'} <: +\overline{\Delta}
+                }{
+                    \forall\Delta'\in\overline{\Delta'}\ldotp\exists\Delta\in\overline{\Delta}\ldotp \Gamma\vdash\Delta' <: \Delta
+                }
+            \end{array}\\[1em]
+            \mathframebox{\Gamma\vdash \sigma <: \tau} \\[0.5em]
+            \begin{array}{cc}
+                \infer[SubCtx]{\Gamma\vdash \alpha <: \tau}{\alpha <: \tau \in \Gamma} &
+                \infer[SubData]{
+                    \Gamma\vdash T\ap\Delta'\ap\overline{\tau} <: T\ap\Delta\ap\overline{\tau}
+                }{
+                    \Gamma\vdash\Delta' <: \Delta
+                }
+            \end{array} \\[0.5em]
+            \begin{array}{cc}
+                \infer[SubAny]{
+                    \Gamma\vdash \tau <: Any\ap\Delta
+                }{
+                    \Gamma\vdash +lt_\Gamma(\tau) <: \Delta
+                } &
+                \infer[SubFun]{
+                    \Gamma\vdash\overline{\tau'}~\Delta'\to\sigma' <: \overline{\tau}~\Delta\to\sigma
+                }{
+                    \overline{\Gamma\vdash\tau <: \tau'} &
+                    \Gamma\vdash\Delta' <: \Delta &
+                    \sigma' <: \sigma
+                }
+            \end{array}
+        \end{gather*}
+        \caption{Subtyping rules of $Core_{\Delta}$.}
+        \label{fig:core-subtyping}
+    \end{figure}
+
+    The subtyping relation (Figure\ \ref{fig:core-subtyping}) on lifetimes forms a bounded lattice with $local$ as the top and $free$ as the bottom.
+    Thus, the minimum of lifetimes is the least upper bound on this lattice.
+    If $\Delta' <: \Delta$ we say that $\Delta'$ outlives $\Delta$.
+
+    We use the operation $lt_\Gamma(\cdot)$ to collect all lifetime restrictions from a type.
+%    Actually, it formally defines, what is the tracked type.
+    It is defined as the following:
+    \[
+        \begin{array}{lll}
+            lt_\Gamma(\alpha)                                     & = & lt_\Gamma(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise} \\
+            lt_\Gamma(T\ap\Delta\ap\overline{\tau})               & = & \overline{lt_\Gamma(\tau)} \cup \{\Delta\}                                         \\
+            lt_\Gamma(\overline{\tau}~\Delta\to\overline{\sigma}) & = & \{\Delta\} \\
+            lt_{\Gamma}(\forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp\sigma) & = & lt_{\Gamma\setminus\overline{l}\setminus\overline{\alpha}}(\sigma) \setminus \overline{l} % todo тут глубокий минус на множествах
+        \end{array}
+    \]
+    The lifetime of a type variable is approximated by the lifetime of its bounding type, if such a bound exists.
+    In some cases, we intentionally employ an empty context to exclude the influence of bounds.
+
+    The rule $SubAny$ says that a special $Any'\Delta$ type is a supertype of $\tau$ if all components of $\tau$ outlive $\Delta$.
+
+%    Notice that negative positions are not considered.
+%    A function can leak a tracked value via an argument function in two situations:
+%    \begin{itemize}
+%        \item Firstly, this tracked value is freshly created, and its use will be restricted to the scope of an argument function.
+%        In the example, \lstinline[language=colang]{withFile} is definitely untracked:
+%        \begin{lstlisting}[language=colang]
+%        fun withFile(path: Path, f: (File'local) -> r): r {
+%            return f(File(path))
+%        }
+%        \end{lstlisting}
+%        \item Secondly, this tracked value is captured by a closure, but in this case, it's lifetime will already be encountered in the closure's lifetime:
+%        \begin{lstlisting}[language=colang]
+%        (k: (File'local) -> r) => k(file)
+%            : ((File'local) -> r)'local -> r
+%        \end{lstlisting}
+%    \end{itemize}
+
+    \subsection{Typing basics of $Core_\Delta$}
+
+    \begin{figure}
+        \begin{gather*}
+            \mathframebox{\Gamma\vdash t : s} \\[0.5em]
+            \infer[Var]{\Gamma\vdash x : s}{x : s \in \Gamma} \\
+            \begin{array}{cc}
+                \infer[TLam]{
+                    \Gamma\vdash\Lambda\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp t : \forall\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp\tau
+                }{
+                    \overline{\alpha <: \sigma}, \Gamma\vdash t : \tau
+                } &
+                \infer[TApp]{
+                    \Gamma\vdash x\ap\overline{\Delta}\ap\overline{\tau'} : [\overline{\alpha\to\tau'}]\ap[\overline{l\to\Delta}]\ap\sigma
+                }{
+                    x : \forall\overline{l}\ap(\overline{\alpha <: \tau})\ldotp \sigma \in \Gamma
+                    &
+                    \overline{\Gamma\vdash\tau' <: [\overline{l\to\Delta}]\ap\tau}
+                }
+            \end{array} \\[0.5em]
+            \begin{array}{cc}
+                \infer[Lam]{
+                    \Gamma\vdash \lambda \overline{x : \tau} \ldotp t :  \overline{\tau}~ \left(+\overline{lt_\Gamma(s)}\right) \to \sigma
+                }{
+                    \overline{x : \tau}, \Gamma\vdash t : \sigma
+                    &
+                    \Gamma\vdash_{fv(t)\setminus \overline{x}}\overline{s}
+                    &
+                    local \not\in lt_\emptyset(\sigma)
+                } &
+                \infer[App]{
+                    \Gamma\vdash t \ap \overline{u} : \sigma
+                } {
+                    \Gamma\vdash t : \overline{\tau}~\Delta\to\sigma
+                    &
+                    \overline{\Gamma\vdash u : \tau'}
+                    &
+                    \overline{\Gamma\vdash\tau' <: \tau}
+                }
+            \end{array} \\[0.5em]
+            \begin{array}{cc}
+                \mathframebox{\Gamma\vdash_{\overline{x}}\overline{\tau}} &
+                \infer[TypesOf]{\Gamma\vdash_{\overline{x}}\overline{s}}{\overline{x : s} \subset \Gamma}
+            \end{array}
+        \end{gather*}
+        \caption{Typing basics of $Core_\Delta$.}
+        \label{fig:core-functions}
+    \end{figure}
+
+    The $Lam$ rule (Figure\ \ref{fig:core-functions}) is crucial for our escape analysis as it prevents leaking of tracked values by prohibiting types with $local$ lifetime present in the return type.
+    Also, it defines that a lifetime of a function is determined by lifetimes of all captured values.
+
+    \subsection{Typing data of $Core_\Delta$} \label{subsec:typing-data}
+
+    %! suppress = EscapeAmpersand
+    \begin{figure}
+        \begin{gather*}
+            \mathframebox{\Gamma\vdash t : s} \\[0.5em]
+            \infer[Ctor]{\Gamma\vdash K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset(\tau)}\right)\ap \overline{\alpha}}{K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset(\tau)}\right)\ap \overline{\alpha} \in \Gamma} \\[0.5em]
+            \infer[Match]{
+                \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l'}_i}\ap(\eta_i)}\right)
+            }{
+                \begin{array}{cc}
+                    \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
+                    &
+                    \Gamma\vdash K_i : \forall \overline{l}_i~\overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\left(+\overline{lt_\emptyset(\sigma_i)}\right)\ap\overline{\alpha}
+                    \\[0.4em]
+                    \overline{l_i' \text{ fresh}}
+                    &
+                    \overline{l_i' <: \Delta}, \overline{x_i : [\overline{\alpha\to\tau}]\ap[\overline{l_i\to l_i'}]\ap\sigma_i}, \Gamma \vdash u_i : \eta_i
+                \end{array}
+            }
+        \end{gather*}
+        \caption{Typing data of $Core_{\Delta}$.}
+        \label{fig:core-data-typing}
+    \end{figure}
+
+    Similar to functions, lifetime of a data constructor is approximated with minimum of lifetimes of all the data types it contains (Figure\ \ref{fig:core-data-typing}).
+    So the lifetime parameters of a data constructor do not present directly in the resulting type, which makes them existential types. % todo cite
+
+    Work with existential lifetimes requires special care in the $Match$ rule.
+    For each data constructor $K_i$ and its existential lifetimes $\overline{l}_i$ we generate fresh lifetimes $\overline{l'}_i$ and approximate their bound with the lifetime of the whole data structure.
+
+    For each pattern-matching branch we need to eliminate fresh lifetimes from the resulting type, since they are not bound outside. % todo cite
+    The $elim_{\Delta, \overline{l}}^p(\cdot)$ function eliminates lifetimes $\overline{l}$, considering the lower bound $\Delta$, considering position $p$ ranging over $+, -$ and $inv$ (let $p^{-1} = + \text{ if } p = - \text{ and } - \text{ if } p = + \text{ and } inv \text{ if } p = inv$):
+    \[
+        \begin{array}{lll}
+            elim_{\Delta, \overline{l}}^p(\alpha) & = & \alpha \\
+            elim_{\Delta, \overline{l}}^p(K\ap \Delta'\ap\overline{\tau}) & = & K\ap \left( elim_{\Delta, \overline{l}}^p(\Delta') \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{inv}(\tau)} \right) \\
+            elim_{\Delta, \overline{l}}^p(\overline{\tau}~\Delta'\to\sigma) & = & \left( \overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau)} \right)~\left( elim_{\Delta, \overline{l}}^p(\Delta') \right)\to elim_{\Delta, \overline{l}}^{p}(\sigma) \\
+            elim_{\Delta, \overline{l}}^{p}(l') & = &
+            \begin{cases}
+                l'     & \text{if } l' \not\in\overline{l} \\
+                \Delta & \text{if } l' \in \overline{l} \land p = + \\
+                free   & \text{if } l' \in \overline{l} \land p = - \\
+                \text{error}  & \text{if } l' \in \overline{l} \land p = inv
+            \end{cases} \\
+            elim_{\Delta, \overline{l}}^{p}(+\overline{\Delta'}) & = & +\left( \overline{elim_{\Delta, \overline{l}}^{p}(\Delta')} \right) \\
+            elim_{\Delta, \overline{l}}^{p}(\Delta') & = & \Delta'
+        \end{array}
+    \]
+    When an existential lifetime occurs in invariant position, it cannot be safely approximated to the lower or the upper bound, thus, the error is reported.
+    Otherwise, this situation can be solved by introducing bivariant projection, but we dedicate this to the future work~\cite{tate2013mixed}.
+
+    The result type of the whole pattern-matching expression is computed as the least upper bound ($lub$) of branch types with eliminated lifetimes.
+
+
+    \section{Implementation} \label{sec:implementation}
+
+    We provide the type-checker prototype implementation written in Haskell.
+    The core logic of the type-checker is quite minimalistic and takes two hundred lines of code.
+    Mostly, it straight-forwardly follows the rules described in Section~\ref{sec:formalization}, except that lifetimes are represented in normalized form:
+    \begin{lstlisting}[language=Haskell]
+        data Lt = LtLocal | LtMin (Set LtName)
+    \end{lstlisting}
+    Here empty set denotes the \lstinline[language=Haskell]{free} lifetime.
+
+
+    \section{Related work} \label{sec:related-work}
+
+
+%    The original work on type-based escape analysis~\cite{hannan1998type}
+
+    % todo Rust
+    % todo ocaml
+    % todo capabilities
+    % todo first class names for handlers
+
+    TODO % todo
+
+
+    \section{Conclusion}
+
+    TODO % todo
+
+    \bibliographystyle{plain}
+    \bibliography{bib}
+
+\end{document}
