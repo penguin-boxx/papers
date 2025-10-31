@@ -486,24 +486,21 @@
 %    Hannan~\cite{hannan1998type} used type-based escape analysis to reduce number of allocations in a functional language.
     % todo origins and classical analysis
 
-    The Rust language supports type-based escape analysis to enforce memory safety of the use of references~\cite{matsakis2014rust}.
-    The excessive flexibility of their approach bases on support of lifetime polymorphism, variance inference and lifetime constraints.
-    However, except the overall feature complexity, sometimes tricks are required to achieve the desired typing.
-    For example, if a function's resulting type lifetime should be the minimum of argument's lifetimes, arguments and resulting type should have the same polymorphic lifetime, which will be inferred to minimum on the call site.
+    The Rust language supports type-based escape analysis to ensure memory safety when using references~\cite{matsakis2014rust}.
+    This is achieved through a combination of lifetime polymorphism, variance inference, and lifetime constraints, which together provide significant representational power but also increase the overall complexity of the type system.
+    Despite that, the minimum of lifetimes can be achieved only indirectly through an additional lifetime constraints or by making all corresponding lifetimes equal.
     In contrast, our approach provides a way to express minimum directly.
 
-    In modal OCaml the \texttt{local} modality prevents borrowed reference from escaping~\cite{lorenzen2024oxidizing}.
-    Modalities here are not first-class type constructors and are rather properties of bindings.
-    So,
+    In modal OCaml, the \texttt{local} modality serves to prevent borrowed references from escaping their defining region, ensuring safe memory use and enabling optimizations such as stack allocation~\cite{lorenzen2024oxidizing}.
+    Modalities here are not first-class type constructors and are rather properties of bindings, so types with modalities cannot, for example, instantiate type variables, which limits the expressiveness further.
 
-    % todo Rust
-    % todo ocaml
-    % todo capabilities
-    % todo first class names for handlers
+    Contemporary research in effect systems makes extensive use of type-based escape analysis to formally guarantee safety properties.
+    Xie et al.~\cite{xie2022first} adopt higher-rank types to enforce the non-leakage of effect handlers.
+    Capability-based effect systems employ type-based escape analysis to establish safety of contextual polymorphism~\cite{osvald2016gentrification, brachthauser2020effects, brachthauser2022effects}.
+    Recent work in the Scala language utilizes dependent types to check escaping~\cite{boruch2023capturing}.
+
     % todo swift
     % todo C++
-
-    TODO % todo
 
 
     \section{Conclusion}
