@@ -114,15 +114,17 @@
     In addition, ownership-based resource management mechanisms often utilize borrowing, permitting the use of resources without requiring ownership transfer within confined scopes~\cite{matsakis2014rust, lorenzen2024oxidizing}.  % todo cite ilia sergey
     Furthermore, escape analysis can be leveraged to enforce safety in contextual polymorphism within capability-based effect systems~\cite{brachthauser2020effects, boruch2023capturing}.
 
+    % todo running example
+
     Despite it's usefulness and interprocedural abilities, languages often avoid using type-based escape analysis, preferring classical approaches based on monotone framework~\cite{blanchet1999escape}. % todo cite monotone framework
     This preference stems primarily from the inherent rigidity or complexity of the resulting type systems.
     For example, the Rust programming language’s lifetime system necessitates support for variance inference, lifetime polymorphism for compound data types, and lifetime constraints~\cite{matsakis2014rust}.
-    Together, these requirements contribute to a sophisticated but challenging model both for implementers and users.
+    Together, these requirements contribute to a flexible but challenging model both for implementers and users.
 
     In this work, we present a simplified type-based escape analysis that intentionally trades off some expressivity to simplify user-provided type annotations.
     Specifically, we assume lifetimes of data types are always covariant, while still preserving safety guarantees.
     Additionally, we introduce existential lifetimes to automate the handling of data type lifetimes.
-    Finally, our approach incorporates union types, which make type signatures transparently and describe a function's dataflow.
+    Finally, our approach incorporates union types, which make type signatures transparently describe a function's dataflow.
 
     The remainder of this paper is organized as follows.
     Section~\ref{sec:overview} provides an informal introduction to our escape analysis approach, illustrated through practical examples.
@@ -331,9 +333,9 @@
     It is defined as the following:
     \[
         \begin{array}{lll}
-            lt_\Gamma(\alpha)                                     & = & lt_\Gamma(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise} \\
-            lt_\Gamma(T\ap\Delta\ap\overline{\tau})               & = & \overline{lt_\Gamma(\tau)} \cup \{\Delta\}                                         \\
-            lt_\Gamma(\overline{\tau}~\Delta\to\overline{\sigma}) & = & \{\Delta\} \\
+            lt_\Gamma(\alpha)                                                         & = & lt_\Gamma(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise}        \\
+            lt_\Gamma(T\ap\Delta\ap\overline{\tau})                                   & = & \overline{lt_\Gamma(\tau)} \cup \{\Delta\}                                                \\
+            lt_\Gamma(\overline{\tau}~\Delta\to\overline{\sigma})                     & = & \{\Delta\}                                                                                \\
             lt_{\Gamma}(\forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp\sigma) & = & lt_{\Gamma\setminus\overline{l}\setminus\overline{\alpha}}(\sigma) \setminus \overline{l} % todo тут глубокий минус на множествах
         \end{array}
     \]
@@ -476,23 +478,42 @@
     \end{lstlisting}
     Here empty set denotes the \lstinline[language=Haskell]{free} lifetime.
 
+    % todo ссылка на реализацию
+
 
     \section{Related work} \label{sec:related-work}
 
+%    Hannan~\cite{hannan1998type} used type-based escape analysis to reduce number of allocations in a functional language.
+    % todo origins and classical analysis
 
-%    The original work on type-based escape analysis~\cite{hannan1998type}
+    The Rust language supports type-based escape analysis to enforce memory safety of the use of references~\cite{matsakis2014rust}.
+    The excessive flexibility of their approach bases on support of lifetime polymorphism, variance inference and lifetime constraints.
+    However, except the overall feature complexity, sometimes tricks are required to achieve the desired typing.
+    For example, if a function's resulting type lifetime should be the minimum of argument's lifetimes, arguments and resulting type should have the same polymorphic lifetime, which will be inferred to minimum on the call site.
+    In contrast, our approach provides a way to express minimum directly.
+
+    In modal OCaml the \texttt{local} modality prevents borrowed reference from escaping~\cite{lorenzen2024oxidizing}.
+    Modalities here are not first-class type constructors and are rather properties of bindings.
+    So,
 
     % todo Rust
     % todo ocaml
     % todo capabilities
     % todo first class names for handlers
+    % todo swift
+    % todo C++
 
     TODO % todo
 
 
     \section{Conclusion}
 
-    TODO % todo
+    In this work we proposed the type-based escape analysis technique that trades some flexibility for simplicity of user-defined annotations.
+    Namely, it includes minimum operation on lifetimes and simplifies work with compositional data structures by approximating their lifetime as the minimum of lifetimes of components.
+    Also, we provided formalization and type-checker prototype implementation.
+
+    In the future work we will prepare mechanized soundness proof and evaluate trade-offs made by our system using larger scale code bases.
+
 
     \bibliographystyle{plain}
     \bibliography{bib}
