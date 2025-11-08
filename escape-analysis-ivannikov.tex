@@ -93,10 +93,10 @@
 
     \textbf{Abstract.}
     Programming languages frequently utilize escape analysis techniques to ensure the safety of compiler optimizations and language features such as borrowing and effect systems.
-    To achieve higher precision, particularly in interprocedural contexts, this analysis is often implemented on the type level.
+    To achieve high precision, particularly in interprocedural contexts, this analysis is often implemented on the type level.
     However, type-level escape analyses tend to be rigid and may impose excessive annotation requirements on programmers.
 
-    In this paper, we introduce a novel type-based escape analysis approach that incorporates a minimum (union) operation on lifetimes, enabling user-provided type annotations accurately capture a function’s data flow, thereby making them simpler and more intuitive to write.
+    In this paper, we introduce a novel type-based escape analysis approach that incorporates a minimum (union) operation on lifetimes, enabling user-provided type annotations accurately capture a function’s data flow, thereby making such annotations simpler and more intuitive to write.
     Additionally, our approach simplifies lifetime tracking for data types through the use of existential lifetimes.
     Finally, we provide a prototype implementation of the corresponding type-checking algorithm.
 
@@ -116,15 +116,15 @@
 
     % todo running example
 
-    Despite it's usefulness and interprocedural abilities, languages often avoid using type-based escape analysis, preferring classical approaches based on monotone framework~\cite{blanchet1999escape}. % todo cite monotone framework
+    Despite it's usefulness and interprocedural abilities, languages often avoid using type-based escape analysis, preferring classical approaches based on monotone framework~\cite{kam1977monotone, blanchet1999escape}.
     This preference stems primarily from the inherent rigidity or complexity of the resulting type systems.
     For example, the Rust programming language’s lifetime system necessitates support for variance inference, lifetime polymorphism for compound data types, and lifetime constraints~\cite{matsakis2014rust}.
     Together, these requirements contribute to a flexible but challenging model both for implementers and users.
 
-    In this work, we present a simplified type-based escape analysis that intentionally trades off some expressivity to simplify user-provided type annotations.
+    In this work, we present a type-based escape analysis that intentionally trades off some expressivity to simplify user-provided type annotations.
     Specifically, we assume lifetimes of data types are always covariant, while still preserving safety guarantees.
     Additionally, we introduce existential lifetimes to automate the handling of data type lifetimes.
-    Finally, our approach incorporates union types, which make type signatures transparently describe a function's dataflow.
+    Also, our approach incorporates union types, which make type signatures transparently describe a function's dataflow.
 
     The remainder of this paper is organized as follows.
     Section~\ref{sec:overview} provides an informal introduction to our escape analysis approach, illustrated through practical examples.
@@ -138,15 +138,12 @@
     In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
 
     We refer to values that must not escape a given scope as \textit{tracked}, and likewise, their types are designated as tracked.
-    To differentiate between tracked and non-tracked types, each type \lstinline[language=colang]|T| is annotated with a special label \lstinline[language=colang]|lab|, referred to as a lifetime:
-    \begin{lstlisting}[language=colang]
-        T'lab /* or for function types */ (A)'lab -> B
-    \end{lstlisting}
+    To differentiate between tracked and non-tracked types, each type \lstinline[language=colang]|T| is annotated with a special label \lstinline[language=colang]|lab|, referred to as a lifetime: \lstinline[language=colang]{T'lab}; or \lstinline[language=colang]{(A)'lab -> B} for function types.
 
     The \lstinline[language=colang]|free| lifetime label designates non-tracked values.
     In contrast, the \lstinline[language=colang]|local| label appears in tracked types and is treated specially by the type system to prevent their escape.
     Namely, tracked values also cannot be returned from functions.
-    Thus, we can specify in type of a higher-order function that it do not leak an argument function.
+    Thus, we can specify in type of a higher-order function that it does not leak an argument function.
     For example, the eager \lstinline[language=colang]|map| function calls its argument inplace:%
     \footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}%
     \footnote{When we omit the explicit lifetime annotation, we assume the \lstinline[language=colang]|free| lifetime.}
@@ -159,7 +156,7 @@
     For instance, the lazy \lstinline[language=colang]|map| function does not eagerly compute and return the final result; instead, it immediately yields a collection that encapsulates the processing logic.
     This behavior can be captured by assigning the same lifetime variable~\lstinline[language=colang]|l| to both the argument function \lstinline[language=colang]|f| and the result type.
     Consequently, the type system records that any tracked capabilities captured by \lstinline[language=colang]|f| may be retained within the result.
-    Thus, such a function continues to support contextual polymorphism, as it can only permit \texttt{f} to escape with the result, and the call site is made aware that the result must not escape its prescribed context:
+    Thus, such function continues to support contextual polymorphism, as it can only permit \texttt{f} to escape with the result, and the call site is made aware that the result must not escape its prescribed context:
     \begin{lstlisting}[language=colang]
         fun lazyMap(xs: LazyList<a>, f: (a)'l -> b): LazyList<b>'l
 
