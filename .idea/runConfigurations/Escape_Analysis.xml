@@ -3,8 +3,8 @@
     <texify>
       <compiler>PDFLATEX</compiler>
       <compiler-path />
-      <pdf-viewer>none</pdf-viewer>
-      <require-focus>true</require-focus>
+      <sumatra-path />
+      <pdf-viewer>BUILT-IN-PDF-VIEWER</pdf-viewer>
       <viewer-command />
       <compiler-arguments>-shell-escape</compiler-arguments>
       <envs />

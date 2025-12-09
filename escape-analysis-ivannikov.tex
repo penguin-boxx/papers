@@ -222,7 +222,7 @@
             \begin{array}{lrl}
                 \text{Variables}          &   & x, y, z, f, g                                                                                                                          \\
                 \text{Data constructors}  &   & K                                                                                                                                      \\
-                \text{Values} & v & \Coloneqq x \vor K \vor \Lambda \overline{l}~\overline{\alpha} \ldotp v \vor K\ap\overline{\Delta}\ap \overline{\tau} \ap \overline{v} \vor \lambda \overline{x : \tau}\ldotp t
+                \text{Values} & v & \Coloneqq x \vor K \vor \Lambda \overline{l}~\overline{(\alpha <: \tau)} \ldotp v \vor K\ap\overline{\Delta}\ap \overline{\tau} \ap \overline{v} \vor \lambda \overline{x : \tau}\ldotp t
                 \\
                 \text{Terms} & t, u & \Coloneqq v \vor t\ap\overline{\Delta}\ap\overline{\tau} \vor t\ap \overline{t} \vor match ~ t ~\{\overline{K \ap \overline{x} \to t}\}
                 \\
@@ -418,7 +418,7 @@
             \mathframebox{\Gamma\vdash t : s} \\[0.5em]
             \infer[Ctor]{\Gamma\vdash K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset(\tau)}\right)\ap \overline{\alpha}}{K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset(\tau)}\right)\ap \overline{\alpha} \in \Gamma} \\[0.5em]
             \infer[Match]{
-                \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim_{\Delta, \overline{l'}_i}\ap(\eta_i)}\right)
+                \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim^+_{\Delta, \overline{l'}_i}\ap(\eta_i)}\right)
             }{
                 \begin{array}{cc}
                     \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
@@ -446,7 +446,7 @@
     \[
         \begin{array}{lll}
             elim_{\Delta, \overline{l}}^p(\alpha) & = & \alpha \\
-            elim_{\Delta, \overline{l}}^p(K\ap \Delta'\ap\overline{\tau}) & = & K\ap \left( elim_{\Delta, \overline{l}}^p(\Delta') \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{inv}(\tau)} \right) \\
+            elim_{\Delta, \overline{l}}^p(T\ap \Delta'\ap\overline{\tau}) & = & T\ap \left( elim_{\Delta, \overline{l}}^p(\Delta') \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{inv}(\tau)} \right) \\
             elim_{\Delta, \overline{l}}^p(\overline{\tau}~\Delta'\to\sigma) & = & \left( \overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau)} \right)~\left( elim_{\Delta, \overline{l}}^p(\Delta') \right)\to elim_{\Delta, \overline{l}}^{p}(\sigma) \\
             elim_{\Delta, \overline{l}}^{p}(l') & = &
             \begin{cases}
