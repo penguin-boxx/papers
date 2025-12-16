@@ -81,7 +81,7 @@
 
     \begin{center}
         \LARGE
-        Draft: Type-based escape analysis with unions
+        Type-based escape analysis with existential lifetimes
 
         \small
 %        Andrey Stoyan
@@ -93,7 +93,7 @@
 
     \textbf{Abstract.}
     Programming languages frequently utilize escape analysis techniques to ensure the safety of compiler optimizations and language features such as borrowing and effect systems.
-    To achieve high precision, particularly in interprocedural contexts, this analysis is often implemented on the type level.
+    To achieve high precision and efficiency, particularly in interprocedural contexts, this analysis is often implemented on the type level.
     However, type-level escape analyses tend to be rigid and may impose excessive annotation requirements on programmers.
 
     In this paper, we introduce a novel type-based escape analysis approach that incorporates a minimum (union) operation on lifetimes, enabling user-provided type annotations accurately capture a function’s data flow, thereby making such annotations simpler and more intuitive to write.
