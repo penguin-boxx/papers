@@ -481,9 +481,6 @@
 
     \section{Related work} \label{sec:related-work}
 
-%    Hannan~\cite{hannan1998type} used type-based escape analysis to reduce number of allocations in a functional language.
-    % todo origins and classical analysis
-
     The Rust language supports type-based escape analysis to ensure memory safety when using references~\cite{matsakis2014rust}.
     This is achieved through a combination of lifetime polymorphism, variance inference, and lifetime constraints, which together provide significant representational power but also increase the overall complexity of the type system.
     Despite that, the minimum of lifetimes can be achieved only indirectly through an additional lifetime constraints or by making all corresponding lifetimes equal.
@@ -496,9 +493,6 @@
     Xie et al.~\cite{xie2022first} adopt higher-rank types to enforce the non-leakage of effect handlers.
     Capability-based effect systems employ type-based escape analysis to establish safety of contextual polymorphism~\cite{osvald2016gentrification, brachthauser2020effects, brachthauser2022effects}.
     Recent work in the Scala language utilizes dependent types to check escaping~\cite{boruch2023capturing}.
-
-    % todo swift
-    % todo C++
 
 
     \section{Conclusion}
