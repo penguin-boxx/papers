@@ -92,9 +92,9 @@
     \end{center}
 
     \textbf{Abstract.}
-    Programming languages frequently utilize escape analysis techniques to ensure the safety of compiler optimizations and language features such as borrowing and effect systems.
-    To achieve high precision and efficiency, particularly in interprocedural contexts, this analysis is often implemented on the type level.
-    However, type-level escape analyses tend to be rigid and may impose excessive annotation requirements on programmers.
+    Programming languages frequently utilize escape analysis techniques to ensure safety of compiler optimizations and various language features.
+    To achieve high precision and efficiency, particularly in interprocedural scenario, escape analysis is often integrated with the type system.
+    However, such analysis tend to be rigid and usually impose excessive annotation requirements on programmers.
 
     In this paper, we introduce a novel type-based escape analysis approach that incorporates a minimum (union) operation on lifetimes, enabling user-provided type annotations accurately capture a function’s data flow, thereby making such annotations simpler and more intuitive to write.
     Additionally, our approach simplifies lifetime tracking for data types through the use of existential lifetimes.
@@ -107,24 +107,25 @@
 %    Then it checks, whether an expression in some context is allowed to be typed with a particular lifetime or not.
 %    Presence of these labels in type signatures makes the analysis local
 
-    Escape analysis is a fundamental technique used by optimizing compilers.
-    Specifically, when an object does not escape the scope in which it is allocated, it can be safely placed on the stack instead of the heap, thereby reducing garbage collection overhead and improving overall program performance~\cite{blanchet1999escape}.
+    Escape analysis is often used to check if an object outlives corresponding lexical scope.
+    It is commonly used by optimizing compilers to allocate some objects on the stack instead of the heap, thereby reducing garbage collection overhead and improving overall program performance~\cite{blanchet1999escape}.
     Moreover, escape analysis plays a crucial role in verifying the safety of various language features.
     For instance, if a first-class function does not leak beyond its intended scope, non-local returns are guaranteed to be safe~\cite{akhin2021kotlin}.
-    In addition, ownership-based resource management mechanisms often utilize borrowing, permitting the use of resources without requiring ownership transfer within confined scopes~\cite{matsakis2014rust, lorenzen2024oxidizing}.  % todo cite ilia sergey
-    Furthermore, escape analysis can be leveraged to enforce safety in contextual polymorphism within capability-based effect systems~\cite{brachthauser2020effects, boruch2023capturing}.
+    In addition, ownership-based resource management mechanisms often utilize borrowing, permitting the use of resources without requiring ownership transfer within confined scopes~\cite{matsakis2014rust, lorenzen2024oxidizing}.
+    Our work is mainly motivated by application of escape analysis for safety enforcement of contextual polymorphism in capability-based effect systems~\cite{brachthauser2020effects, boruch2023capturing}.
 
-    % todo running example
+    Integration of escape analysis with type systems give several important advantages over more classical approaches.
+    Firstly, information about escaping is explicated in functions signatures, so interprocedural analysis can be implemented as intraprocedural that just consults with signatures of called functions.
+    Secondly, such analysis do not produce long-distance constraints, which contributes to better error reporting.
 
-    Despite it's usefulness and interprocedural abilities, languages often avoid using type-based escape analysis, preferring classical approaches based on monotone framework~\cite{kam1977monotone, blanchet1999escape}.
-    This preference stems primarily from the inherent rigidity or complexity of the resulting type systems.
+    However, only few languages adopt escape analysis integrated with the type system because of the inherent rigidity or complexity of the resulting type systems.
     For example, the Rust programming language’s lifetime system necessitates support for variance inference, lifetime polymorphism for compound data types, and lifetime constraints~\cite{matsakis2014rust}.
     Together, these requirements contribute to a flexible but challenging model both for implementers and users.
 
     In this work, we present a type-based escape analysis that intentionally trades off some expressivity to simplify user-provided type annotations.
-    Specifically, we assume lifetimes of data types are always covariant, while still preserving safety guarantees.
-    Additionally, we introduce existential lifetimes to automate the handling of data type lifetimes.
-    Also, our approach incorporates union types, which make type signatures transparently describe a function's dataflow.
+    Specifically, our approach incorporates union types, which make type signatures transparently describe a function's dataflow.
+    We introduce existential lifetimes to automate the handling of data type lifetimes.
+    Additionally, we assume lifetimes of data types are always covariant, while still preserving safety guarantees.
 
     The remainder of this paper is organized as follows.
     Section~\ref{sec:overview} provides an informal introduction to our escape analysis approach, illustrated through practical examples.
@@ -138,11 +139,11 @@
     In the following, we provide an informal overview of the type-based escape analysis technique introduced in this paper.
 
     We refer to values that must not escape a given scope as \textit{tracked}, and likewise, their types are designated as tracked.
-    To differentiate between tracked and non-tracked types, each type \lstinline[language=colang]|T| is annotated with a special label \lstinline[language=colang]|lab|, referred to as a lifetime: \lstinline[language=colang]{T'lab}; or \lstinline[language=colang]{(A)'lab -> B} for function types.
+    To differentiate between tracked and non-tracked types, each type \lstinline[language=colang]|T| is annotated with a special label \lstinline[language=colang]|lab|, referred to as a \textit{lifetime}: \lstinline[language=colang]{T'lab}; or \lstinline[language=colang]{(A)'lab -> B} for function types.
 
     The \lstinline[language=colang]|free| lifetime label designates non-tracked values.
-    In contrast, the \lstinline[language=colang]|local| label appears in tracked types and is treated specially by the type system to prevent their escape.
-    Namely, tracked values also cannot be returned from functions.
+    In contrast, the \lstinline[language=colang]|local| label appears in tracked types and is treated specially by the type system to prevent their escape from the corresponding lexical scope.
+    Namely, tracked values cannot be returned from functions.
     Thus, we can specify in type of a higher-order function that it does not leak an argument function.
     For example, the eager \lstinline[language=colang]|map| function calls its argument inplace:%
     \footnote{We adopt the Haskell naming convention, where type names beginning with a lowercase letter denote type variables, which are implicitly universally quantified.}%
@@ -153,7 +154,7 @@
 
     To enable a function to propagate its arguments through its result, polymorphism over lifetime labels can be used.
     In essence, this is an explicit specification of the function’s dataflow directly in the type signature.
-    For instance, the lazy \lstinline[language=colang]|map| function does not eagerly compute and return the final result; instead, it immediately yields a collection that encapsulates the processing logic.
+    For instance, the \lstinline[language=colang]|lazyMap| function does not eagerly compute and return the final result; instead, it immediately yields a collection that encapsulates the processing logic.
     This behavior can be captured by assigning the same lifetime variable~\lstinline[language=colang]|l| to both the argument function \lstinline[language=colang]|f| and the result type.
     Consequently, the type system records that any tracked capabilities captured by \lstinline[language=colang]|f| may be retained within the result.
     Thus, such function continues to support contextual polymorphism, as it can only permit \texttt{f} to escape with the result, and the call site is made aware that the result must not escape its prescribed context:
@@ -161,7 +162,7 @@
         fun lazyMap(xs: LazyList<a>, f: (a)'l -> b): LazyList<b>'l
 
         fun printAll(file: File'local, xs: LazyList<Int>) {
-            let ys: LazyList<Int>'local = lazyMap(xs, (x) => file.write(x))
+            let ys: LazyList<Int>'local = lazyMap(xs, (x) => file.write(x); x)
             ys.collect() // force execution
         }
     \end{lstlisting}
@@ -186,15 +187,15 @@
     \end{lstlisting}
 
     We define subtyping so that non-tracked values may be used in positions where tracked values are expected: \lstinline[language=colang]|free <: local|.
-    Moreover, for simplicity, all type constructors are covariant with respect to their lifetimes.
-    So, at the destruction site we consider stored lifetimes as covariant projections (see\ \ref{subsec:typing-data}). % todo cite ross tate
+    Moreover, for simplicity, all type constructors are covariant with respect to their lifetimes, which requires special care in pattern-matching rule.
 
     Following~\cite{boruch2023capturing}, we permit tracked types to instantiate polymorphic type parameters, thereby making them first-class citizens in the language.
     To control when tracked types are appropriate for instantiation, we use bounded polymorphism.
     For example, the \lstinline[language=colang]|map| function uses values of type \lstinline[language=colang]|a| inside and returns values of type \lstinline[language=colang]|b| directly to the caller.
-    As a result, these type parameters may be instantiated with tracked types:\footnote{We assume that \lstinline[language=colang]|Any| type serves as the top element in the type lattice.} \footnote{To preserve backward compatibility, the type \lstinline[language=colang]|Any'free| may be used as the default bound.}
+    As a result, these type parameters may be instantiated with tracked types:%
+    \footnote{We assume that \lstinline[language=colang]|Any| type serves as the top element in the type lattice.}
     \begin{lstlisting}[language=colang]
-        fun map(xs: List<a>, f: (a)'l -> b): List<b>'l
+        fun map(xs: List<a>, f: (a)'local -> b): List<b>
                 where a <: Any'local, b <: Any'local
     \end{lstlisting}
 
@@ -235,7 +236,7 @@
     \end{figure}
 
     The type-level syntax of $Core_\Delta$ is given on the Figure\ \ref{fig:core-types}.
-    We will use $+$ on lifetimes in prefix position when taking the minimum of a bunch of lifetimes (like $+\overline{\Delta}$) and in infix position for the given lifetimes (like $\Delta_1 + \Delta_2$).
+    We will use $+$ on lifetimes in prefix position when taking the minimum of a bunch of lifetimes\footnote{Effectively, the empty list of lifetimes in the union denotes \lstinline[language=colang]{free} lifetime. We discuss normalized presentation later in Section\ \ref{sec:implementation}.} (like $+\overline{\Delta}$) and in infix position for the given lifetimes (like $\Delta_1 + \Delta_2$).
     All monotypes are annotated with lifetimes.
     Type schemas contain lifetime parameters and bounded type parameters.
 
@@ -460,7 +461,7 @@
         \end{array}
     \]
     When an existential lifetime occurs in invariant position, it cannot be safely approximated to the lower or the upper bound, thus, the error is reported.
-    Otherwise, this situation can be solved by introducing bivariant projection, but we dedicate this to the future work~\cite{tate2013mixed}.
+%    Otherwise, this situation can be solved by introducing bivariant projection, but we dedicate this to the future work.
 
     The result type of the whole pattern-matching expression is computed as the least upper bound ($lub$) of branch types with eliminated lifetimes.
 
@@ -504,7 +505,7 @@
 
     In this work we proposed the type-based escape analysis technique that trades some flexibility for simplicity of user-defined annotations.
     Namely, it includes minimum operation on lifetimes and simplifies work with compositional data structures by approximating their lifetime as the minimum of lifetimes of components.
-    Also, we provided formalization and type-checker prototype implementation.
+    Also, we provided formalization and the type-checker prototype implementation.
 
     In the future work we will prepare mechanized soundness proof and evaluate trade-offs made by our system using larger scale code bases.
 
