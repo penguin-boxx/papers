@@ -5,7 +5,6 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="15554d1e-d56c-434a-97ac-1758983892bd" name="Changes" comment="Update">
-      <change beforePath="$PROJECT_DIR$/.idea/runConfigurations/Escape_Analysis.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/runConfigurations/Escape_Analysis.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/escape-analysis-ivannikov.tex" beforeDir="false" afterPath="$PROJECT_DIR$/escape-analysis-ivannikov.tex" afterDir="false" />
     </list>
@@ -55,6 +54,7 @@
     &quot;LaTeX.Effect Systems Overview.executor&quot;: &quot;Run&quot;,
     &quot;LaTeX.Escape Analysis.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
     &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
@@ -86,30 +86,6 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1729770043791</updated>
-    </task>
-    <task id="LOCAL-00091" summary="Update">
-      <option name="closed" value="true" />
-      <created>1752769708246</created>
-      <option name="number" value="00091" />
-      <option name="presentableId" value="LOCAL-00091" />
-      <option name="project" value="LOCAL" />
-      <updated>1752769708246</updated>
-    </task>
-    <task id="LOCAL-00092" summary="Update">
-      <option name="closed" value="true" />
-      <created>1752834076711</created>
-      <option name="number" value="00092" />
-      <option name="presentableId" value="LOCAL-00092" />
-      <option name="project" value="LOCAL" />
-      <updated>1752834076711</updated>
-    </task>
-    <task id="LOCAL-00093" summary="Perplexitify core">
-      <option name="closed" value="true" />
-      <created>1752843440783</created>
-      <option name="number" value="00093" />
-      <option name="presentableId" value="LOCAL-00093" />
-      <option name="project" value="LOCAL" />
-      <updated>1752843440783</updated>
     </task>
     <task id="LOCAL-00094" summary="Update">
       <option name="closed" value="true" />
@@ -479,7 +455,31 @@
       <option name="project" value="LOCAL" />
       <updated>1761059215827</updated>
     </task>
-    <option name="localTasksCounter" value="140" />
+    <task id="LOCAL-00140" summary="Update">
+      <option name="closed" value="true" />
+      <created>1765899579011</created>
+      <option name="number" value="00140" />
+      <option name="presentableId" value="LOCAL-00140" />
+      <option name="project" value="LOCAL" />
+      <updated>1765899579011</updated>
+    </task>
+    <task id="LOCAL-00141" summary="Update">
+      <option name="closed" value="true" />
+      <created>1766064994539</created>
+      <option name="number" value="00141" />
+      <option name="presentableId" value="LOCAL-00141" />
+      <option name="project" value="LOCAL" />
+      <updated>1766064994539</updated>
+    </task>
+    <task id="LOCAL-00142" summary="Update">
+      <option name="closed" value="true" />
+      <created>1766069367633</created>
+      <option name="number" value="00142" />
+      <option name="presentableId" value="LOCAL-00142" />
+      <option name="project" value="LOCAL" />
+      <updated>1766069367633</updated>
+    </task>
+    <option name="localTasksCounter" value="143" />
     <servers />
   </component>
   <component name="VcsManagerConfiguration">
