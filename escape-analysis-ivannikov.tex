@@ -96,9 +96,8 @@
     To achieve high precision and efficiency, particularly in interprocedural scenarios, escape analysis can be integrated into the type system.
     However, a significant drawback of this approach is that it often necessitates complex and verbose type annotations from the programmers.
 
-    In this paper, we introduce a novel type-based escape analysis that incorporates a minimum (union) operation on lifetimes.
-    This feature enables user-provided type annotations to more accurately capture a function’s data flow, thereby making such annotations simpler and more intuitive to write.
-    Additionally, our approach simplifies lifetime tracking for data types through the use of existential lifetimes.
+    In this paper, we introduce a novel type-based escape analysis that simplifies lifetime tracking for data types through the use of existential lifetimes.
+    Additionally, our escape-analysis incorporates a minimum operation on lifetimes, which enables user-provided type annotations to more accurately capture a function’s data flow, thereby making them simpler and more intuitive to write.
     Finally, we present a prototype implementation of the corresponding type-checking algorithm.
 
 
