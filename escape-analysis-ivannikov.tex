@@ -331,13 +331,13 @@
             lt_\Gamma(\alpha)                                                         & = & lt_\Gamma(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise}        \\
             lt_\Gamma(T\ap\Delta\ap\overline{\tau})                                   & = & \overline{lt_\Gamma(\tau)} \cup \{\Delta\}                                                \\
             lt_\Gamma(\overline{\tau}~\Delta\to\overline{\sigma})                     & = & \{\Delta\}                                                                                \\
-            lt_{\Gamma}(\forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp\sigma) & = & lt_{\Gamma\setminus\overline{l}\setminus\overline{\alpha}}(\sigma) \setminus \overline{l} % todo тут глубокий минус на множествах
+            lt_{\Gamma}(\forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp\sigma) & = & lt_{\overline{(\alpha <: Any\ap free)}, \Gamma}(\sigma) \text{ deep remove } \overline{l}
         \end{array}
     \]
     The lifetime of a type variable is approximated by the lifetime of its bounding type, if such a bound exists.
     In some cases, we intentionally employ an empty context to exclude the influence of bounds.
 
-    The $SubAny$ rule establishes that the type $Any'\Delta$ is a supertype of $\tau$ if and only if all constituent components of $\tau$ outlive $\Delta$.
+    The $SubAny$ rule establishes that the type $Any\ap \Delta$ is a supertype of $\tau$ if and only if all constituent components of $\tau$ outlive $\Delta$.
 
 %    Notice that negative positions are not considered.
 %    A function can leak a tracked value via an argument function in two situations:
@@ -465,15 +465,13 @@
 
     \section{Implementation} \label{sec:implementation}
 
-    We provide a prototype implementation of the type-checker, developed in Haskell\footnote{\url{https://0x0.st/K9p6.zip}}.
+    We provide a prototype implementation of the type-checker, developed in Haskell\footnote{\url{https://github.com/penguin-boxx/existential-escape-analysis-paper}}.
     The core logic of the type-checker is concise, spanning approximately two hundred lines of code.
     The implementation directly follows the formal rules described in Section~\ref{sec:formalization}, with the exception that lifetimes are represented in a normalized form:
     \begin{lstlisting}[language=Haskell]
         data Lt = LtLocal | LtMin (Set LtName)
     \end{lstlisting}
     In this representation, the empty set denotes the \lstinline[language=Haskell]{free} lifetime.
-
-    % todo ссылка на реализацию
 
 
     \section{Related work} \label{sec:related-work}
