@@ -108,7 +108,7 @@
 %    Presence of these labels in type signatures makes the analysis local
 
     Escape analysis is a static analysis technique used to determine whether the lifetime of an object exceeds its defining lexical scope.
-    This technique is widely used by optimizing compilers to facilitate stack allocation of objects that would otherwise be allocated on the heap, thereby reducing garbage collection overhead and enhancing overall program performance~\cite{blanchet1999escape}.
+    This technique is widely used by optimizing compilers, for example, to facilitate stack allocation of objects that would otherwise be allocated on the heap, thereby reducing garbage collection overhead and enhancing overall program performance~\cite{blanchet1999escape}.
     Beyond optimization, escape analysis is critical for verifying the safety of various language features.
     For example, ensuring that a first-class function does not escape its intended scope allows for the safe execution of non-local returns~\cite{akhin2021kotlin}.
     Similarly, ownership-based resource management systems frequently rely on borrowing mechanisms, which permit temporary resource access without ownership transfer within confined scopes~\cite{matsakis2014rust, lorenzen2024oxidizing}.
@@ -123,8 +123,8 @@
     Collectively, these requirements result in a model that, while flexible, presents significant challenges for both compiler implementers and end users.
 
     In this work, we present a type-based escape analysis that intentionally trades off some expressivity to simplify user-provided type annotations.
-    Specifically, our approach incorporates union types, enabling type signatures to transparently reflect a function's data flow.
-    Also, we introduce existential lifetimes to automate the handling of lifetimes within data types.
+    Specifically, we introduce existential lifetimes to automate the handling of lifetimes within data types.
+    Also, our approach incorporates union types, enabling type signatures to transparently reflect a function's data flow.
 
     The remainder of this paper is organized as follows.
     Section~\ref{sec:overview} provides an informal introduction to our escape analysis approach, illustrated through practical examples.
