@@ -235,7 +235,7 @@
     \end{figure}
 
     The type-level syntax of $Core_\Delta$ is given on Figure\ \ref{fig:core-types}.
-    We use $+$ operator on lifetimes in prefix position when taking the minimum of a sequence of lifetimes (e.g.\ $+\overline{\Delta}$)\footnote{Effectively, the empty list of lifetimes in the minimum denotes \lstinline[language=colang]{free} lifetime. We discuss normalized presentation later in Section\ \ref{sec:implementation}.} and in notation for specific lifetimes (e.g.\ $\Delta_1 + \Delta_2$).
+    We use $+$ operator on lifetimes in prefix position when taking the minimum of a sequence of lifetimes (e.g.\ $+\overline{\Delta}$)\footnote{Effectively, the empty list of lifetimes in the minimum denotes \lstinline[language=colang]{free} lifetime. We discuss normalized presentation later in Section\ \ref{sec:implementation}, but in the paper we use direct definition for clarity.} and in notation for specific lifetimes (e.g.\ $\Delta_1 + \Delta_2$).
     All monotypes are annotated with lifetimes, while type schemas quantify over lifetime parameters and bounded type parameters.
 
     %! suppress = MissingLabel
@@ -321,7 +321,7 @@
     \end{figure}
 
     The subtyping relation on lifetimes, illustrated in Figure\ \ref{fig:core-subtyping}, constitutes a bounded lattice with $local$ as the top element and $free$ as the bottom.
-    Consequently, the minimum of a set of lifetimes corresponds to the least upper bound within this lattice, making it analogous to a union type operation.
+    Consequently, the minimum of a set of lifetimes corresponds to the least upper bound within this lattice, making it analogous to a union type operation\footnote{Note that so-called ``minimum'' of lifetimes correspond to ``maximum'' in terms of lattice theory.}.
     When $\Delta' <: \Delta$, we say that $\Delta'$ outlives $\Delta$.
 
     We define the operation $lt_\Gamma(\cdot)$ to aggregate all lifetime restrictions inherent in a type.
