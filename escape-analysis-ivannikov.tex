@@ -127,7 +127,7 @@
     Also, our approach incorporates a minimum operation on lifetimes, enabling type signatures to transparently reflect a function's data flow.
 
     The remainder of this paper is organized as follows.
-    Section~\ref{sec:overview} provides an informal introduction to our escape analysis approach, illustrated through practical examples.
+    Section~\ref{sec:overview} provides informal introduction to our escape analysis approach, illustrated through practical examples.
     In Section~\ref{sec:formalization}, we present a formalization of our system using a rigorous formal calculus.
     Section~\ref{sec:implementation} discusses details of our prototype implementation.
     Finally, Section~\ref{sec:related-work} compares our design with existing approaches.
@@ -235,7 +235,7 @@
     \end{figure}
 
     The type-level syntax of $Core_\Delta$ is given on Figure\ \ref{fig:core-types}.
-    We use $+$ operator on lifetimes in prefix position when taking the minimum of a sequence of lifetimes (e.g.\ $+\overline{\Delta}$)\footnote{Effectively, the empty list of lifetimes in the minimum denotes \lstinline[language=colang]{free} lifetime. We discuss normalized presentation later in Section\ \ref{sec:implementation}, but in the paper we use the direct definition for clarity.} and in notation for specific lifetimes (e.g.\ $\Delta_1 + \Delta_2$).
+    We use $+$ operator on lifetimes in prefix position when taking the minimum of a sequence of lifetimes (e.g.\ $+\overline{\Delta}$)\footnote{Effectively, the empty list of lifetimes in the minimum denotes \lstinline[language=colang]{free} lifetime. We discuss normalized presentation later in Section\ \ref{sec:implementation}, but in the paper, we use the direct definition for clarity.} and in notation for specific lifetimes (e.g.\ $\Delta_1 + \Delta_2$).
     All monotypes are annotated with lifetimes, while type schemas quantify over lifetime parameters and bounded type parameters.
 
     %! suppress = MissingLabel
@@ -479,14 +479,14 @@
 
     The Rust language supports type-based escape analysis to ensure memory safety when using references~\cite{matsakis2014rust}.
     This is achieved through a combination of lifetime polymorphism, variance inference, and lifetime constraints, which together provide significant representational power but also increase the overall complexity of the type system.
-    Despite that, the minimum of lifetimes can be achieved only indirectly through an additional lifetime constraints or by making all corresponding lifetimes equal.
+    Despite that, the minimum of lifetimes can be achieved only indirectly through additional lifetime constraints or by making all corresponding lifetimes equal.
     In contrast, our approach provides a way to express minimum directly.
 
     In modal OCaml, the \texttt{local} modality serves to prevent borrowed references from escaping their defining region, ensuring safe memory use and enabling optimizations such as stack allocation~\cite{lorenzen2024oxidizing}.
     Modalities here are not first-class type constructors and are rather properties of bindings, so types with modalities cannot, for example, instantiate type variables, which limits the expressiveness further.
 
     Contemporary research in effect systems makes extensive use of type-based escape analysis to formally guarantee safety properties.
-    Xie et al.~\cite{xie2022first} adopt higher-rank types to enforce the non-leakage of effect handlers.
+    Xie et al.~\cite{xie2022first} adopt higher-rank types to enforce the non-leakage of lexical effect handlers.
     Capability-based effect systems employ type-based escape analysis to establish safety of contextual polymorphism~\cite{osvald2016gentrification, brachthauser2020effects, brachthauser2022effects}.
     Recent work in the Scala language utilizes dependent types to check escaping~\cite{boruch2023capturing}.
 
