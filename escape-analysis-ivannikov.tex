@@ -124,10 +124,10 @@
 
     In this work, we present a type-based escape analysis that intentionally trades off some expressivity to simplify user-provided type annotations.
     Specifically, we introduce existential lifetimes to automate the handling of lifetimes within data types.
-    Also, our approach incorporates a minimum operation on lifetimes, enabling type signatures to transparently reflect a function's data flow.
+    Additionally, our approach incorporates a minimum operation on lifetimes, enabling type signatures to transparently reflect a function's data flow.
 
     The remainder of this paper is organized as follows.
-    Section~\ref{sec:overview} provides informal introduction to our escape analysis approach, illustrated through practical examples.
+    Section~\ref{sec:overview} provides an informal introduction to our escape analysis approach, illustrated through practical examples.
     In Section~\ref{sec:formalization}, we present a formalization of our system using a rigorous formal calculus.
     Section~\ref{sec:implementation} discusses details of our prototype implementation.
     Finally, Section~\ref{sec:related-work} compares our design with existing approaches.
@@ -153,7 +153,7 @@
     \end{lstlisting}
 
     To permit a function to propagate arguments through its return value, we employ polymorphism over lifetime labels.
-    This approach effectively explicitly encodes the function’s data flow within the type signature.
+    This approach effectively encodes the function’s data flow within the type signature.
     For instance, the \lstinline[language=colang]|lazyMap| function does not eagerly compute a final result; rather, it yields a collection that encapsulates the computation logic.
     This behavior is modeled by assigning the same lifetime variable~\lstinline[language=colang]|l| to both the argument closure \lstinline[language=colang]|f| and the result type.
     Consequently, the type system establishes that any tracked values captured by \lstinline[language=colang]|f| may persist within the returned value:
@@ -172,7 +172,7 @@
             (x) => f(g(x))
     \end{lstlisting}
 
-    For the sake of simplicity, lifetime polymorphism is not supported for compound datatypes.
+    For the sake of simplicity, lifetime polymorphism is not supported for compound data types.
     Instead, the lifetime of a compound data type is derived as the minimum of the lifetimes of its constituent components; this same principle applies to closures.
     Conversely, during destructuring, the lifetimes of extracted components are approximated by the lifetime of the containing compound data type:
     \begin{lstlisting}[language=colang]
@@ -234,8 +234,8 @@
         \label{fig:core-syntax}
     \end{figure}
 
-    The type-level syntax of $Core_\Delta$ is given on Figure\ \ref{fig:core-types}.
-    We use $+$ operator on lifetimes in prefix position when taking the minimum of a sequence of lifetimes (e.g.\ $+\overline{\Delta}$)\footnote{Effectively, the empty list of lifetimes in the minimum denotes \lstinline[language=colang]{free} lifetime. We discuss normalized presentation later in Section\ \ref{sec:implementation}, but in the paper, we use the direct definition for clarity.} and in notation for specific lifetimes (e.g.\ $\Delta_1 + \Delta_2$).
+    The type-level syntax of $Core_\Delta$ is given in Figure\ \ref{fig:core-types}.
+    We use the $+$ operator on lifetimes in prefix position when taking the minimum of a sequence of lifetimes (e.g.\ $+\overline{\Delta}$)\footnote{Effectively, the empty list of lifetimes in the minimum denotes the \lstinline[language=colang]{free} lifetime. We discuss normalized presentation later in Section\ \ref{sec:implementation}, but in the paper, we use the direct definition for clarity.} and in notation for specific lifetimes (e.g.\ $\Delta_1 + \Delta_2$).
     All monotypes are annotated with lifetimes, while type schemas quantify over lifetime parameters and bounded type parameters.
 
     %! suppress = MissingLabel
@@ -437,7 +437,7 @@
     Analogous to functions, the lifetime of a data constructor is approximated by the minimum of the lifetimes of all its constituent data types (Figure\ \ref{fig:core-data-typing}).
     Consequently, the lifetime parameters of a data constructor do not appear explicitly in the resulting type, which makes them existential in nature.
 
-    Work with existential lifetimes requires special care in the $Match$ rule.
+    Working with existential lifetimes requires special care in the $Match$ rule.
     For each data constructor $K_i$ and its existential lifetimes $\overline{l}_i$ we generate fresh lifetimes $\overline{l'}_i$ and approximate their bound using the lifetime of the enclosing data structure.
 
     In each pattern-matching branch, it is essential to eliminate these fresh lifetimes from the resulting type, as they are not bound in the outer scope.
@@ -479,11 +479,11 @@
 
     The Rust language supports type-based escape analysis to ensure memory safety when using references~\cite{matsakis2014rust}.
     This is achieved through a combination of lifetime polymorphism, variance inference, and lifetime constraints, which together provide significant representational power but also increase the overall complexity of the type system.
-    Despite that, the minimum of lifetimes can be achieved only indirectly through additional lifetime constraints or by making all corresponding lifetimes equal.
+    However, the minimum of lifetimes can be achieved only indirectly through additional lifetime constraints or by making all corresponding lifetimes equal.
     In contrast, our approach provides a way to express minimum directly.
 
     In modal OCaml, the \texttt{local} modality serves to prevent borrowed references from escaping their defining region, ensuring safe memory use and enabling optimizations such as stack allocation~\cite{lorenzen2024oxidizing}.
-    Modalities here are not first-class type constructors and are rather properties of bindings, so types with modalities cannot, for example, instantiate type variables, which limits the expressiveness further.
+    Modalities here are not first-class type constructors, but rather properties of bindings, so types with modalities cannot, for example, instantiate type variables, which limits the expressiveness further.
 
     Contemporary research in effect systems makes extensive use of type-based escape analysis to formally guarantee safety properties.
     Xie et al.~\cite{xie2022first} adopt higher-rank types to enforce the non-leakage of lexical effect handlers.
@@ -494,7 +494,7 @@
     \section{Conclusion}
 
     In this work, we proposed a type-based escape analysis technique that strategically trades a degree of flexibility for the simplicity of user-defined annotations.
-    Specifically, our approach incorporates a minimum operation on lifetimes and streamlines the handling of compositional data structures by approximating their lifetimes as the minimum of the lifetimes of their constituent components.
+    Specifically, our approach incorporates the minimum operation on lifetimes and streamlines the handling of compound data types by approximating their lifetimes as the minimum of the lifetimes of their constituent components.
     Furthermore, we provided a formal specification of the system alongside a prototype implementation of the type-checker.
 
     In future work, we intend to develop a mechanized proof of soundness and evaluate the practical implications of the trade-offs inherent in our system through application to larger-scale codebases.
