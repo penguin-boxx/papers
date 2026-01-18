@@ -1,0 +1,174 @@
+\documentclass[preview]{standalone}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{multicol}
+\usepackage{proof}
+\usepackage{mathtools}
+
+\newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
+\newcommand{\mathframebox}[1]{\framebox{$\displaystyle #1$}}
+\newcommand{\vor}{~|~}
+\newcommand{\ap}{~}
+\newcommand{\ctx}[1]{ctx\left(#1\right)~}
+\newcommand{\step}{\rightsquigarrow}
+\newcommand{\local}{\top}
+\newcommand{\free}{\bot}
+\newcommand{\keyword}[1]{\mathbf{#1}}
+\newcommand{\identation}{\text{\hspace{2em}}}
+
+\begin{document}
+%    \[
+%        \begin{array}{lrl}
+%            \text{Variables}          &   & x, y, z, f, g                                                                                                                          \\
+%            \text{Data constructors}  &   & K                                                                                                                                      \\
+%            \text{Values} & v & \Coloneqq x \vor K \vor \Lambda \overline{l}~\overline{(\alpha <: \tau)} \ldotp v \vor K\ap\overline{\Delta}\ap \overline{\tau} \ap \overline{v} \vor \lambda \overline{(x : \tau)}\ldotp t
+%            \\
+%            \text{Terms} & t, u & \Coloneqq v \vor t\ap\overline{\Delta}\ap\overline{\tau} \vor t\ap \overline{t} \vor match ~ t ~\{\overline{K \ap \overline{x} \to t}\}
+%            \\
+%            \text{Evaluation context} & E & \Coloneqq \square \vor E \ap\overline{\Delta}\ap \overline{\tau} \vor E \ap \overline{t} \vor v \ap (\overline{v}, E, \overline{t})    \\
+%            &   & \vor K\ap\overline{\Delta}\ap\overline{\tau}\ap(\overline{v}, E, \overline{t}) \vor match\ap E\ap \{\overline{K\ap\overline{x}\to t}\}
+%        \end{array}
+%    \]
+%    \[
+%        \begin{array}{lrl}
+%            \text{Type variables}     &                    & \alpha, \beta                                                                                                      \\
+%            \text{Type constructors}  &                    & T                                                                                                                  \\
+%            \text{Lifetime variables} &                    & l                                                                                                                  \\
+%            \text{Lifetimes}          & \Delta             & \Coloneqq l \vor local \vor free \vor +\overline{\Delta}                                                           \\
+%            \text{Monotypes}          & \tau, \sigma, \eta & \Coloneqq \alpha \vor T \ap \Delta \ap \overline{\tau} \vor \overline{\tau}~\Delta \to \sigma                      \\
+%            \text{Type schemas}       & s                  & \Coloneqq \forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp \sigma                                            \\
+%            \text{Typing contexts}    & \Gamma             & \Coloneqq \emptyset \vor x : s, \Gamma \vor l <: \Delta, \Gamma \vor \alpha <: \tau, \Gamma                        \\
+%            &                    & \vor K : \forall \overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\Delta\ap \overline{\alpha}, \Gamma
+%        \end{array}
+%    \]
+%    \begin{gather*}
+%        \begin{array}{llll}
+%            \text{(tapp)} & (\Lambda \overline{l}~\overline{(\alpha <: \tau)}\ldotp t)\ap \overline{\Delta} \ap \overline{\sigma} & \longrightarrow & [\overline{l \to \Delta}, \overline{\alpha\to\sigma}]\ap t
+%            \\
+%            \text{(app)} & (\lambda \overline{(x : \tau)}\ldotp t) \ap \overline{v} & \longrightarrow & [\overline{x\to v}]\ap t
+%            \\
+%            \text{(match)} & match ~K \ap\Delta\ap\overline{\tau}\ap \overline{v} ~ \{ \overline{K_i \ap \overline{x}_i \to u_i}\} & \longrightarrow & [\overline{x_k\to v}]\ap u_k, \text{ where } K = K_k
+%        \end{array}\\
+%        \hspace{-15em}\infer[\text{(step)}]{E[t]\longrightarrow E[t']}{t\longrightarrow t'}
+%    \end{gather*}
+%    \begin{gather*}
+%        \mathframebox{\Gamma\vdash\Delta' <: \Delta} \\[0.5em]
+%        \begin{array}{cc}
+%            \infer[SubFree]{\Gamma\vdash free <: \Delta}{} &
+%            \infer[SubLocal]{\Gamma\vdash\Delta <: local}{} \\[0.5em]
+%            \infer[SubCtx_\Delta]{
+%                \Gamma\vdash l <: \Delta
+%            }{
+%                l <: \Delta \in \Gamma
+%            } &
+%            \infer[Sub+]{
+%                \Gamma\vdash+\overline{\Delta'} <: +\overline{\Delta}
+%            }{
+%                \forall\Delta'\in\overline{\Delta'}\ldotp\exists\Delta\in\overline{\Delta}\ldotp \Gamma\vdash\Delta' <: \Delta
+%            }
+%        \end{array}\\[1em]
+%        \mathframebox{\Gamma\vdash \sigma <: \tau} \\[0.5em]
+%        \begin{array}{cc}
+%            \infer[SubCtx]{\Gamma\vdash \alpha <: \tau}{\alpha <: \tau \in \Gamma} &
+%            \infer[SubData]{
+%                \Gamma\vdash T\ap\Delta'\ap\overline{\tau} <: T\ap\Delta\ap\overline{\tau}
+%            }{
+%                \Gamma\vdash\Delta' <: \Delta
+%            }
+%        \end{array} \\[0.5em]
+%        \begin{array}{cc}
+%            \infer[SubAny]{
+%                \Gamma\vdash \tau <: Any\ap\Delta
+%            }{
+%                \Gamma\vdash +lt_\Gamma(\tau) <: \Delta
+%            } &
+%            \infer[SubFun]{
+%                \Gamma\vdash\overline{\tau'}~\Delta'\to\sigma' <: \overline{\tau}~\Delta\to\sigma
+%            }{
+%                \overline{\Gamma\vdash\tau <: \tau'} &
+%                \Gamma\vdash\Delta' <: \Delta &
+%                \sigma' <: \sigma
+%            }
+%        \end{array}
+%    \end{gather*}
+%    \[
+%        \begin{array}{lll}
+%            lt_\Gamma(\alpha)                                                         & = & lt_\Gamma(\tau) \text{ if } \alpha <: \tau \in \Gamma, \emptyset \text{ otherwise}        \\
+%            lt_\Gamma(T\ap\Delta\ap\overline{\tau})                                   & = & \overline{lt_\Gamma(\tau)} \cup \{\Delta\}                                                \\
+%            lt_\Gamma(\overline{\tau}~\Delta\to\overline{\sigma})                     & = & \{\Delta\}                                                                                \\
+%            lt_{\Gamma}(\forall \overline{l}~\overline{(\alpha <: \tau)}\ldotp\sigma) & = & lt_{\overline{(\alpha <: Any\ap free)}, \Gamma}(\sigma) \text{ remove } \overline{l}
+%        \end{array}
+%    \]
+    \begin{gather*}
+        \mathframebox{\Gamma\vdash t : s} \\[0.5em]
+        \infer[Var]{\Gamma\vdash x : s}{x : s \in \Gamma} \\
+        \infer[TLam]{
+            \Gamma\vdash\Lambda\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp t : \forall\overline{l}\ap\overline{(\alpha <: \sigma)}\ldotp\tau
+        }{
+            \overline{\alpha <: \sigma}, \Gamma\vdash t : \tau
+        } \\
+        \infer[TApp]{
+            \Gamma\vdash x\ap\overline{\Delta}\ap\overline{\tau'} : [\overline{\alpha\to\tau'}]\ap[\overline{l\to\Delta}]\ap\sigma
+        }{
+            x : \forall\overline{l}\ap\overline{(\alpha <: \tau)}\ldotp \sigma \in \Gamma
+            &
+            \overline{\Gamma\vdash\tau' <: [\overline{l\to\Delta}]\ap\tau}
+        } \\
+        \infer[Lam]{
+            \Gamma\vdash \lambda \overline{(x : \tau)} \ldotp t :  \overline{\tau}~ \left(+\overline{lt_\Gamma(s)}\right) \to \sigma
+        }{
+            \overline{x : \tau}, \Gamma\vdash t : \sigma
+            &
+            \Gamma\vdash_{fv(t)\setminus \overline{x}}\overline{s}
+            &
+            local \not\in lt_\emptyset(\sigma)
+        } \\
+        \infer[App]{
+            \Gamma\vdash t \ap \overline{u} : \sigma
+        } {
+            \Gamma\vdash t : \overline{\tau}~\Delta\to\sigma
+            &
+            \overline{\Gamma\vdash u : \tau'}
+            &
+            \overline{\Gamma\vdash\tau' <: \tau}
+        } \\
+        \begin{array}{cc}
+            \mathframebox{\Gamma\vdash_{\overline{x}}\overline{\tau}} &
+            \infer[TypesOf]{\Gamma\vdash_{\overline{x}}\overline{s}}{\overline{x : s} \subset \Gamma}
+        \end{array}
+    \end{gather*}
+%    \begin{gather*}
+%        \mathframebox{\Gamma\vdash t : s} \\[0.5em]
+%        \infer[Ctor]{\Gamma\vdash K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset(\tau)}\right)\ap \overline{\alpha}}{K : \forall\overline{l}\ \overline{\alpha}\ldotp \overline{\tau}\to T \ap\left(+\overline{lt_\emptyset(\tau)}\right)\ap \overline{\alpha} \in \Gamma} \\[0.5em]
+%        \infer[Match]{
+%            \Gamma\vdash match ~ t ~\{ \overline{K_i\ap \overline{x_{i}} \to u_i }\}  : lub\left(\overline{elim^+_{\Delta, \overline{l'}_i}\ap(\eta_i)}\right)
+%        }{
+%            \begin{array}{cc}
+%                \Gamma\vdash t : T\ap\Delta \ap\overline{\tau}
+%                &
+%                \Gamma\vdash K_i : \forall \overline{l}_i~\overline{\alpha}\ldotp \overline{\sigma_{i}} \to T\ap\left(+\overline{lt_\emptyset(\sigma_i)}\right)\ap\overline{\alpha}
+%                \\[0.4em]
+%                \overline{l_i' \text{ fresh}}
+%                &
+%                \overline{l_i' <: \Delta}, \overline{x_i : [\overline{\alpha\to\tau}]\ap[\overline{l_i\to l_i'}]\ap\sigma_i}, \Gamma \vdash u_i : \eta_i
+%            \end{array}
+%        }
+%    \end{gather*}
+%    \[
+%        \begin{array}{lll}
+%            elim_{\Delta, \overline{l}}^p(\alpha) & = & \alpha \\
+%            elim_{\Delta, \overline{l}}^p(T\ap \Delta'\ap\overline{\tau}) & = & T\ap \left( elim_{\Delta, \overline{l}}^p(\Delta') \right)\ap\left( \overline{elim_{\Delta, \overline{l}}^{inv}(\tau)} \right) \\
+%            elim_{\Delta, \overline{l}}^p(\overline{\tau}~\Delta'\to\sigma) & = & \left( \overline{elim_{\Delta, \overline{l}}^{p^{-1}}(\tau)} \right)~\left( elim_{\Delta, \overline{l}}^p(\Delta') \right)\to elim_{\Delta, \overline{l}}^{p}(\sigma) \\
+%            elim_{\Delta, \overline{l}}^{p}(l') & = &
+%            \begin{cases}
+%                l'     & \text{if } l' \not\in\overline{l} \\
+%                \Delta & \text{if } l' \in \overline{l} \land p = + \\
+%                free   & \text{if } l' \in \overline{l} \land p = - \\
+%                \text{error}  & \text{if } l' \in \overline{l} \land p = inv
+%            \end{cases} \\
+%            elim_{\Delta, \overline{l}}^{p}(+\overline{\Delta'}) & = & +\left( \overline{elim_{\Delta, \overline{l}}^{p}(\Delta')} \right) \\
+%            elim_{\Delta, \overline{l}}^{p}(\Delta') & = & \Delta'
+%        \end{array}
+%    \]
+\end{document}
