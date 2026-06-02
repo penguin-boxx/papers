@@ -5,12 +5,50 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="15554d1e-d56c-434a-97ac-1758983892bd" name="Changes" comment="Update">
-      <change beforePath="$PROJECT_DIR$/escape-analysis-ivannikov.tex" beforeDir="false" afterPath="$PROJECT_DIR$/escape-analysis-ivannikov.tex" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/runConfigurations/Proofs_Escape_Analysis.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/escape-analysis-proofs.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bib.bib" beforeDir="false" afterPath="$PROJECT_DIR$/bib.bib" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
     <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="CopilotChats">
+    <option name="panelChat">
+      <chat>
+        <option name="activeSessionId" value="6f604e08-fd3a-4d9f-bf95-294ae4f7f4ea" />
+        <option name="sessions">
+          <session>
+            <option name="chatType" value="PANEL" />
+            <option name="id" value="0e09dfa3-afd4-48e5-b495-2be0eef938c1" />
+            <option name="modeId" value="Agent" />
+            <option name="modelType" value="builtin_family" />
+            <option name="modelValue" value="claude-opus-4.7" />
+            <option name="status" value="Completed" />
+            <option name="targetType" value="LOCAL" />
+          </session>
+          <session>
+            <option name="chatType" value="PANEL" />
+            <option name="id" value="6f604e08-fd3a-4d9f-bf95-294ae4f7f4ea" />
+            <option name="modeId" value="Agent" />
+            <option name="modelType" value="builtin_family" />
+            <option name="modelValue" value="auto" />
+            <option name="targetType" value="LOCAL" />
+          </session>
+        </option>
+        <option name="type" value="PANEL" />
+      </chat>
+    </option>
+  </component>
+  <component name="CopilotPersistence">
+    <persistenceIdMap>
+      <entry key="_/home/huawei/Projs/papers" value="2nsmE3EbqI6CbPBVyTtmlj7H2wI" />
+    </persistenceIdMap>
+  </component>
+  <component name="CopilotUserSelectedChatMode">
+    <option name="chatModeId" value="Agent" />
   </component>
   <component name="Git.Settings">
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
@@ -52,14 +90,22 @@
     &quot;LaTeX.Effect System as a Synergy.executor&quot;: &quot;Run&quot;,
     &quot;LaTeX.Effect Systems Overview.executor&quot;: &quot;Run&quot;,
     &quot;LaTeX.Escape Analysis.executor&quot;: &quot;Run&quot;,
+    &quot;LaTeX.Proofs Escape Analysis.executor&quot;: &quot;Run&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.typescript.service.memoryLimit.init&quot;: &quot;true&quot;,
     &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;codeWithMe.voiceChat.enabledByDefault&quot;: &quot;false&quot;,
     &quot;git-widget-placeholder&quot;: &quot;main&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;/home/huawei/Projs/pl-seminars&quot;,
-    &quot;settings.editor.selected.configurable&quot;: &quot;editor.preferences.fonts.default&quot;
+    &quot;last_opened_file_path&quot;: &quot;/home/huawei/Projs/papers&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
 }</component>
   <component name="RecentsManager">
@@ -67,13 +113,14 @@
       <recent name="$PROJECT_DIR$" />
     </key>
   </component>
-  <component name="RunManager" selected="LaTeX.Escape Analysis">
+  <component name="RunManager" selected="LaTeX.Proofs Escape Analysis">
     <list>
       <item itemvalue="BibTeX.bib overview" />
       <item itemvalue="BibTeX.bib synergy" />
       <item itemvalue="BibTeX.bib escape" />
       <item itemvalue="LaTeX.Effect Systems Overview" />
       <item itemvalue="LaTeX.Escape Analysis" />
+      <item itemvalue="LaTeX.Proofs Escape Analysis" />
       <item itemvalue="LaTeX.Effect System as a Synergy" />
     </list>
   </component>
@@ -481,6 +528,9 @@
     <option name="localTasksCounter" value="143" />
     <servers />
   </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="Cleanup first part" />
     <MESSAGE value="Cleanup second part" />
@@ -508,5 +558,13 @@
     <MESSAGE value="Update Grigory" />
     <MESSAGE value="Update" />
     <option name="LAST_COMMIT_MESSAGE" value="Update" />
+  </component>
+  <component name="github-copilot-workspace">
+    <instructionFileLocations>
+      <option value=".github/instructions" />
+    </instructionFileLocations>
+    <promptFileLocations>
+      <option value=".github/prompts" />
+    </promptFileLocations>
   </component>
 </project>
