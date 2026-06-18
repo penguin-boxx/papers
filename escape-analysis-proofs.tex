@@ -2,1105 +2,245 @@
 %! suppress = TooLargeSection
 %! suppress = MissingLabel
 
-% Preamble — adapted to the layout of
-% "Информатика и автоматизация / Informatics and Automation" (SPIIRAS, SPC RAS),
-% https://ia.spcras.ru/index.php/sp/aims-and-scope
-\documentclass[12pt,a4paper]{article}
+\documentclass[10pt]{SPIIRAS_Proceedings}
 
-% Packages
-\usepackage[T2A,T1]{fontenc}
-\usepackage[utf8]{inputenc}
-\usepackage[english,russian]{babel}
-\usepackage{amsmath}
-\usepackage{amssymb}
-\usepackage{amsthm}
-\usepackage{xcolor}
-\usepackage{multicol}
-\usepackage{proof}
 \usepackage{mathtools}
-\usepackage{hyperref}
-\hypersetup{colorlinks=true, linkcolor=black, citecolor=black, urlcolor=blue}
-
-\usepackage{geometry}
-% Journal page setup: A4, 2.0 cm margins, 1.5 line spacing.
-\geometry{a4paper, top=20mm, bottom=20mm, left=20mm, right=20mm}
-
-\usepackage{setspace}
-\onehalfspacing
-
-\usepackage{enumitem}
-\setlist{noitemsep}
-
-\usepackage{indentfirst}
+\usepackage{proof}
 \usepackage{booktabs}
 \usepackage{array}
+\let\ditshape\itshape
 
-% Section heading style closer to the journal:
-% centered, bold, sans-serif feel approximated with bfseries.
-\usepackage{titlesec}
-\titleformat{\section}{\centering\normalfont\large\bfseries}{\thesection.}{0.6em}{}
-\titleformat{\subsection}{\normalfont\bfseries}{\thesubsection.}{0.6em}{}
-
-\newtheorem{theorem}{Theorem}
-\newtheorem{corollary}[theorem]{Corollary}
-\newtheorem{lemma}[theorem]{Lemma}
-
-% Inline helper for the UDC/DOI/affiliation lines in the header.
-\newcommand{\headerline}[1]{\noindent\small #1\par}
-
-\newcommand{\graybox}[1]{\colorbox{lightgray}{$\displaystyle #1$}}
-\newcommand{\mathframebox}[1]{\framebox{$\displaystyle #1$}}
 \newcommand{\vor}{~|~}
-\newcommand{\ap}{~}
-\newcommand{\ctx}[1]{ctx\left(#1\right)~}
 \newcommand{\step}{\rightsquigarrow}
-\newcommand{\local}{\top}
-\newcommand{\free}{\bot}
 \newcommand{\keyword}[1]{\mathbf{#1}}
-\newcommand{\identation}{\text{\hspace{2em}}}
 
 \usepackage{listings}
 \lstdefinestyle{modern}{
-    basicstyle=\normalfont\ttfamily\small,     % fixed-width font, smaller size
-    keywordstyle=\color{blue!80!black}\bfseries,  % strong blue keywords
-    stringstyle=\color{red!70!black},      % subtle red for strings
-    commentstyle=\color{green!60!black}\itshape,  % italic green comments
-    numberstyle=\tiny\color{gray!50},      % small, gray line numbers
-    rulecolor=\color{gray!50},            % frame color
-    tabsize=4,                           % tab size of 2 spaces
-    showspaces=false,                   % don't show spaces as underscores
-    showstringspaces=false,             % don't highlight spaces in strings
-    breaklines=false,                    % automatic line breaking
-    breakatwhitespace=false,             % break lines at whitespace
-    captionpos=b,                       % caption at the bottom
-    escapeinside={(*@}{@*)},             % escape to LaTeX inside comments
-    gobble=8,      % skip 4 characters of indentation in code lines
+    basicstyle=\fontsize{9pt}{10pt}\ttfamily,
+    keywordstyle=\bfseries,
+    stringstyle=,
+    commentstyle=\itshape,
+    numberstyle=\tiny,
+    tabsize=4,
+    showspaces=false,
+    showstringspaces=false,
+    breaklines=true,
+    breakatwhitespace=true,
+    captionpos=b,
+    escapeinside={(*@}{@*)},
+    gobble=8,
 }
 \lstdefinelanguage{colang}{
-    keywords=[1]{let, var, effect, perform, data, context, fun, where, if, else, throw, try, catch, local, free, op, handle, resume, class, interface, override, init, return},
+    keywords=[1]{let,var,effect,perform,data,context,fun,where,if,else,throw,try,catch,local,free,op,handle,resume,return},
     sensitive=true,
-    comment=[l]{//},
-    morecomment=[s]{/*}{*/},
-    morestring=[b]",
-    breaklines=false,
-    tabsize=4,
-    showstringspaces=false,
-}
-\lstdefinelanguage{rust}{
-    keywords={
-        as, break, const, continue, crate, else, enum, extern, false, fn, for, if, impl, in,
-        let, loop, match, mod, move, mut, pub, ref, return, self, Self, static, struct, super,
-        trait, true, type, unsafe, use, where, while, async, await, dyn
-    },
     comment=[l]{//},
     morecomment=[s]{/*}{*/},
     morestring=[b]",
 }
 \lstset{style=modern}
 
-% Document
+% Helper macros for an English-primary layout that reuses the journal class
+% without modifying SPIIRAS_Proceedings.cls. \udktop prints the UDC (+ optional
+% DOI) line once at the very top; \makerustitle reproduces the Russian title
+% block of \maketitle but WITHOUT the UDC line, so UDC is never duplicated.
+\makeatletter
+\newcommand{\udktop}{\noindent\footnotesize\textbf{\foreignlanguage{russian}{УДК}}~\@udk\ifx\@doi\@empty\relax\else\hfill\footnotesize\textbf{DOI}~\@doi\fi}
+\newcommand{\makerustitle}{%
+\begin{center}
+\normalsize\@authorsTitleRus\\
+\normalsize\bfseries\MakeUppercase{\@titleRus}\\[8pt]
+\normalsize\normalfont
+\end{center}
+\rule{\textwidth}{0.5pt}
+\textit{\@authorsRus}~\textbf{\@titleRus.}\\
+{\hspace*{0.5cm}\textbf{Аннотация.}}~{\hyphenpenalty=10000\setlength{\parindent}{0.5cm} \@abstractRus}\\
+\hspace*{0.5cm}\textbf{Ключевые слова:}~\@keywordsRus \\[-4pt]
+\rule{\textwidth}{0.5pt} \\[-2pt]
+}
+\makeatother
+
 \begin{document}
 \selectlanguage{english}
 
-    % ---------------------------------------------------------------------
-    % Journal header block (English).
-    % Layout follows the conventions of "Informatics and Automation"
-    % (https://ia.spcras.ru): UDC, DOI placeholder, title, authors,
-    % affiliation, abstract, keywords, acknowledgments.
-    % ---------------------------------------------------------------------
-
-    \headerline{\textbf{UDC} 004.052.42, 004.43}
-    \headerline{\textbf{DOI} 10.15622/ia.XX.X.X\hfill\textit{(to be assigned by the editor)}}
-
-    \vspace{0.5em}
-    \begin{center}
-        {\Large\bfseries
-            A mechanized proof of type safety for an escape-analysis calculus
-            with existential lifetimes and effect handlers\par}
-
-        \vspace{0.8em}
-        {\normalsize\textbf{A.\,Stoyan}\textsuperscript{1}\par}
-
-        \vspace{0.4em}
-        {\small\itshape
-            \textsuperscript{1}\,National Research University Higher School of Economics\\
-            (HSE University), 3A Kantemirovskaya Str., Saint Petersburg, 194100, Russian Federation\par}
-    \end{center}
-
-    \vspace{0.5em}
-    \noindent\textbf{Abstract.}
-    Type-based escape analysis is a static-analysis technique that lifts the question of
-    whether a value outlives its lexical scope into the type system; it underpins
-    stack allocation, borrowing in ownership-based languages, and safety of capability-based
-    effect systems.
-    A recent calculus, $Core_\Delta$, reduces the user-facing annotation burden of such systems
-    through three combined design decisions: \emph{existential} lifetimes on compound data,
-    an explicit \emph{minimum} operation over lifetimes, and bounded polymorphism with
-    lifetime-annotated bounds.
-    However, the meta-theoretic guarantees of $Core_\Delta$ have so far been justified only on paper,
-    and the principal motivating application of the calculus~--- capability-based effect
-    handlers~--- has been discussed only informally.
-    \emph{The aim of this work} is to close both gaps with a machine-checked proof of type safety
-    for a calculus that genuinely combines existential lifetimes with delimited-control effect handlers.
-    \emph{Methods.}
-    The $Core_\Delta$ calculus is extended with single-operation algebraic effect handlers in the style
-    of capability passing.
-    For the extended calculus we give a small-step operational semantics based on
-    marker-indexed pure evaluation contexts that reify captured continuations as first-class
-    runtime values, and we mechanize the entire system~--- syntax, semantics, subtyping, and typing~---
-    in the Rocq/Coq proof assistant using pure de~Bruijn indices.
-    \emph{Results.}
-    We prove the classical progress and preservation theorems for the extended calculus and
-    obtain type safety as a corollary.
-    Going beyond type safety, we mechanize two escape-analysis guarantees that motivate the
-    calculus: a \emph{capability-confinement} theorem stating that a runtime capability can never
-    surface at an evaluation position outside its handler, and an \emph{operational non-escape}
-    theorem stating that a value delivered at an escapable ($free$) data type can never carry a
-    $local$-confined lifetime.
-    The development comprises approximately $6{,}500$ lines of Rocq code organized into eight modules
-    and is accompanied by more than thirty machine-checked examples, including the state, exception,
-    and non-determinism effects encoded with the new handlers, all reduced inside the proof assistant.
-    A comparison with related mechanized accounts of effect handlers and of lifetime/region systems
-    shows that the present development is, to the best of our knowledge, the first to combine
-    \emph{both} ingredients within a single mechanized soundness proof.
-    \emph{Practical relevance.}
-    The artifact provides a reusable, machine-checked foundation for designing type-based escape
-    analyses in languages with first-class effect handlers; it is publicly available at
-    \url{https://github.com/penguin-boxx/effect-proofs}.
-
-    \vspace{0.4em}
-    \noindent\textbf{Keywords:}
-    type systems, escape analysis, existential lifetimes, algebraic effect handlers,
-    delimited control, capability confinement, mechanized metatheory, Rocq/Coq, type safety.
-
-    \vspace{0.4em}
-    \noindent\textbf{Acknowledgements.}
-    The author thanks the colleagues at HSE University for fruitful discussions on the design of
-    capability-based effect systems.
-    No external funding was received for this work.
-
-
-    \section{Introduction}
-
-    Escape analysis is a long-standing static-analysis technique whose purpose is to
-    determine whether the lifetime of a value may exceed its defining lexical
-    scope~\cite{blanchet1999escape, park1992escape}.
-    Beyond classical compiler optimizations such as stack allocation and scalar
-    replacement, escape analysis has in the last decade become a load-bearing
-    component of several modern type systems: it justifies the safety of non-local
-    returns in Kotlin~\cite{akhin2021kotlin}, underlies borrowing in
-    ownership-based languages such as Rust~\cite{matsakis2014rust} and recent
-    extensions of OCaml~\cite{lorenzen2024oxidizing}, and enforces
-    \emph{contextual polymorphism} in capability-based effect
-    systems~\cite{brachthauser2020effects, brachthauser2022effects, boruch2023capturing}.
-
-    Integrating escape analysis directly into the type system has two well-known
-    advantages over conventional data-flow approaches.
-    First, escape information becomes explicit at function boundaries, so that
-    inter\-procedural analysis reduces to intraprocedural rule-checking consulting
-    function signatures.
-    Second, no long-distance constraints are generated, which makes diagnostics
-    local and predictable.
-    The trade-off is that user-facing annotations rapidly accumulate: lifetime
-    polymorphism, variance, and explicit \emph{outlives} constraints have to be
-    declared on every data type and threaded through every signature, which
-    raises the entry barrier both for compiler implementers and for end users.
-
-    \subsection{Problem statement}
-
-    A recent calculus, $Core_\Delta$~\cite{stoyan2025existential},
-    attacks the annotation burden by changing the form of lifetime
-    information available at type-level data:
-    \begin{itemize}
-        \item lifetimes form a two-point lattice $free \sqsubseteq local$ extended with a
-            binary \emph{minimum} operation $+$, so that a function signature can
-            express the data-flow join of its arguments directly;
-        \item compound data types are not parameterized by lifetimes; instead the
-            lifetime of a constructed value is the minimum of the lifetimes of its
-            fields, and these fields' lifetimes are recovered \emph{existentially}
-            on pattern matching;
-        \item bounded polymorphism with lifetime-annotated bounds permits tracked
-            (i.e.\ $local$) values to instantiate type parameters in a controlled way.
-    \end{itemize}
-
-    The proposal is attractive, but two questions left open by the original work
-    threaten its viability for a real implementation.
-    \emph{(Q1)} Is the type system actually sound?
-    The interaction between subtyping over a non-trivial lifetime lattice, existential
-    lifetimes introduced by data constructors, and variance-directed elimination on
-    pattern matching is subtle enough that a paper-and-pencil argument is not
-    sufficient evidence for adopting the calculus in a compiler.
-    \emph{(Q2)} Does the system extend cleanly to its principal motivating application
-    --- capability-based effect handlers?
-    Handlers introduce a delimited-control operational semantics whose interaction
-    with lifetime annotations, with substitution under multiple binder forms, and with
-    the existential lifetimes introduced by constructors is non-obvious.
-
-    The present paper provides a positive answer to both questions in the form of a
-    fully machine-checked artifact.
-
-    \subsection{Contributions}
-
-    The contributions of this paper are the following.
-
-    \begin{enumerate}
-        \item We extend the $Core_\Delta$ calculus with single-operation algebraic effect
-            handlers in the capability-passing style of Bra\-cht\-h\"au\-ser et
-            al.~\cite{brachthauser2020effects}, encoding capabilities as ordinary data
-            constructors that carry a runtime marker
-            (Section~\ref{sec:background}, Section~\ref{sec:formalization}).
-        \item We give a small-step operational semantics for the extended calculus
-            based on evaluation contexts with marker-indexed \emph{pure} sub-contexts;
-            this models the ``capture of the continuation up to the matching handler''
-            of multi-prompt delimited control as a syntactic reification via a new
-            $\keyword{resume}_m$ runtime form (Section~\ref{sec:formalization}).
-        \item We mechanize the syntax, operational semantics, subtyping, and typing of
-            the extended calculus in Rocq/Coq using pure de~Bruijn indices, and we
-            prove the classical progress, preservation, and type-safety theorems
-            (Section~\ref{sec:formalization}, Section~\ref{sec:mechanization}).
-        \item Beyond type safety, we mechanize the two escape-analysis guarantees that
-            motivate the calculus:
-            a \emph{capability-confinement} theorem (a runtime capability is never even
-            well-typed at an evaluation position outside its handler, hence a closed
-            program never reduces to a configuration that exposes one), and an
-            \emph{operational non-escape} theorem (a value delivered at an escapable
-            $free$ data type provably carries no top-level $local$ lifetime).
-            Both are stated as Rocq theorems rather than argued informally
-            (Section~\ref{sec:formalization}).
-        \item We exercise the development with more than thirty machine-checked
-            examples, including reduction traces for state, exception, and
-            non-determinism effects encoded with the new handlers
-            (Section~\ref{sec:evaluation}).
-        \item We compare the development with existing mechanizations of effect-handler
-            calculi and of lifetime/region systems, showing that --- to the best of our
-            knowledge --- this is the first mechanized soundness proof that genuinely
-            combines an existential-lifetime escape analysis with first-class effect
-            handlers (Section~\ref{sec:related-work}).
-    \end{enumerate}
-
-    The remainder of the paper is organized as follows.
-    Section~\ref{sec:related-work} reviews related work on type-based escape
-    analysis and on mechanizations of effect handlers.
-    Section~\ref{sec:background} recalls the design of $Core_\Delta$ and motivates
-    the effect-handler extension on a small example.
-    Section~\ref{sec:formalization} presents the formal calculus and states the main
-    meta-theorems together with their proof outlines.
-    Section~\ref{sec:mechanization} describes the structure of the Rocq development,
-    its representation choices, and the explicitly delimited scope of the axiomatized
-    auxiliary lemmas.
-    Section~\ref{sec:evaluation} evaluates the development through a series of
-    worked examples.
-    Section~\ref{sec:discussion} discusses limitations and threats to validity.
-    Section~\ref{sec:conclusion} concludes.
-
-
-    \section{State of the art} \label{sec:related-work}
-
-    \subsection{Type-based escape analysis in production languages}
-
-    Several modern languages embed a form of escape analysis directly into their
-    type system.
-    The most established case is the lifetime system of Rust~\cite{matsakis2014rust}:
-    it combines lifetime polymorphism on data types, variance inference, and explicit
-    outlives constraints to obtain a system that is highly expressive but, by common
-    consensus, difficult both to teach and to implement.
-    Notably, Rust expresses the minimum of two lifetimes only indirectly, either by
-    introducing additional outlives constraints or by equating lifetimes.
-
-    A more recent thread of work, exemplified by the OCaml \texttt{local}
-    modality~\cite{lorenzen2024oxidizing}, treats locality as a modality on bindings
-    rather than as a first-class component of the type.
-    The resulting system is simpler than Rust's, but pays for that simplicity by
-    being unable to instantiate polymorphic type parameters with types carrying
-    a non-default modality.
-    Kotlin's contract-based escape analysis~\cite{akhin2021kotlin} is similarly
-    binding-oriented and is therefore limited to first-order escape conditions.
-
-    \subsection{Type-based escape analysis in effect systems}
-
-    Capability-based effect systems explicitly rely on escape analysis to enforce
-    that a capability granted by \texttt{handle} does not outlive the dynamic
-    extent of its handler.
-    The Effekt language~\cite{brachthauser2020effects, brachthauser2022effects}
-    pioneers this approach with a notion of \emph{second-class} bindings and uses
-    them to guarantee the safety of contextual polymorphism.
-    Xie et al.~\cite{xie2022first} adopt higher-rank polymorphism for a similar
-    purpose in their first-class evidence-passing translation of effect handlers.
-    Boruch-Gru\-szecki et al.~\cite{boruch2023capturing} introduce capture
-    tracking in the Scala dependent type system to refine the escape information
-    attached to function types.
-
-    These works share with $Core_\Delta$ the goal of making escape information
-    visible in types, but they differ on the carrier of that information:
-    Effekt and capture-tracking Scala attach escape annotations to types as
-    sets of captured variables, whereas $Core_\Delta$ uses a coarse-grained
-    two-point lattice with an explicit minimum, which is easier to integrate with
-    subtyping and considerably simpler to inhabit on the user side.
-
-    \subsection{Mechanizations of effect-handler calculi}
-
-    The meta-theory of algebraic effect handlers has been mechanized several
-    times, most notably in Rocq/Coq and Agda variants of the
-    $\lambda^{eff}$-style calculus~\cite{brachthauser2020effects, brachthauser2022effects}.
-    These developments typically focus either on type safety with simple type
-    systems (no escape analysis), or on the meta-theory of capture tracking on
-    its own (no effect handlers).
-    Our development closes this gap by handling both ingredients in a single
-    mechanized soundness proof.
-
-    \subsection{Comparison summary}
-
-    Table~\ref{tab:comparison} summarizes how the present development compares
-    with the closest pieces of related work.
-
-    \begin{table}[h]
-        \centering
-        \small
-        \caption{Comparison with closest related work on type-based escape analysis
-            and on mechanizations of effect-handler calculi.
-            ``Mech.'' = formally mechanized; ``EA'' = type-based escape analysis;
-            ``Eff.'' = first-class effect handlers; ``Min'' = explicit minimum on lifetimes.}
-        \label{tab:comparison}
-        \begin{tabular}{@{}lcccc@{}}
-            \toprule
-            \textbf{System / work} & \textbf{Mech.} & \textbf{EA} & \textbf{Eff.} & \textbf{Min} \\
-            \midrule
-            Rust lifetimes~\cite{matsakis2014rust}             & partial & yes & no  & indirect \\
-            OCaml \texttt{local}~\cite{lorenzen2024oxidizing}  & no      & yes & no  & no       \\
-            Effekt~\cite{brachthauser2020effects}              & yes     & yes & yes & no       \\
-            Capture tracking~\cite{boruch2023capturing}        & yes     & yes & no  & no       \\
-            $Core_\Delta$ (paper)~\cite{stoyan2025existential} & no      & yes & no  & yes      \\
-            \textbf{This work}                                 & \textbf{yes} & \textbf{yes} & \textbf{yes} & \textbf{yes} \\
-            \bottomrule
-        \end{tabular}
-    \end{table}
-
-
-    \section{Background and motivating example} \label{sec:background}
-
-    \subsection{The $Core_\Delta$ fragment in brief}
-
-    In $Core_\Delta$, every type carries a lifetime annotation drawn from the lattice
-    $free \sqsubseteq local$, extended with a binary minimum $\Delta_1 + \Delta_2$ and
-    with lifetime variables bound by the enclosing type scheme.
-    The annotation $T\,'\!\Delta$ records the lifetime at which a value of type $T$ may
-    safely be used.
-    The lifetime $free$ classifies values that may escape arbitrarily; the lifetime
-    $local$ classifies values that must not leave their defining scope.
-    The crucial typing invariant, enforced by the rule for $\lambda$-abstraction, is that
-    the result type of a function may not mention $local$.
-    This prevents leakage of tracked values through return values, captured closures, or
-    compound data.
-
-    Compound data types in $Core_\Delta$ do \emph{not} carry user-visible lifetime
-    parameters.
-    Instead, the lifetime of a constructed value is computed as the minimum of the
-    lifetimes of its arguments; when a value is pattern-matched, the lifetimes of the
-    components are conservatively approximated by the lifetime of the scrutinee.
-    Internally, the lifetimes that were ``forgotten'' at construction time are recovered
-    as \emph{existential} lifetime variables, which the $Match$ rule re-binds with a
-    fresh name bounded by the scrutinee's lifetime.
-    These fresh variables must be eliminated from the type of each branch before they
-    leak into the outer scope; this elimination is performed by a variance-directed
-    substitution that approximates positive occurrences by the bound, negative
-    occurrences by $free$, and rejects invariant occurrences.
-
-    \subsection{Effect handlers as the motivating application}
-
-    Capability-based effect systems use type-based escape analysis to ensure that a
-    capability granted by \texttt{handle} cannot be smuggled out of the dynamic
-    extent of the corresponding handler.
-    A natural encoding maps a capability for effect $E$ with type arguments
-    $\overline{T}$ to a data constructor $K_{cap_E}$ whose result type is
-    $E\,'\!local\,\overline{T}$: the $local$ annotation expresses precisely the
-    requirement that the capability must not escape.
-    Operations on the effect are invoked via \texttt{perform}, which reifies the
-    surrounding pure evaluation context as a resumption and transfers control to the
-    operation body installed by \texttt{handle}.
-    The resumption itself is then a value whose type must in turn prevent it from
-    outliving the handler frame.
-
-    Three aspects of this design make a paper-and-pencil soundness argument fragile:
-    \begin{itemize}
-        \item The reduction relation must locate the matching handler delimiter
-            \emph{across} pure sub-contexts but must not cross other handlers.
-            This standard ``operation-lookup'' rule of multi-prompt delimited
-            control interacts with substitution under binders and therefore with
-            lifetime annotations.
-        \item The continuation captured by \texttt{perform} is reified as a value
-            (the runtime form $\keyword{resume}_m\,b$), so the type system must
-            assign it a function type while keeping the runtime marker $m$~---
-            which has no static counterpart~--- implicit.
-        \item Existential lifetimes introduced by constructors interact with the
-            substitution lemma: pattern-matching a capability under a handler must
-            re-bind its existential lifetimes without aliasing the marker-fresh
-            names introduced by \texttt{perform}.
-    \end{itemize}
-
-    \subsection{Running example}\label{subsec:running-example}
-
-    To make these interactions concrete, consider an exception effect $\mathit{Exc}$ with
-    a single operation $\mathit{throw} : \forall \alpha.\,Unit \to \alpha$.
-    The capability constructor produced by the effect declaration is
-    $K_{cap_{\mathit{Exc}}} : Unit\,'\!local \to \mathit{Exc}\,'\!local$.
-    A client uses the effect as follows (with $\beta$ a fresh type variable bound
-    inside the operation body, instantiated at the \texttt{perform} site):
-    \[
-        \keyword{handle}~\mathit{Exc}\;[Int]\;\;\big(\lambda x.\,\lambda k.\,0\big)\;\;\keyword{in}\;\;
-        \keyword{perform}\;c_{\mathit{Exc}}\;[Int]\;()\,+\,1
-    \]
-    Here the operation body $\lambda x.\,\lambda k.\,0$ discards the resumption~$k$ and
-    returns the default value~$0$, a typical exception-style handler.
-    Reduction proceeds as follows.
-    First, $\keyword{handle}$ allocates a fresh marker $m$, installs a delimiter
-    $\keyword{handler}_m$, and substitutes the runtime capability
-    $\keyword{cap}_{\mathit{Exc}}^m\,[Int]\,(\lambda x.\,\lambda k.\,0)$ for the bound
-    variable~$c_{\mathit{Exc}}$.
-    Second, the $H\!\_Perform$ rule identifies the surrounding pure context $P_m =
-    [\cdot]\,+\,1$ and rewrites the configuration to
-    \[
-        (\lambda x.\,\lambda k.\,0)\;()\;\;(\keyword{resume}_m\,(([\cdot]\,+\,1)\;\$0)),
-    \]
-    discharging the resumption.
-    Third, two $\beta$-steps eliminate the operation body and yield the value~$0$,
-    then $H\!\_Return$ removes the handler delimiter to produce $0$ as the final
-    answer.
-
-    Note how the $local$ annotation on the capability type ensures that even though the
-    body $\lambda x.\,\lambda k.\,0$ has the resumption $k$ in scope, it cannot smuggle
-    $k$ out via its closure environment, because doing so would require typing a closure
-    with $local$ in a covariant position of its result type --- which the $T\!\_Lam$
-    rule forbids.
-    This very interaction is what the mechanization makes precise.
-
-
-    \section{Formalization} \label{sec:formalization}
-
-    \subsection{Syntax}
-
-    Lifetimes, types, and terms follow the grammar of $Core_\Delta$, extended with three
-    runtime-only term forms for the operational semantics of handlers
-    (Figure~\ref{fig:syntax}).
-    \begin{figure}[h]
-        \centering
-        \[
-            \begin{array}{lrl}
-                \text{Lifetimes}        & \Delta & \Coloneqq l \vor free \vor local \vor \Delta_1 + \Delta_2 \\
-                \text{Types}            & \tau   & \Coloneqq \alpha \vor \overline{\tau}\,\Delta \to \sigma
-                                                    \vor K\,\Delta\,\overline{\tau}
-                                                    \vor \forall l.\,\tau \vor \forall (\alpha <: \tau').\,\tau \\
-                \text{Terms}            & t      & \Coloneqq x \vor t\,t \vor \lambda(x : \tau).\,t
-                                                    \vor t\,[\tau] \vor \Lambda(\alpha <: \tau).\,t
-                                                    \vor t\,[\Delta] \vor \Lambda l.\,t \\
-                                        &        & \vor K\,\Delta\,\overline{\Delta}\,\overline{\tau}\,\overline{t}
-                                                    \vor \keyword{match}\,t\,\keyword{with}\,K\,\overline{x} \Rightarrow t \mid \_ \Rightarrow t \\
-                                        &        & \vor \keyword{handle}\,E\,\overline{\tau}\,t_{op}\,\keyword{in}\,t
-                                                    \vor \keyword{perform}\,t\,\overline{\tau}\,t \\
-                                        &        & \vor \keyword{cap}_E^m\,\overline{\tau}\,t_{op}
-                                                    \vor \keyword{handler}_m\,t
-                                                    \vor \keyword{resume}_m\,b
-            \end{array}
-        \]
-        \caption{Syntax of the extended calculus.}
-        \label{fig:syntax}
-    \end{figure}
-    Markers $m \in \mathbb{N}$ are fresh natural numbers generated by \texttt{handle}.
-    The forms $\keyword{cap}_E^m$, $\keyword{handler}_m$, and $\keyword{resume}_m$ never
-    appear in source programs; they arise only as intermediate reduction states.
-    For simplicity each effect declares a single operation, which eliminates
-    operation tags from the syntax without affecting expressive power
-    (multi-operation effects can be encoded by a sum-typed argument).
-
-    \subsection{Operational semantics}
-
-    Evaluation contexts come in two flavors.
-    General contexts $E$ contain a hole and may cross any binder-free construct.
-    \emph{Pure} contexts $P_m$, indexed by a marker $m$, additionally forbid crossing
-    a $\keyword{handler}_{m'}$ delimiter for the \emph{same} marker $m$, but may cross
-    delimiters for other markers as well as all administrative constructs.
-    This is essential for the operation-lookup rule of multi-prompt delimited control.
-
-    The interesting head-reduction rules are:
-    \begin{align*}
-        \keyword{handle}\,E\,\overline{\tau}\,t_{op}\,\keyword{in}\,t
-            &\;\rightsquigarrow\; \keyword{handler}_m\,(t[\keyword{cap}_E^m\,\overline{\tau}\,t_{op}/x])
-                & (m \text{ fresh}) \\
-        \keyword{handler}_m\,v &\;\rightsquigarrow\; v \\
-        \keyword{handler}_m\,(P_m[\keyword{perform}\,(\keyword{cap}_E^m\,\overline{\tau}\,t_{op})\,\overline{\sigma}\,v])
-            &\;\rightsquigarrow\; t_{op}[\overline{\sigma}/\overline{\beta}][v,\,\keyword{resume}_m\,P_m[\cdot]] \\
-        (\keyword{resume}_m\,b)\,v &\;\rightsquigarrow\; \keyword{handler}_m\,(b[v/x])
-    \end{align*}
-    together with the standard $\beta$, type-$\beta$, lifetime-$\beta$, and match
-    rules.
-    The third rule is the only one whose left-hand side is not in head position;
-    it scans the pure context $P_m$ to locate the matching capability and reifies the
-    captured continuation as $\keyword{resume}_m$.
-
-    Two design points deserve emphasis.
-    First, the handlers are \emph{deep}: the fourth rule re-installs the delimiter
-    $\keyword{handler}_m$ around the resumed body, so a resumption invoked inside the
-    operation body is itself handled by the same handler.
-    This matches the discipline of Eff, Koka, and Effekt and is exactly what the state
-    example of Section~\ref{sec:evaluation} relies on.
-    Second, we model the ``capture up to the matching handler'' of multi-prompt
-    delimited control by \emph{marker-indexed pure contexts} rather than by an explicit
-    continuation stack or by named \texttt{shift}/\texttt{reset} prompts.
-    The pay-off is specific to the mechanization: because markers never bind program
-    variables, the reduction relation stays first-order, capture-avoiding substitution
-    is the ordinary de~Bruijn operation, and the entire metatheory avoids nominal
-    infrastructure (Section~\ref{sec:mechanization}).
-    The resumption is kept first-class --- a value of function type --- so that the
-    canonical-forms lemma for arrows acquires a second case
-    (Lemma~\ref{lem:canonical}); this is the one genuinely new shape relative to a
-    handler-free calculus.
-
-    \subsection{Type system}
-
-    The typing judgment $\Gamma \vdash t : \tau$ refines the typing of $Core_\Delta$
-    with three new rules for handlers.
-    Rule $T\!\_Cap$ types a runtime capability as $K_E\,local\,\overline{\tau}$.
-    Rule $T\!\_HandlerM$ types $\keyword{handler}_m\,t$ at the type of $t$ and imposes
-    no constraint on $m$.
-    Rule $T\!\_Resume$ types $\keyword{resume}_m\,b$ as a function whose argument type
-    is the resumed value's type and whose result type is the answer type recorded
-    in~$b$.
-    The source-level rules $T\!\_Handle$ and $T\!\_Perform$ look up the effect
-    declaration in $\Gamma$ and instantiate its operation signature.
-
-    The escape discipline of handlers is fixed by two deliberate annotation choices,
-    which together implement the slogan ``$local$ may flow into a handler but never out''.
-    The operation's polymorphic type arguments are bounded by $\keyword{Any}\,'\!free$,
-    so an operation \emph{argument} may not itself carry a $local$ lifetime; dually,
-    rule $T\!\_Resume$ types the resumption at a $local$ closure lifetime, so the
-    resumption is itself confined and cannot be returned through any function boundary.
-    Relaxing the first choice to admit $local$ operands is possible but requires
-    propagating the operand's lifetime into the resumption and answer types; we keep
-    the conservative choice here and return to the trade-off in
-    Section~\ref{sec:discussion}.
-
-    The subtyping relation is unchanged: $free <: \Delta <: local$, plus the structural
-    rules for function types (contravariant on arguments, covariant on result) and
-    for constructor types (covariant on lifetimes), and the $SubAny$ rule, which
-    permits $\tau <: \keyword{Any}\,\Delta$ whenever every lifetime occurring in $\tau$
-    outlives $\Delta$.
-
-    \subsection{Meta-theorems and proof outlines}
-
-    We prove the standard syntactic type-safety theorems.
-    Let $\Gamma$ be an \emph{evaluation context}, that is, a typing context that
-    contains neither term, type, nor effect bindings (it may still contain lifetime
-    bounds and constructor declarations).
-
-    The proofs rely on a small set of auxiliary lemmas; we state the principal ones
-    explicitly here, both because they are independently useful and because their
-    structure illustrates how the existential-lifetime machinery interacts with the
-    handler semantics.
-
-    \begin{lemma}[Canonical forms]\label{lem:canonical}
-        Let $\Gamma$ be an evaluation context and $v$ a value with $\Gamma \vdash v : \tau$.
-        \begin{enumerate}
-            \item If $\tau = \overline{\sigma}\,\Delta \to \rho$, then either
-                $v = \lambda(\overline{x}:\overline{\sigma'}).\,t$ for some $t$ or
-                $v = \keyword{resume}_m\,b$ for some $m, b$.
-            \item If $\tau = K\,\Delta\,\overline{\sigma}$, then $v =
-                K'\,\Delta'\,\overline{\Delta'}\,\overline{\sigma'}\,\overline{v}$ for
-                some constructor $K'$ and arguments.
-            \item If $\tau = \forall l.\,\rho$, then $v = \Lambda l.\,t$.
-            \item If $\tau = \forall (\alpha <: \sigma).\,\rho$, then
-                $v = \Lambda(\alpha <: \sigma').\,t$.
-        \end{enumerate}
-    \end{lemma}
-
-    \begin{theorem}[Progress]\label{thm:progress}
-        If $\Gamma$ is an evaluation context and $\Gamma \vdash t : \tau$, then either
-        $t$ is a value or there exists $t'$ such that $t \rightsquigarrow t'$.
-    \end{theorem}
-
-    \begin{proof}[Proof sketch]
-        By induction on the derivation of $\Gamma \vdash t : \tau$.
-        The cases for variables, $\keyword{handle}$, and $\keyword{perform}$ are
-        discharged by the assumption that $\Gamma$ contains no term, type, or
-        effect bindings.
-        The application, type-application, lifetime-application, and \texttt{match}
-        cases use Lemma~\ref{lem:canonical} together with the small-step rules of
-        Figure~\ref{fig:syntax}.
-        The $T\!\_HandlerM$ case branches on whether the body is a value
-        (in which case $H\!\_Return$ applies) or steps internally
-        (in which case the congruence $S\!\_HandlerM$ applies).
-        Constructor terms require an auxiliary ``split or step'' lemma showing
-        that a list of typed terms either consists entirely of values or contains
-        a left-most reducible position.
-    \end{proof}
-
-    \begin{theorem}[Preservation]\label{thm:preservation}
-        If $\Gamma$ is an evaluation context, $\Gamma \vdash t : \tau$, and
-        $t \rightsquigarrow t'$, then $\Gamma \vdash t' : \tau$.
-    \end{theorem}
-
-    \begin{proof}[Proof sketch]
-        By induction on $\Gamma \vdash t : \tau$, using the standard substitution
-        lemmas for term, type, and lifetime variables.
-        The non-routine cases are:
-        \emph{(i)} the \texttt{match}-yes case, which discharges the
-        existential-lifetime elimination via a dedicated
-        $\mathit{match\_yes\_preservation}$ lemma that relates the variance-directed
-        elimination function on types to the substitution induced by reduction;
-        \emph{(ii)} the $H\!\_Perform$ case, which uses a lemma stating that no
-        well-typed $\keyword{perform}\,(\keyword{cap}_E^m\,\ldots)$ can occur at top
-        level under an evaluation context (this discharges the source-level
-        $T\!\_Handle$ and $T\!\_Perform$ rules in the preservation proof).
-    \end{proof}
-
-    \begin{corollary}[Type safety]\label{cor:safety}
-        If $\Gamma$ is an evaluation context, $\Gamma \vdash t : \tau$, and
-        $t \rightsquigarrow^{*} t'$, then $t'$ is not stuck.
-    \end{corollary}
-
-    \begin{proof}
-        By induction on the multi-step reduction, applying
-        Theorems~\ref{thm:progress} and~\ref{thm:preservation} at each step.
-    \end{proof}
-
-    \subsection{Escape guarantees}\label{subsec:escape}
-
-    Type safety is the means, not the end: the calculus exists to guarantee that
-    tracked entities --- capabilities and the $local$-confined values they protect ---
-    do not escape their scope. We mechanize two such guarantees.
-
-    The first concerns runtime capabilities. Recall that the typing rule $T\!\_Cap$
-    is the only rule that consults the effect environment, and that an evaluation
-    context $\Gamma$ contains no effect bindings. Since every evaluation-context frame
-    types its hole in the \emph{same} context (no frame introduces a binder), a
-    capability sitting at an evaluation position would force its effect tag into
-    $\Gamma$ --- which is impossible. This yields the strongest possible statement:
-    such a configuration is not even well-typed.
-
-    \begin{theorem}[Capability confinement]\label{thm:confine}
-        Let $\Gamma$ be an evaluation context and $E$ an evaluation context frame.
-        Then there is no type $\tau$ with
-        $\Gamma \vdash E[\keyword{cap}_{E'}^m\,\overline{\sigma}\,t_{op}] : \tau$.
-        Consequently, if $\Gamma \vdash t : \tau$ and
-        $t \rightsquigarrow^{*} E[\keyword{cap}_{E'}^m\,\overline{\sigma}\,t_{op}]$,
-        then this reduct is unreachable: a closed well-typed program never exposes a
-        capability at an evaluation position outside its handler.
-    \end{theorem}
-
-    \begin{proof}[Proof sketch]
-        The first part is a structural induction on $E$ (lemma
-        $\mathit{plug\_typing\_inv}$) composed with inversion of the
-        $\keyword{perform}$/$\keyword{cap}$ typing and \emph{eval\_ctx\_no\_eff}.
-        The second part transports the first along preservation
-        (Theorem~\ref{thm:preservation}).
-    \end{proof}
-
-    The second guarantee is the value-level counterpart of the $local \not<: free$
-    lattice fact. A subsumption can never relax a $local$ lifetime to $free$; carried
-    along the dynamics by preservation, this means a value produced at an escapable
-    data type cannot be a $local$-confined datum in disguise.
-
-    \begin{theorem}[Operational non-escape of $local$ values]\label{thm:nonescape}
-        Let $\Gamma$ be an evaluation context and $K \neq \keyword{Any}$.
-        If $\Gamma \vdash t : K\,'\!free\,\overline{\sigma}$,
-        $t \rightsquigarrow^{*} v$, and $v$ is a value, then
-        $v = K\,'\!\Delta\,\overline{\Delta'}\,\overline{\sigma}\,\overline{v}$ with
-        $\Delta$ free of any top-level $local$.
-    \end{theorem}
-
-    \begin{proof}[Proof sketch]
-        Preservation gives $\Gamma \vdash v : K\,'\!free\,\overline{\sigma}$; canonical
-        forms fixes the head constructor; inversion of the constructor typing together
-        with the downward-closure of the lifetime order (lemma
-        $\mathit{lt\_sub\_no\_local\_mono}$) discharges the lifetime side condition.
-    \end{proof}
-
-
-    \section{Mechanization in Rocq/Coq} \label{sec:mechanization}
-
-    The artifact\footnote{\url{https://github.com/penguin-boxx/effect-proofs}}
-    is a Rocq/Coq development of approximately $6\,500$ lines, organized into eight
-    modules (Table~\ref{tab:modules}).
-    All binders use a pure de~Bruijn representation; both substitution and shifting
-    are defined as ordinary recursive functions.
-
-    \begin{table}[h]
-        \centering
-        \small
-        \caption{Modules of the Rocq development.}
-        \label{tab:modules}
-        \begin{tabular}{@{}lrl@{}}
-            \toprule
-            \textbf{Module} & \textbf{LOC} & \textbf{Content} \\
-            \midrule
-            \texttt{Syntax.v}              & 133   & lifetimes, types, terms, values, decidable $\texttt{is\_value}$ \\
-            \texttt{Substitution.v}        & 498   & shifting and substitution on lifetimes, types, terms \\
-            \texttt{SubstitutionTheory.v}  & 972   & fusion, commutation, and zero-shift lemmas \\
-            \texttt{Semantics.v}           & 602   & evaluation contexts, $\keyword{pure}_m$, head-step, full-step \\
-            \texttt{Typing.v}              & 804   & lifetime subtyping, type subtyping, typing relation \\
-            \texttt{Sugar.v}               & 470   & derived combinators and surface notation \\
-            \texttt{Safety.v}              & 1\,863  & inversion, narrowing, canonical forms, progress, preservation,
-                                                       type safety, confinement, non-escape \\
-            \texttt{Examples.v}            & 1\,156  & worked examples and effect-handler programs \\
-            \midrule
-            \textbf{Total}                 & \textbf{6\,498} & \\
-            \bottomrule
-        \end{tabular}
-    \end{table}
-
-    \subsection{Representation choices}
-
-    \paragraph{Lifetimes as a free term.}
-    Lifetimes are represented as an inductive type
-    $\{\,lt\_var\,n,\,lt\_free,\,lt\_local,\,lt\_min\,\}$.
-    Unlike the normalized representation used in the Haskell prototype of the previous
-    paper~\cite{stoyan2025existential}, the Rocq formalization keeps the syntactic
-    structure of $\Delta_1 + \Delta_2$ explicit; semantic equivalence is mediated by the
-    subtyping relation $\Gamma \vdash \Delta_1 <: \Delta_2$.
-    This matches the on-paper presentation and avoids carrying a normalization invariant
-    inside the inductive typing predicate.
-
-    \paragraph{Capabilities reuse constructor machinery.}
-    The capability constructor for an effect declaration is registered in $\Gamma$ as a
-    special constructor binding $K_{cap_E}$, structurally indistinguishable from a
-    user-declared data constructor.
-    This dramatically reduces the number of inversion and canonical-form lemmas that
-    have to be proven separately for effects, at the cost of a side condition on
-    $T\!\_Ctor$ and $T\!\_Match$ ensuring that capability tags cannot be matched by
-    ordinary patterns.
-
-    \paragraph{Marker freshness.}
-    Markers are natural numbers introduced by $H\!\_Handle$.
-    Their freshness is not enforced syntactically; instead, the meta-theorems
-    quantify universally over the marker, and the operational semantics is closed
-    under $\alpha$-equivalent renaming of markers because $\keyword{handler}_m$ does
-    not bind anywhere.
-    This keeps the proofs first-order and avoids the need for nominal infrastructure.
-
-    \subsection{Scope of axiomatization}
-
-    The development closes the main meta-theorems --- progress, preservation, type
-    safety, capability confinement, and operational non-escape --- on the typing and
-    reduction relations, modulo a set of auxiliary lemmas posed as \texttt{Axiom}s
-    rather than proved (Table~\ref{tab:axioms}).
-    Two facts that earlier drafts axiomatized are now \emph{theorems}: the
-    $\forall$-subtyping inversion lemma $\mathit{sub\_ty\_all\_inv\_full}$ is proved via
-    a full Kernel-$F_{<:}$ narrowing development, and the
-    ``no well-typed $\keyword{perform}$ of a capability survives without its handler''
-    invariant is now discharged by the same structural argument that underlies
-    capability confinement (Theorem~\ref{thm:confine}), rather than being assumed.
-    The remaining axioms fall into two groups: standard de~Bruijn substitution
-    plumbing (including its interaction with subtyping), and two domain-specific facts
-    about constructor argument lists.
-    The five top-level theorems use these axioms transitively.
-    Two \emph{surface-syntax typing examples} in \texttt{Examples.v}
-    (\texttt{typed\_match\_pair} and \texttt{typed\_choice}) are currently left
-    \texttt{Admitted}; they are convenience restatements whose proof pattern is already
-    exhibited by the corresponding fully-proved examples (\texttt{ex\_match\_pair} and
-    the reduction lemma \texttt{red\_choice}), and no meta-theorem or reduction trace
-    depends on them.
-
-    \begin{table}[h]
-        \centering
-        \small
-        \caption{Explicit axioms in the development, grouped by purpose.}
-        \label{tab:axioms}
-        \begin{tabular}{@{}p{0.32\linewidth}p{0.60\linewidth}@{}}
-            \toprule
-            \textbf{Group} & \textbf{Representative axioms} \\
-            \midrule
-            de~Bruijn substitution plumbing &
-                term/type/lifetime substitution preservation
-                (\texttt{subst\_tm\_lemma}, \texttt{subst\_ty\_in\_tm\_lemma},
-                \texttt{subst\_lt\_in\_tm\_lemma}, and their parallel-substitution
-                variants \texttt{subst\_list\_*}); shift/subst commutation
-                (\texttt{shift\_subst\_lt\_*}); single-step weakening
-                (\texttt{sub\_weaken\_cons}) \\[0.3em]
-            Subtyping stability under substitution / shift &
-                \texttt{sub\_subst\_ty}, \texttt{sub\_subst\_lt},
-                \texttt{sub\_subst\_lt\_at}, \texttt{lt\_sub\_shift\_lt},
-                \texttt{lt\_sub\_subst\_lt}, \texttt{shift\_lt\_sub} \\[0.3em]
-            Domain-specific (constructor lists) &
-                \texttt{progress\_ctor\_aux} (elementwise lifting of progress to a
-                list of constructor arguments); \texttt{ctor\_step\_preservation}
-                (preservation for the congruence step on constructor arguments);
-                with the bridging facts \texttt{ctor\_lts\_chain\_bounded} and
-                \texttt{inst\_ctor\_type\_subst\_eq} relating schema instantiation to
-                iterated lifetime substitution \\
-            \bottomrule
-        \end{tabular}
-    \end{table}
-
-    \subsection{Build and reproducibility}
-
-    The artifact compiles with Rocq~9.x against the Stdlib distribution.
-    A top-level \texttt{Makefile} generates the Rocq make-file from \texttt{src/\_CoqProject}
-    and builds all eight modules.
-    On a contemporary workstation the full build takes well under one minute, which makes
-    the development suitable for use as a teaching artifact or as a regression-testing
-    baseline for further extensions.
-    No external libraries beyond Stdlib are required.
-    The trusted base is correspondingly small: the proofs use neither classical logic
-    nor functional extensionality, and \texttt{Print Assumptions} on each of the five
-    top-level theorems reports exactly the axioms of Table~\ref{tab:axioms} and nothing
-    else --- in particular, no \texttt{Admitted} goal is reachable from any
-    meta-theorem or reduction trace.
-
-
-    \section{Evaluation through worked examples} \label{sec:evaluation}
-
-    The \texttt{Examples.v} module of the development contains more than thirty
-    machine-checked examples, structured into three groups.
-
-    \paragraph{Group 1: original $Core_\Delta$ examples.}
-    The eight worked examples from the original $Core_\Delta$
-    paper~\cite{stoyan2025existential} are reproduced both with the primitive de~Bruijn
-    syntax and with the surface-notation module from \texttt{Sugar.v}.
-    These include the identity function, subsumption from $free$ to $local$ closures,
-    higher-order application, lifetime polymorphism, type polymorphism, pair
-    constructors at $free$ and $local$, pair destructuring, and the
-    repository / make-repository / compose examples from the
-    motivating section of the paper.
-    All of them are checked by Rocq.
-
-    \paragraph{Group 2: classical effect-handler programs.}
-    Three handler programs --- a \emph{reader} (single \texttt{ask}), an \emph{exception}
-    handler (single \texttt{throw}, the resumption discarded), and a
-    \emph{non-deterministic choice} handler (a single-shot instance that resumes once
-    with the chosen value) --- are both typed and reduced.
-    The reduction lemmas \texttt{red\_reader}, \texttt{red\_exception}, and
-    \texttt{red\_choice} witness the full reduction trace inside Rocq, and
-    \texttt{typed\_reader} / \texttt{typed\_exception} establish the corresponding
-    typings; the operation-polymorphic typing of the choice handler is the deferred
-    example noted in Section~\ref{sec:mechanization}.
-
-    \paragraph{Group 3: state effect with two operations.}
-    A state effect with \texttt{get} and \texttt{put} is encoded via two nested handlers,
-    and three reduction traces (\texttt{red\_state\_get}, \texttt{red\_state\_put},
-    \texttt{red\_state\_putget}) confirm that the marker-indexed pure-context machinery
-    correctly threads the state through nested handlers.
-    These examples are the strongest tests of the operational semantics, as they exercise
-    both nested handlers and resumptions invoked across them.
-
-    \paragraph{Group 4: escape guarantees in action.}
-    A small group of examples instantiates the guarantees of
-    Section~\ref{subsec:escape} on concrete programs.
-    The lemma \texttt{cap\_escape\_blocked} witnesses, at the type level, that a
-    capability type $E\,'\!local\,\overline{\tau}$ fails the $no\_local$ side condition
-    that $T\!\_Lam$ imposes on function results --- so a handler body can never return
-    its capability or its resumption.
-    Together with the operational theorems
-    (\texttt{capability\_never\_exposed},
-    \texttt{local\_value\_does\_not\_escape}), these checks confirm that the design
-    forbids exactly the leaks it is meant to forbid, and that it does so without
-    rejecting any of the thirty-odd positive programs above.
-
-    \paragraph{Discussion.}
-    The examples serve a dual purpose.
-    First, they sanity-check the operational semantics: any change to
-    \texttt{Semantics.v} that breaks delimited-control behavior is caught immediately
-    by the reduction lemmas.
-    Second, they demonstrate that the typing rules can be inhabited at the granularity
-    required by realistic programs --- not just by the smallest possible test cases.
-    The fact that the same artifact mechanizes both the syntactic safety theorems
-    \emph{and} non-trivial reduction examples gives substantially more confidence in
-    the design than either ingredient would provide alone.
-
-
-    \section{Discussion} \label{sec:discussion}
-
-    \subsection{Design decisions and trade-offs}
-
-    The combination of pure de~Bruijn indices with marker-indexed evaluation contexts
-    was chosen for two reasons.
-    First, it avoids the need for nominal infrastructure (e.g.\ Aydemir et al.'s
-    \texttt{Metalib}), which considerably lowers the maintenance cost of the development.
-    Second, since markers never bind program variables, they do not introduce the
-    classical $\alpha$-conversion difficulties that motivate nominal techniques.
-    The price paid is that marker freshness is enforced semantically (by quantifying
-    universally over markers in the meta-theorems) rather than syntactically, which
-    is acceptable in our setting but would not scale to systems where markers
-    \emph{do} interact with binders.
-
-    Restricting effects to a single operation simplifies the syntax substantially
-    without losing expressive power, as multi-operation effects can be encoded by
-    a sum-typed argument and a $\keyword{match}$ inside the operation body.
-    The price is some boilerplate at the user level; we judge this an acceptable
-    trade-off for an artifact whose primary purpose is to deliver a sharp soundness
-    proof.
-
-    A further deliberate choice concerns the lifetime of operation arguments.
-    As noted in Section~\ref{sec:formalization}, operation arguments are bounded so as
-    to be $free$, while resumptions are typed at a $local$ closure lifetime.
-    This realizes a clean asymmetry --- ``$local$ may flow into a handler but never
-    out'' --- and is precisely what makes the confinement and non-escape theorems go
-    through unconditionally.
-    Admitting $local$ operands (so that a handler could retain a tracked value for the
-    dynamic extent of its handler) is an attractive generalization, but it is not free:
-    the operand's lifetime would have to be propagated into the resumption and answer
-    types, and the confinement proof would acquire an additional case showing that an
-    inward-flowing $local$ value is either consumed before the body returns or threaded
-    back through a re-installed handler. We leave this extension to future work and
-    flag it as the natural next increment in expressive power.
-
-    \subsection{Limitations and threats to validity}
-
-    Three limitations are worth making explicit.
-    \begin{enumerate}
-        \item \emph{Axiomatized lemmas.}
-            As discussed in Section~\ref{sec:mechanization}, a small set of
-            auxiliary lemmas remains axiomatized.
-            Since earlier drafts, the $\forall$-subtyping inversion lemma and the
-            ``no escaping $\keyword{perform}$ of a capability'' invariant have been
-            fully proved (the latter is now the engine of capability confinement);
-            what remains is concentrated in de~Bruijn substitution plumbing and two
-            facts about constructor argument lists, both standard but voluminous to
-            discharge by hand.
-            Two convenience \emph{typing} examples are additionally left
-            \texttt{Admitted}; no meta-theorem or reduction trace depends on them.
-            The axioms are explicit and isolated; nevertheless, fully closing them
-            is the most important next step.
-        \item \emph{Single-operation effects.}
-            The system handles only one operation per effect declaration; while
-            multi-operation effects are encodable, an unconstrained extension would
-            improve usability and is on the immediate roadmap.
-        \item \emph{No mechanized link to the type-checker prototype.}
-            The Haskell prototype of $Core_\Delta$~\cite{stoyan2025existential} and the
-            Rocq specification are currently kept in sync by hand.
-            Extracting a certified reference algorithm from the Rocq definitions would
-            close this gap and is also planned.
-    \end{enumerate}
-
-    \subsection{Implications for language design}
-
-    Beyond the immediate technical results, the mechanization offers two implications
-    for language design.
-    First, it confirms that an existential-lifetime escape analysis with an explicit
-    minimum can be combined with first-class effect handlers without sacrificing
-    type safety \emph{or} capability confinement, which provides a concrete foundation
-    for designing future capability-based effect systems with simple user-facing
-    annotations.
-    Second, the explicit comparison of mechanization techniques (pure de~Bruijn vs.\
-    nominal) and the precise demarcation of axiomatized lemmas can serve as a
-    template for future mechanizations of similar calculi.
-
-
-    \section{Conclusion} \label{sec:conclusion}
-
-    We have presented a mechanized type-safety proof, in Rocq/Coq, for the
-    $Core_\Delta$ escape-analysis calculus extended with single-operation algebraic
-    effect handlers.
-    The development covers syntax, small-step semantics with marker-indexed pure
-    evaluation contexts, a subtyping relation over a two-point lifetime lattice with
-    minimum, and a typing relation that re-binds existential lifetimes on pattern
-    matching.
-    Progress and preservation are proved as fully closed theorems modulo a small,
-    explicitly delimited set of axiomatized auxiliary lemmas; type safety follows as
-    a corollary.
-    On top of safety we mechanize the two escape guarantees that motivate the calculus:
-    a capability is never well-typed at an evaluation position outside its handler, and
-    a value delivered at an escapable $free$ type never carries a $local$-confined
-    lifetime.
-    A library of more than thirty examples --- including state, exceptions, and
-    non-deterministic choice --- exercises both the typing and the reduction relations.
-    To the best of our knowledge, this is the first mechanized soundness proof to
-    combine existential-lifetime escape analysis with first-class effect handlers.
-
-    Future work proceeds along three axes.
-    First, the remaining axiomatized lemmas --- now confined to de~Bruijn substitution
-    plumbing and two constructor-list facts, the $\forall$-subtyping inversion having
-    already been discharged --- need to be closed, along with the two deferred typing
-    examples.
-    Second, effects should be generalized to multi-operation declarations, which
-    requires reinstating operation tags but is otherwise routine, and operation
-    arguments should be allowed to carry $local$ lifetimes (the ``$local$ in, never
-    out'' extension of Section~\ref{sec:discussion}), which sharpens the confinement
-    theorem rather than merely enlarging the syntax.
-    Third, the mechanized calculus should be connected with the Haskell prototype of
-    the type-checker by extracting a certified reference algorithm from the Rocq
-    definitions, thereby closing the gap between the formal specification and the
-    executable implementation.
-
-
-    \bibliographystyle{plain}
-    \bibliography{bib}
-
-    % ---------------------------------------------------------------------
-    % Russian summary block, placed at the end as required by the journal.
-    % ---------------------------------------------------------------------
-    \selectlanguage{russian}
-
-    \vspace{1.5em}
-    \noindent\textbf{УДК} 004.052.42, 004.43
-
-    \vspace{0.5em}
-    \begin{center}
-        {\large\bfseries
-            Машинно-проверенное доказательство типобезопасности исчисления
-            escape-анализа с экзистенциальными временами жизни и обработчиками эффектов\par}
-
-        \vspace{0.6em}
-        {\normalsize\textbf{А.\,Стоян}\textsuperscript{1}\par}
-
-        \vspace{0.4em}
-        {\small\itshape
-            \textsuperscript{1}\,Национальный исследовательский университет <<Высшая школа экономики>>\\
-            (НИУ ВШЭ), ул.~Кантемировская, 3А, Санкт-Петербург, 194100, Российская Федерация\par}
-    \end{center}
-
-    \vspace{0.5em}
-    \noindent\textbf{Аннотация.}
-    Типизированный escape-анализ~--- это техника статического анализа, поднимающая в систему
-    типов вопрос о том, не переживает ли значение свою лексическую область видимости;
-    она лежит в основе стековой аллокации, заимствования во владельческих языках и обеспечения
-    безопасности систем эффектов на основе возможностей (capabilities).
-    Недавно предложенное исчисление $Core_\Delta$ снижает нагрузку на программиста за счёт
-    сочетания трёх проектных решений: \emph{экзистенциальных} времён жизни в составных типах
-    данных, явной операции \emph{минимума} над временами жизни и ограниченного полиморфизма с
-    границами, аннотированными временами жизни.
-    Однако метатеоретические гарантии $Core_\Delta$ до сих пор обосновывались лишь на бумаге,
-    а главное приложение~--- обработчики алгебраических эффектов на основе capabilities~---
-    обсуждалось неформально.
-    \emph{Цель работы}~--- закрыть оба пробела машинно-проверенным доказательством
-    типобезопасности для исчисления, объединяющего экзистенциальные времена жизни с
-    делимитированно-управляющими обработчиками эффектов.
-    \emph{Методы.}
-    Исчисление $Core_\Delta$ расширяется одно-операционными алгебраическими обработчиками
-    эффектов в стиле передачи capability; для него задаётся малошаговая операционная семантика
-    на основе контекстов вычислений, индексированных маркерами, реифицирующих захваченные
-    продолжения в качестве полноправных значений времени выполнения, после чего проводится полная
-    механизация~--- синтаксиса, семантики, отношения подтипизации и отношения типизации~--- в
-    средствe доказательств Rocq/Coq с использованием индексов де~Брёйна.
-    \emph{Результаты.}
-    Доказаны классические теоремы продвижения (progress) и сохранения (preservation) для
-    расширенного исчисления; в качестве следствия получена типобезопасность.
-    Помимо типобезопасности, машинно доказаны две гарантии escape-анализа, ради которых
-    и создавалось исчисление: теорема об \emph{удержании возможностей} (capability
-    confinement), согласно которой возможность времени выполнения никогда не может
-    оказаться в вычислительной позиции вне своего обработчика, и теорема об
-    \emph{операционном неускользании}, согласно которой значение, выдаваемое на
-    ускользающем ($free$) типе данных, не может нести ограниченное ($local$) время жизни.
-    Разработка содержит около $6\,500$ строк кода на Rocq, организованных в восемь модулей,
-    и сопровождается более чем тридцатью машинно-проверенными примерами, включая кодирования
-    состояния, исключений и недетерминированного выбора в виде алгебраических эффектов,
-    редуцируемыми непосредственно внутри ассистента доказательств.
-    Сравнение со смежными работами показывает, что, насколько нам известно, представленная
-    разработка является первым машинно-проверенным доказательством типобезопасности,
-    действительно объединяющим оба ингредиента~--- escape-анализ на экзистенциальных временах
-    жизни и обработчики эффектов первого класса~--- в рамках единого формализма.
-    \emph{Практическая значимость.}
-    Артефакт предоставляет переиспользуемое, машинно-проверенное основание для проектирования
-    типизированных escape-анализов в языках с обработчиками эффектов первого класса; он
-    открыто доступен по адресу \url{https://github.com/penguin-boxx/effect-proofs}.
-
-    \vspace{0.4em}
-    \noindent\textbf{Ключевые слова:}
-    системы типов, escape-анализ, экзистенциальные времена жизни, алгебраические обработчики
-    эффектов, делимитированное управление, удержание возможностей, машинная метатеория,
-    Rocq/Coq, типобезопасность.
-
-    \vspace{0.4em}
-    \noindent\textbf{Благодарности.}
-    Автор благодарит коллег из НИУ ВШЭ за плодотворные обсуждения проектирования систем
-    эффектов на основе capabilities.
-    Финансирование исследования из внешних источников не привлекалось.
+\udk{004.052.42, 004.43}
+\titleRus{Машинно-проверенная метатеория исчисления escape-анализа с экзистенциальными временами жизни и обработчиками эффектов}
+\authorsTitleRus{А. С\smallcapsfake{тоян}}
+\authorsRus{Стоян~А.}
+\titleEng{A mechanized metatheory of an escape-analysis calculus with existential lifetimes and effect handlers}
+\authorsTitleEng{A. S\smallcapsfake{toyan}}
+\authorsEng{Stoyan~A.}
+
+\abstractRus{Типизированный escape-анализ переносит вопрос о выходе значения за пределы его лексической области видимости из оптимизирующего анализа в систему типов. Такая техника важна для стекового размещения без сборщика мусора, владения и заимствования, а также для обработчиков эффектов, где возможность выполнения операции не должна переживать свой обработчик. Цель работы состоит в построении машинно-проверенной метатеории для исчисления Core-Delta, объединяющего экзистенциальные времена жизни в составных данных, явный минимум времён жизни, ограниченный полиморфизм и однооперационные алгебраические обработчики эффектов в стиле передачи capabilities. Исчисление снабжается малошаговой операционной семантикой с контекстами вычислений, индексированными runtime-маркерами; захваченные продолжения представляются как значения времени выполнения. Синтаксис, подтипизация, типизация, семантика и основные доказательства механизированы в Rocq/Coq с использованием индексов де Брёйна. В результате получены теоремы продвижения, сохранения и типобезопасности с точностью до четырёх стандартных лемм о подстановке. Дополнительно формализованы две гарантии, непосредственно выражающие смысл escape-анализа: удержание runtime-capability внутри области действия обработчика и операционное неускользание локальных значений через свободный тип данных. Разработка содержит около 23 тыс. строк Rocq-кода, включает проверяемое ядро, библиотеку примеров обработчиков reader, state, exception и optionality, трассы редукции, свидетели отклонения программ, нарушающих правила локальности, а также явный аудит доверенной базы доказательства с помощью команды Print Assumptions. Артефакт может служить проверяемой спецификацией для компиляторов, совмещающих безопасное стековое размещение, capability-безопасные обработчики эффектов и локально диагностируемые правила escape-анализа.}
+
+\keywordsRus{системы типов, escape-анализ, экзистенциальные времена жизни, алгебраические обработчики эффектов, делимитированное управление, удержание capabilities, машинно-проверенная метатеория, Rocq, Coq, типобезопасность.}
+
+\abstractEng{Type-based escape analysis moves the question of whether a value outlives its lexical scope from an optimizing compiler pass into the type system. This technique is important for garbage-collector-free stack allocation, ownership and borrowing, and capability-based effect handlers, where the capability used to invoke an operation must not outlive the handler that grants it. The paper presents a Rocq/Coq mechanized metatheory for Core-Delta, a calculus that combines existential lifetimes in compound data, an explicit lifetime minimum, bounded polymorphism, and single-operation algebraic effect handlers in a capability-passing style. The calculus is equipped with a small-step operational semantics based on evaluation contexts indexed by runtime markers; captured continuations are reified as runtime values. The syntax, subtyping, typing, operational semantics, and main safety arguments are mechanized with de Bruijn indices. The development proves progress, preservation, and type safety modulo four standard substitution lemmas. It also formalizes two guarantees that express the purpose of escape analysis directly: confinement of runtime capabilities to the dynamic extent of their handler, and operational non-escape of local values through a free data type. The artifact contains about 23 thousand lines of Rocq code, including a verified core, examples of reader, state, exception, and optionality handlers, reduction traces, and rejection witnesses for programs that violate locality. The result can be used as a checked specification for compilers that combine safe stack allocation, capability-safe effect handlers, and local diagnostic rules for escape analysis.}
+
+\keywordsEng{type systems, escape analysis, existential lifetimes, algebraic effect handlers, delimited control, capability confinement, mechanized metatheory, Rocq, Coq, type safety.}
+
+\udktop
+\makeengtitle
+\normalsize
+
+\section{Introduction}
+Escape analysis determines whether a value can outlive its lexical scope. It originated as a compiler optimization, for example for stack allocation and the elimination of intermediate objects~\cite{park1992escape,blanchet1999escape}. In modern languages this property increasingly becomes part of the type discipline: Rust ties it to lifetimes and borrowing~\cite{matsakis2014rust}, OCaml develops a closely related idea through modal control of locality~\cite{lorenzen2024oxidizing}, and Kotlin uses contracts for restricted cases of non-local control~\cite{akhin2021kotlin}. Verification of such mechanisms has likewise become a topic in its own right: RustBelt provides a semantic foundation for the safety of Rust~\cite{jung2018rustbelt,jung2020stacked}, while Prusti, Creusot, RustHornBelt, and RefinedRust show that properties of Rust programs can be lifted to the level of machine-checked specifications~\cite{astrauskas2022prusti,denis2022creusot,matsushita2022rusthornbelt,gaher2024refinedrust}.
+
+A separate reason to make escape analysis type-based is connected with algebraic effect handlers. In capability-based systems an effect operation is invoked through a capability value; if such a capability leaves the dynamic extent of its handler, the program gains access to a handler that no longer exists. The languages and calculi Effekt, capture tracking, and evidence-passing handlers address this problem by different means~\cite{brachthauser2020effects,brachthauser2022effects,boruch2023capturing,xie2021generalized,xie2022first}. Existing approaches, however, usually require either explicit capture sets or a heavy polymorphic infrastructure. The $Core_\Delta$ calculus~\cite{stoyan2025existential} offers a different trade-off: lifetimes form a small lattice $free \sqsubseteq local$ with an explicit minimum operation, and compound data types hide the lifetimes of their fields existentially and recover them on pattern matching.
+
+The difficulty is that such a combination is convenient for the programmer but non-trivial for the metatheory. Existential lifetimes interact with substitution, subtyping, and variance; effect handlers add continuation capture and runtime markers. A pen-and-paper proof can easily miss a case in which a local value or a capability ends up in the result of a function. The goal of this work is to give a machine-checked metatheory of an extended $Core_\Delta$ with effect handlers and to show which guarantees of escape analysis actually follow from the typing rules.
+
+The main contributions of the paper are the following. First, $Core_\Delta$ is extended with single-operation effect handlers in a capability-passing style. Second, a small-step semantics is defined with marker-indexed evaluation contexts and runtime values for continuations. Third, the syntax, semantics, subtyping, and typing are mechanized in Rocq/Coq. Fourth, progress, preservation, and type safety are proved modulo four standard substitution lemmas for the de Bruijn representation. Fifth, two domain-specific guarantees are formalized: a capability does not escape its handler, and a value observed at a type with lifetime $free$ does not carry a top-level $local$.
+
+\section{Related Work and Problem Statement}\label{sec:related-work}
+Classical region systems made lifetime an explicit object of typing long before modern ownership languages~\cite{tofte1997region,fluet2006monadic}. Their goal is close to ours: to replace a global analysis with local conditions at function boundaries. The difference is that $Core_\Delta$ does not parameterize every user-defined type by a lifetime. A data constructor computes the minimum of the lifetimes of its arguments, and pattern matching introduces fresh existential variables bounded by the lifetime of the scrutinized value. This reduces the number of annotations but complicates the proof of type preservation under reduction.
+
+Effect handlers have been studied from both the denotational and the operational side~\cite{plotkin2013handling,zyuzin2021contextual,van2022handling,van2024framework,tang2025modal}. The practical line includes the integration of handlers into OCaml~\cite{sivaramakrishnan2021retrofitting} and efficient compilation schemes based on evidence passing~\cite{xie2021generalized}. Particularly relevant to our work are systems in which effects are represented as capabilities: Effekt introduces a type discipline for scope-based and type-based reasoning~\cite{brachthauser2020effects,brachthauser2022effects}, while capture tracking refines function types with sets of captured values~\cite{boruch2023capturing}. $Core_\Delta$ uses coarser but more compact information: a value is either free to escape outward or locally confined.
+
+Mechanization of the metatheory of type systems builds on the experience of POPLMark and subsequent work on the engineering of formal metatheory~\cite{aydemir2008engineering}. The tools Ott and Autosubst show that working with syntax and substitutions can be automated~\cite{sewell2010ott,schaefer2015autosubst,stark2019autosubst2}. In our artifact a more direct variant is chosen: pure de Bruijn indices and recursive shift and substitution functions. This makes the definitions transparent and portable, but leaves four substitution lemmas as explicit technical obligations.
+
+This survey yields the requirements for the proposed model. It must: (i) describe lifetimes in types without overloading the user with parameters; (ii) confine a runtime capability within its handler; (iii) admit first-class continuations yet not let them escape; (iv) have a checkable metatheory suitable as a specification for a compiler implementation.
+
+\section{A Calculus with Existential Lifetimes}\label{sec:calculus}
+Lifetimes are given by the grammar
+\[
+\Delta ::= l \vor free \vor local \vor \Delta_1 + \Delta_2 .
+\]
+The operation $+$ is interpreted as a minimum: a value built from several fields is safe no longer than its shortest-lived field. Types include variables, functions, data constructors, and two kinds of polymorphism:
+\[
+\tau ::= \alpha \vor \overline{\tau}\,\Delta \to \sigma
+\vor K\,\Delta\,\overline{\tau}
+\vor \forall l.\tau
+\vor \forall(\alpha<:\tau').\tau .
+\]
+The annotation $K\,\Delta\,\overline{\tau}$ means that a value of constructor $K$ may be used for the lifetime $\Delta$. A key restriction applies to functions: the result must not contain a top-level $local$. Thanks to this, a local value cannot be returned across an ordinary function boundary.
+
+Data constructors have no user-level lifetime parameters. If a constructor receives fields with lifetimes $\Delta_1,\ldots,\Delta_n$, the lifetime of the result equals $\Delta_1+\cdots+\Delta_n$. On pattern matching these forgotten lifetimes are recovered as fresh existential variables bounded by the lifetime of the scrutinized value. Variance-aware elimination replaces positive occurrences by the bound, negative ones by $free$, and rejects invariant positions. It is precisely this rule that forbids the classical leakage channels through containers and functions.
+
+An effect handler is represented as
+\[
+\keyword{handle}\ E\ \overline{\tau}\ t_{op}\ \keyword{in}\ t,
+\]
+where $t_{op}$ is the body of the operation. On entering the handler a fresh runtime marker $m$ and a value $\keyword{cap}_E^m$ are created and substituted into the body. The call
+\[
+\keyword{perform}\ c\ \overline{\tau}\ v
+\]
+finds the nearest compatible handler, captures the pure evaluation context up to its delimiter, and passes the argument $v$ and the continuation $\keyword{resume}_m$ to the body of the operation. The semantics is deep: applying the continuation re-installs the delimiter of the same marker. This matches the standard behavior of Eff/Koka/Effekt handlers but is formalized without named marker variables: a marker does not bind program variables and therefore does not complicate substitution.
+
+Two invariants are used for the safety of handlers. The first is type-based: the capability and the resumption have lifetime $local$ and hence cannot be returned outward through a function. The second is operational: the predicate $\keyword{marker\_ok}\ ms\ t$ records that every runtime capability with marker $m$ is located under the corresponding $\keyword{handler}_m$ or within the permitted active set $ms$. Source programs satisfy $\keyword{marker\_ok}\ [\,]\ t$.
+
+\section{Mechanization and Main Results}\label{sec:mechanization}
+The development is carried out in Rocq/Coq and published as an artifact at \url{https://github.com/penguin-boxx/effect-proofs}. The verified core consists of the modules listed in Table~\ref{tab:modules}. The example files are separated from the core: they demonstrate the rules on programs but do not belong to the trusted base of the proof.
+
+\begin{table}[h]
+\centering
+\caption{Structure of the Rocq development}
+\label{tab:modules}
+\footnotesize
+\begin{tabular}{@{}p{0.36\linewidth}p{0.54\linewidth}@{}}
+\toprule
+\textbf{Module} & \textbf{Contents} \\
+\midrule
+\texttt{Syntax.v}, \texttt{Substitution.v} & syntax, values, shifts, and substitutions \\
+\texttt{Semantics.v} & evaluation contexts, pure contexts, markers, small step \\
+\texttt{Typing.v} & lifetime subtyping, type subtyping, typing \\
+\texttt{SubstitutionTheory.v} & weakening, narrowing, inversions, substitution lemmas \\
+\texttt{Safety.v} & canonical forms, progress, preservation, type safety, non-escape \\
+\texttt{Sugar.v}, \texttt{Examples*.v} & surface notation, examples, and reduction traces \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The choice of pure de Bruijn indices was deliberate. Nominal infrastructures and syntax generators reduce the amount of routine proof, but hide some of the operations critical for the interaction of lifetime substitution and handlers. In our variant all shifts and substitutions are ordinary functions, and the place of the remaining technical obligations is visible from the output of \texttt{Print Assumptions}. At the time of writing, only the four lemmas shown in Table~\ref{tab:axioms} remain in the trusted base; the remaining statements, including canonical forms and preservation of the marker invariant, are formalized as theorems.
+
+\begin{table}[h]
+\centering
+\caption{Remaining technical obligations of the proof}
+\label{tab:axioms}
+\footnotesize
+\begin{tabular}{@{}p{0.42\linewidth}p{0.48\linewidth}@{}}
+\toprule
+\textbf{Lemma} & \textbf{Role in the proof} \\
+\midrule
+\texttt{subst\_tm\_lemma} & substitution of a value for a term variable \\
+\texttt{subst\_ty\_in\_tm\_lemma} & substitution of a type at a type application \\
+\texttt{subst\_lt\_in\_tm\_lemma} & substitution of a lifetime at a lifetime application \\
+\texttt{subst\_list\_lt\_in\_tm\_lemma} & parallel lifetime substitution in the \texttt{match} rule \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The first main result is progress. If $\Gamma$ is a computation context, $\Gamma\vdash t:\tau$ and $\keyword{marker\_ok}\ [\,]\ t$, then $t$ is either a value or there exists $t'$ such that $t\step t'$. The proof uses a stronger open form: for a nonempty active set of markers a third alternative is allowed, a pending \texttt{perform} call. When the set is empty this alternative is impossible.
+
+The second result is type preservation: if $\Gamma\vdash t:\tau$ and $t\step t'$, then $\Gamma\vdash t':\tau$. The ordinary reduction cases use the corresponding substitution lemmas. Non-typed runtime forms do not appear from source code arbitrarily: they are created only by the handler rule and immediately receive capability or resumption types with lifetime $local$.
+
+Progress and preservation together yield type safety: a well-typed source program satisfying the marker invariant does not reach a stuck configuration. This property is important but insufficient for escape analysis. Therefore two specialized guarantees are additionally proved. The confinement theorem states that a runtime capability $\keyword{cap}_E^m$ cannot occur in a pure evaluation position outside its $\keyword{handler}_m$. The non-escape theorem states that if a computation of type $K\,free\,\overline{\sigma}$ terminates with a constructor value, then the top-level lifetime of that value is not $local$. Thus the type information indeed forbids the observable leakage of local values.
+
+\section{Evaluation and Comparison}\label{sec:evaluation}
+The evaluation of the artifact consists of three parts. The first is reproducibility: the verified core builds with standard Rocq/Coq without external libraries beyond the Stdlib. The build command generates a makefile from \texttt{src/\_CoqProject} and compiles the core; \texttt{Print Assumptions} on the top-level theorems shows only the substitution obligations of Table~\ref{tab:axioms}. The second part is example coverage. The modules \texttt{Examples.v} and \texttt{ExamplesProofs.v} contain positive $Core_\Delta$ programs, reader, state, exception, and optionality handlers, as well as step-by-step reduction traces. The third part is negative witnesses: checkable conditions reject programs in which a local capability is stored in a free state, in which \texttt{Option}\,$local$ is exposed through a free interface, or in which an existential lifetime is used contravariantly.
+
+A comparison with related work is given in Table~\ref{tab:comparison}. Unlike Rust and OCaml \texttt{local}, our model includes first-class effect handlers; unlike Effekt and capture tracking, it uses an explicit lifetime minimum instead of capture sets. Modern handler implementations and compilation schemes~\cite{sivaramakrishnan2021retrofitting,xie2021generalized} demonstrate the practical significance of delimited control but do not address the problem of existential lifetimes in compound data.
+
+\begin{table}[h]
+\centering
+\caption{Comparison with related systems}
+\label{tab:comparison}
+\footnotesize
+\begin{tabular}{@{}p{0.35\linewidth}cccc@{}}
+\toprule
+\textbf{System} & \textbf{Mech.} & \textbf{EA} & \textbf{Eff.} & \textbf{Min} \\
+\midrule
+Rust lifetimes~\cite{matsakis2014rust} & partial & yes & no & indirect \\
+OCaml \texttt{local}~\cite{lorenzen2024oxidizing} & no & yes & no & no \\
+Effekt~\cite{brachthauser2020effects,brachthauser2022effects} & yes & yes & yes & no \\
+Capture tracking~\cite{boruch2023capturing} & yes & yes & no & no \\
+$Core_\Delta$~\cite{stoyan2025existential} & no & yes & no & yes \\
+This work & yes & yes & yes & yes \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+A practical usage scenario for the artifact is the design of a compiler intermediate language in which stack or region allocation must coexist with capability-safe effect handlers. The typing rules specify local checks at function boundaries, and the operational semantics shows which runtime invariant is needed for a correct implementation of capture/resume. This makes the formalization not only a proof of a property of a particular calculus, but also a checkable reference for the design of languages with safe lifetime management.
+
+\section{Limitations and Future Work}\label{sec:discussion}
+The main limitation of the current version is the four substitution lemmas left as technical obligations. They do not change the rules of the language but must be completed for a fully self-contained proof artifact. The second limitation is single-operation effects. Multi-operation effects are encoded by a sum-typed argument, but the user-level notation becomes cumbersome; the natural development is to add operation tags. The third limitation is the conservative typing of operation arguments: in the current variant local values may enter the handler body through the capability and the resumption, but the operation argument is restricted to a free type. Extending this to ``local in, never out'' would require threading the lifetime of the argument through the continuation type and the handler's answer.
+
+Another direction is a certified type-checking algorithm. At present the Rocq development specifies the typing and subtyping relations, while a prototype checking algorithm is maintained separately. Extracting a reference checker from the proven definitions would shorten the distance between the metatheory and a compiler implementation. Finally, it is useful to compare the chosen de Bruijn representation with automated infrastructures: Autosubst may reduce the amount of routine, but it is important to preserve the explicit connection between lifetime substitution and the handler rules.
+
+\section{Conclusion}\label{sec:conclusion}
+We have presented a machine-checked metatheory of the $Core_\Delta$ calculus extended with single-operation algebraic effect handlers. The calculus combines existential lifetimes in data, an explicit lifetime minimum, bounded polymorphism, and a capability-passing semantics of handlers. In Rocq/Coq we mechanized the syntax, subtyping, typing, small-step semantics, canonical forms, progress, preservation, type safety, and two specialized guarantees of escape analysis. Modulo four standard substitution lemmas, it is proved that a well-typed program does not get stuck, a runtime capability does not escape the scope of its handler, and a value of a free data type does not hide a top-level $local$. The example library exercises the model on reader/state/exception/optionality handlers and on programs that the analysis must reject.
+
+The resulting artifact is useful as a specification for compilers of languages in which safe stack allocation, resource ownership, and first-class effect handlers must work within a single type system. Future work consists of completing the substitution metatheory, extending effects to multi-operation declarations, and extracting a certified checking algorithm.
+
+\renewcommand{\refname}{References}
+\begingroup
+\let\thebibliography\thebibliographyEng
+\bibliographystyle{plain}
+\bibliography{bib}
+\endgroup
+
+\begin{aboutAuthors}
+\textbf{Andrey Stoyan}~--- researcher in type systems, escape analysis, and mechanized metatheory of programming languages; National Research University Higher School of Economics (HSE University), Saint Petersburg, Russian Federation. Position: \textit{[TODO before submission]}. Academic degree: \textit{[TODO before submission]}. ORCID: \textit{[TODO before submission]}. E-mail: \textit{[TODO before submission]}. Research interests: type systems, capability-based effects, lifetime management, and machine-checked correctness proofs.\smallskip
+
+\textbf{Acknowledgements.} This research received no external funding.
+\end{aboutAuthors}
+
+\newpage
+\selectlanguage{russian}
+\makerustitle
+\normalsize
+
+\begin{aboutAuthors}
+\textbf{Стоян Андрей}~--- исследователь в области систем типов, escape-анализа и механизированной метатеории языков программирования; Национальный исследовательский университет <<Высшая школа экономики>> (НИУ ВШЭ), Санкт-Петербург, Российская Федерация. Должность: \textit{[TODO: указать перед подачей]}. Учёная степень: \textit{[TODO: указать перед подачей]}. ORCID: \textit{[TODO: указать ORCID]}. E-mail: \textit{[TODO: указать адрес электронной почты]}. Область научных интересов: системы типов, capability-based эффекты, управление временем жизни значений, машинно-проверенные доказательства корректности.\smallskip
+
+\textbf{Поддержка исследований.} Финансирование исследования из внешних источников не привлекалось.
+\end{aboutAuthors}
+
+\IfFileExists{escape-analysis-proofs.bbl}{%
+\begingroup
+\let\thebibliography\thebibliographyRus
+\def\bibitem##1{\item}
+\input{escape-analysis-proofs.bbl}
+\endgroup}{%
+}
 
 \end{document}
