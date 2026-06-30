@@ -5,18 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="ee2145e6-2982-4370-82c6-dbb60f97d4f4" name="Changes" comment="Update">
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/bib.bib" beforeDir="false" afterPath="$PROJECT_DIR$/bib.bib" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/escape-analysis-proofs.tex" beforeDir="false" afterPath="$PROJECT_DIR$/escape-analysis-proofs.tex" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proofs/src/CounterexampleMarkerReturn.v" beforeDir="false" afterPath="$PROJECT_DIR$/proofs/src/CounterexampleMarkerReturn.v" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proofs/src/Safety.v" beforeDir="false" afterPath="$PROJECT_DIR$/proofs/src/Safety.v" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proofs/src/Semantics.v" beforeDir="false" afterPath="$PROJECT_DIR$/proofs/src/Semantics.v" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proofs/src/Substitution.v" beforeDir="false" afterPath="$PROJECT_DIR$/proofs/src/Substitution.v" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proofs/src/SubstitutionTheory.v" beforeDir="false" afterPath="$PROJECT_DIR$/proofs/src/SubstitutionTheory.v" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proofs/src/Syntax.v" beforeDir="false" afterPath="$PROJECT_DIR$/proofs/src/Syntax.v" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proofs/src/Typing.v" beforeDir="false" afterPath="$PROJECT_DIR$/proofs/src/Typing.v" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/proofs/src/plan.md" beforeDir="false" afterPath="$PROJECT_DIR$/proofs/src/plan.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
