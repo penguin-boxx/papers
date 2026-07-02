@@ -26,6 +26,12 @@ ACMCPSAMPLES= \
 
 all:  ${PDF} ALLSAMPLES
 
+# Effect-systems paper (Труды ИСП РАН). latexmk drives xelatex + biber and
+# reruns them until all references and citations are resolved; pdflatex is
+# not usable here (Cyrillic bibliography heading needs the Unicode font path).
+fvar:
+	latexmk -pdf -xelatex effect-systems-free-variables.tex
+
 %.pdf:  %.dtx   $(PACKAGE).cls
 	pdflatex $<
 	- bibtex $*
@@ -184,4 +190,4 @@ samples/sample-acmcp.tex: samples/samples.ins samples/samples.dtx
 samples/sample-acmcp-%.tex: samples/sample-acmcp.tex samples/acm-jdslogo.png
 	sed 's/acmArticleType{Review}/acmArticleType{$*}/' $< > $@
 
-.PHONY: all ALLSAMPLES docclean clean distclean archive zip
+.PHONY: all fvar ALLSAMPLES docclean clean distclean archive zip
