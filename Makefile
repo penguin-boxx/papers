@@ -32,6 +32,15 @@ all:  ${PDF} ALLSAMPLES
 fvar:
 	latexmk -pdf -xelatex effect-systems-free-variables.tex
 
+# Escape-analysis mechanization paper (Информатика и автоматизация / SPIIRAS
+# class). References are hand-formatted per the journal template: gen_refs.py
+# regenerates the two escape-analysis-proofs-refs-*.tex lists from bib.bib in
+# citation order; no bibtex run is involved.
+escape:
+	python3 gen_refs.py
+	pdflatex -interaction=nonstopmode escape-analysis-proofs.tex
+	pdflatex -interaction=nonstopmode escape-analysis-proofs.tex
+
 %.pdf:  %.dtx   $(PACKAGE).cls
 	pdflatex $<
 	- bibtex $*
@@ -190,4 +199,4 @@ samples/sample-acmcp.tex: samples/samples.ins samples/samples.dtx
 samples/sample-acmcp-%.tex: samples/sample-acmcp.tex samples/acm-jdslogo.png
 	sed 's/acmArticleType{Review}/acmArticleType{$*}/' $< > $@
 
-.PHONY: all fvar ALLSAMPLES docclean clean distclean archive zip
+.PHONY: all fvar escape ALLSAMPLES docclean clean distclean archive zip
