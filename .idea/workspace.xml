@@ -4,7 +4,12 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ee2145e6-2982-4370-82c6-dbb60f97d4f4" name="Changes" comment="Update" />
+    <list default="true" id="ee2145e6-2982-4370-82c6-dbb60f97d4f4" name="Changes" comment="Update">
+      <change beforePath="$PROJECT_DIR$/Makefile" beforeDir="false" afterPath="$PROJECT_DIR$/Makefile" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/bib.bib" beforeDir="false" afterPath="$PROJECT_DIR$/bib.bib" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/effect-systems-free-variables.tex" beforeDir="false" afterPath="$PROJECT_DIR$/effect-systems-free-variables.tex" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/escape-analysis-proofs.tex" beforeDir="false" afterPath="$PROJECT_DIR$/escape-analysis-proofs.tex" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
