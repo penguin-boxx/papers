@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate journal-house-style (Informatics and Automation / SPIIRAS) reference
+r"""Generate journal-house-style (Informatics and Automation / SPIIRAS) reference
 lists from bib.bib in citation order: an English `thebibliographyEng` with real
 \bibitem labels, and a Russian-page `thebibliographyRus` with plain \item entries
 (same order, so numbering agrees)."""
@@ -110,16 +110,19 @@ for key in order:
         rus = f'\\emph{{{ra}}} {title} // {bk}. {tail}'
     elif etype == 'misc':
         ea, ra = fmt_authors(f['author']) if f.get('author') else ('', '')
-        url = ''
-        if f.get('howpublished'):
+        # URL: prefer an explicit `url` field, else a \url{...} inside `howpublished`.
+        url = f.get('url', '').strip()
+        if not url and f.get('howpublished'):
             um = re.search(r'\\url\{([^}]*)\}', f['howpublished'])
-            if um: url = um.group(1)
-        acc = ''
-        if f.get('note'):
-            am = re.search(r'Accessed:\s*(\d{4})-(\d{2})-(\d{2})', f['note'])
-            if am: acc = f' (accessed {am.group(3)}.{am.group(2)}.{am.group(1)})'
-        eng = f'{ea} {title}. {f["year"]}. Available at: \\url{{{url}}}{acc}.'
-        rus = f'\\emph{{{ra}}} {title} // {f["year"]}. Available at: \\url{{{url}}}{acc}.'
+            if um: url = um.group(1).strip()
+        # access date: prefer `urldate = {YYYY-MM-DD}`, else `Accessed: YYYY-MM-DD` in `note`.
+        dm = re.search(r'(\d{4})-(\d{2})-(\d{2})', f.get('urldate', ''))
+        if not dm and f.get('note'):
+            dm = re.search(r'Accessed:\s*(\d{4})-(\d{2})-(\d{2})', f['note'])
+        acc = f' (accessed {dm.group(3)}.{dm.group(2)}.{dm.group(1)})' if dm else ''
+        tail = f' Available at: \\url{{{url}}}{acc}.' if url else ''
+        eng = f'{ea} {title}. {f["year"]}.{tail}'
+        rus = f'\\emph{{{ra}}} {title} // {f["year"]}.{tail}'
     else:
         sys.exit(f'unhandled type {etype} for {key}')
     eng_items.append(f'\\bibitem{{{key}}}\n{eng}\n')

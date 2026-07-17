@@ -41,8 +41,10 @@ overview:
 opo:
 	latexmk -pdf one-plus-one.tex
 
-## Remove regenerable build artifacts (LaTeX aux/PDF via latexmk + minted caches).
+## Remove regenerable build artifacts (LaTeX aux/PDF via latexmk, minted caches, and the
+## gen_refs.py-generated escape-analysis-proofs reference lists).
 clean:
 	-latexmk -C
 	$(RM) -r _minted*
 	$(RM) *.bbl
+	$(RM) escape-analysis-proofs-refs-eng.tex escape-analysis-proofs-refs-rus.tex

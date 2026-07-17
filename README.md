@@ -21,7 +21,7 @@ The shared bibliography for every paper is `bib.bib`.
 
 ```
 .
-├─ *.tex              paper sources (+ escape-analysis-proofs-refs-{eng,rus}.tex, generated & \input)
+├─ *.tex              paper sources (escape-analysis-proofs-refs-{eng,rus}.tex are generated & git-ignored)
 ├─ bib.bib            shared bibliography
 ├─ Makefile           one build goal per paper
 ├─ scripts/           build helpers: gen_refs.py, make-docx.sh, mkbib.py, preprocess.py, filters.lua
@@ -38,6 +38,11 @@ The shared bibliography for every paper is `bib.bib`.
 bundled in `styles/`. `acmart`, `IEEEtran`, and `article` are provided by TeX Live. The
 Makefile and the IDEA run configs put `styles/` on `TEXINPUTS`/`BSTINPUTS` so the compilers
 find the bundled classes.
+
+`escape-analysis-proofs.tex` `\input`s two reference lists that are **generated** from `bib.bib`
+by `scripts/gen_refs.py` (git-ignored, removed by `make clean`). `make escape-proofs` and the IDEA
+"Proofs Escape Analysis" config regenerate them automatically; a bare `latexmk`/`pdflatex` or a fresh
+clone must run `make escape-proofs` (or `python3 scripts/gen_refs.py`) first.
 
 ## System-wide dependencies
 

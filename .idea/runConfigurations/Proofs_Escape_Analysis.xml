@@ -12,7 +12,7 @@
         <env name="BSTINPUTS" value="$PROJECT_DIR$:$PROJECT_DIR$/styles:" />
       </envs>
       <expand-macros-in-environment-variables>true</expand-macros-in-environment-variables>
-      <before-run-command />
+      <before-run-command>python3 scripts/gen_refs.py</before-run-command>
       <main-file>$PROJECT_DIR$/escape-analysis-proofs.tex</main-file>
       <output-path>$PROJECT_DIR$</output-path>
       <auxil-path>{projectDir}/auxil</auxil-path>
