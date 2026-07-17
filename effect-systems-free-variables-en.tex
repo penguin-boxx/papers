@@ -1,0 +1,891 @@
+%% English translation of effect-systems-free-variables.tex.
+%% Standalone article version; build with xelatex + biber:
+%%   latexmk -pdf -xelatex effect-systems-free-variables-en.tex
+%% (xelatex is used so the < > | glyphs in the code listings render literally,
+%%  exactly as in the Russian original; bib.bib is reused verbatim.)
+\documentclass[11pt]{article}
+
+\usepackage[a4paper, left=2.4cm, right=2.4cm, top=2.4cm, bottom=2.6cm]{geometry}
+\usepackage{fontspec}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{listings}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
+\usepackage[english]{babel}
+\usepackage{csquotes}
+\usepackage{hyperref}
+\usepackage[backend=biber, style=numeric, sorting=none, maxbibnames=99]{biblatex}
+\addbibresource{bib.bib}
+
+% --- listings: same lightweight language definitions as the original ---
+\lstdefinestyle{modern}{
+    basicstyle=\ttfamily\footnotesize,
+    keywordstyle=\bfseries,
+    commentstyle=\itshape,
+    stringstyle=,
+    numberstyle=\tiny,
+    tabsize=2,
+    showspaces=false,
+    showstringspaces=false,
+    breaklines=true,
+    breakatwhitespace=true,
+    captionpos=b,
+    escapeinside={(*@}{@*)},
+    columns=fullflexible,
+    keepspaces=true,
+}
+\lstset{style=modern}
+\lstdefinelanguage{colang}{
+    keywords={let,var,effect,perform,data,context,fun,where,if,else,throw,try,catch,local,free,op,handle,resume,return},
+    sensitive=true, comment=[l]{//}, morecomment=[s]{/*}{*/}, morestring=[b]",
+}
+\lstdefinelanguage{modal}{
+    keywords={fun,let,if,else,handle,with,mask},
+    sensitive=true, comment=[l]{//}, morestring=[b]",
+}
+
+\title{Effect Systems as a Mechanism for Managing\\ Contextual Free Variables: A Unifying Perspective}
+\author{A.\,S. Stoyan\thanks{National Research University Higher School of Economics,
+3A Kantemirovskaya Str., Saint Petersburg, 194100, Russia.
+Email: \texttt{a.stoyan@hse.ru}. ORCID: 0009-0004-6935-1447.}}
+\date{}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Effect systems lift information about a program's computational effects to the type
+level: they sharpen abstraction boundaries and let the compiler verify that an effectful
+computation runs in a context that supports it. Nevertheless, static effect tracking has
+not yet become common practice: the leading approaches --- effect rows, capabilities, and
+modal types --- have evolved as unrelated constructions, and a language designer
+struggles to see the overall design space. We propose a unifying perspective: an effect
+system is a mechanism for managing the contextual free variables of a computation,
+i.e., dependencies that are not passed as ordinary arguments but must be resolved by the
+execution context. Such a variable goes through a lifecycle of two phases: it arises
+pending, as an unfulfilled contextual requirement, and once bound, its value can be
+captured by a closure as a lexical free variable. Families of effect systems differ in
+which phases and transitions of this lifecycle they make explicit in types. Classical
+row-based systems (Koka, Links, Java's checked exceptions) keep the variables pending and
+cannot express capture. Capability-based systems allow capture but forbid a captured
+variable from escaping its context by means of type-level escape analysis. Modal systems,
+instead of forbidding the escape, release the escaped variable again, re-exposing it in
+the type as a contextual requirement. Comparing the families along this single axis shows
+that the static discipline of an effect system can be assembled from two mechanisms
+already familiar to practitioners: implicit parameters and type-level escape analysis.
+\end{abstract}
+
+\noindent\textbf{Keywords:} effect systems; computational effects; contextual free
+variables; free variables; implicit parameters; escape analysis; capabilities; effect
+rows; modal types; type systems; contextual polymorphism.
+
+\bigskip
+
+
+\section{Introduction}
+
+Programming is, to a large extent, about managing complexity: a developer strives to
+focus on an individual fragment of behaviour without holding the whole program in mind at
+once. Abstraction and separation of concerns are the key devices: different
+responsibilities are delegated to different entities, such as functions or modules. It is
+often convenient to single out, as such an entity, the \emph{execution context} of a
+computation, while \emph{effects} arise naturally as the interactions of the computation
+with that context~\cite{kiselyov2013extensible}.
+
+Let us start from the opposite notion --- purity. The only observable result of a pure
+computation is its value. A function is called pure if it returns the same result on the
+same arguments, and its application is a pure computation. Programming with pure functions
+is generally considered good practice: the composition of pure functions is pure, the
+semantics of the code is transparent, and type systems work well, providing partial
+specification, safety, and clarity of abstractions.
+
+However, writing and maintaining a non-trivial program using pure computations alone is
+hard. All state and control flow must be managed explicitly through the arguments and
+results of functions. As an example of manual error propagation: a function returns a
+\lstinline|Result|, and every call is accompanied by a check. What is needed is a tool
+for managing complexity --- something that hides such inessential details.
+
+\begin{lstlisting}[language=colang]
+    fun readInts(n: Int): Result<List<Int>, Error> {
+        if (n == 0) { return Ok(Nil()) }
+        let x = readInt()
+        if (x is Err) { return x }
+        let xs = readInts(n - 1)
+        if (xs is Err) { return xs }
+        Ok(Node(x.value, xs.value))
+    }
+\end{lstlisting}
+
+Computational effects are exactly such a tool. An effect is an interaction of a
+computation with its execution context; the computation addresses the context directly,
+without the ceremony that pervades pure code. The context may be the run-time system
+providing OS services, mutable memory cells, control-transfer mechanisms, input/output,
+and so on. An \emph{effectful operation} is a construct that gives rise to an effect. For
+example, the exception mechanism lets a computation report an error directly to the
+context --- the nearest handler: the routine propagation of errors disappears from the
+code, and the essence remains.
+
+\noindent\begin{minipage}{\linewidth}
+\begin{lstlisting}[language=colang]
+    fun readInts(n: Int): List<Int> {
+        if (n == 0) { return Nil() }
+        Node(readInt(), readInts(n - 1))
+    }
+\end{lstlisting}
+\end{minipage}
+
+Some approaches let the programmer define their own effects and execution contexts as
+library code. In particular, \emph{effect handlers} are a promising approach that has
+proven itself beyond the community of purely functional
+languages~\cite{plotkin2013handling, chandrasekaran2018algebraic}. Handlers separate the
+signature of an effect from its implementation~\cite{kiselyov2013extensible}: an
+expression can be viewed as a client that evaluates either to a pure result or to a
+request to a server (the execution context, the effect handler). A handler delimits a
+region in which certain effectful operations are possible, and interprets them in terms
+of pure values and the effects of the enclosing region. User-defined effects serve as a
+tool for building embedded domain-specific languages~\cite{leijen2017structured}, and
+various such approaches compete in expressiveness, performance, and the convenience of
+composing independently defined effects~\cite{liang1995monad, kiselyov2013extensible,
+schrijvers2019monad, van2024framework}.
+
+Many effectful operations are admissible only within a limited region. For example, an
+exception can be thrown only within the context of a corresponding handler, and a mutable
+cell allocated on the stack cannot be used after the function returns. Static control over
+the use of such operations prevents many run-time errors and improves program
+reliability. \emph{Effect systems} are precisely the mechanism for providing such control
+at the type level. Moreover, since effects are inherently implicit at the term level, it
+is hard to judge their presence from the source code: thus the signature of the effectful
+version of \lstinline|readInts| above is silent about the possible error. Some degree of
+explicitness is therefore still required, which effect systems provide at the type level.
+This helps to state clear functional abstractions and to prevent implementation details
+from silently leaking as interactions with the context.
+
+The idea of tracking effects in types goes back to the work of Lucassen and
+Gifford~\cite{lucassen1988polymorphic}; the counter-movement of the modern mainstream is
+also telling: OCaml~5 has adopted effect handlers without tracking them in types at
+all~\cite{sivaramakrishnan2021retrofitting}, which only sharpens the question of a
+practical effect system. Many promising effect-system constructions have been proposed:
+row-polymorphic types~\cite{leijen2014koka}, capabilities~\cite{brachthauser2022effects,
+boruch2023capturing}, modal types~\cite{tang2025modal}, and others. However, each approach
+has its own strengths and weaknesses, and the overall picture of the design space is
+insufficiently studied. Yet a language designer needs a holistic view of the available
+options in order to choose the most suitable solution given the features and constraints
+of the target language.
+
+In this work we propose a unifying view of these seemingly disparate approaches:
+\emph{an effect system is a mechanism for managing the contextual free variables of a
+computation at the type level}. Such variables are not passed as ordinary term arguments
+but must be resolved by the surrounding context: a handler, a resource, a capability, or
+another witness. This view, which draws on observations from the Scala
+language~\cite{odersky2021safer, boruch2023capturing}, lets us regard the classical type
+system and the effect system as two sides of one problem: the former manages
+\emph{bound} variables, the latter --- contextual free variables. These variables, in
+turn, pass through a single \emph{lifecycle}, and each existing family of effect systems
+turns out to be a choice of which phases and transitions of this cycle are available and
+how they are reflected at the type level.
+
+This work is precisely a unifying perspective, not an exhaustive survey: the scope is
+deliberately narrowed to three families, selected by a practical criterion ---
+constructions embodied in programming languages and aimed at the application programmer.
+Most literally, this perspective applies to effects arising from interaction with the
+execution context: algebraic operations, exceptions, access to resources and
+capabilities. For effect predicates on computations --- for example, divergence, cost
+estimates, or information-security labels --- the reading through contextual free
+variables is more of an analogy than a literal model.
+
+This work is based on our earlier English-language survey~\cite{stoyan2024modern} but
+differs from it in substance. New are the lifecycle model of a contextual free variable
+itself (Fig.~\ref{fig:lifecycle}, Table~\ref{tbl:free-vars}), the notion of
+\emph{uncapturing} of a captured variable, and the reading of each family in terms of the
+cycle (Sections~\ref{sec:rows}--\ref{sec:modal}).
+
+The contributions of the work can be summarized as follows:
+\begin{itemize}
+    \item we formulate a single point of view on effect systems as a means of managing
+    contextual free variables and describe their \emph{lifecycle}, along whose phases and
+    transitions all the constructions under consideration are arranged
+    (Section~\ref{sec:idea});
+    \item we revisit three families of modern effect systems --- row-based
+    (Section~\ref{sec:rows}), capability-based (Section~\ref{sec:capabilities}), and modal
+    (Section~\ref{sec:modal}) --- and show which transitions of the cycle each of them
+    supports;
+    \item we carry out a comparative analysis of the families along a single lifecycle
+    axis and show that the static discipline of such an effect system can be regarded as a
+    combination of two mechanisms already familiar to practitioners --- implicit
+    parameters and type-level escape analysis (Sections~\ref{sec:comparison}
+    and~\ref{subsec:synthesis}).
+\end{itemize}
+
+
+\section{Free Variables as an Embodiment of Requests to the Context}
+\label{sec:es-intro}
+
+In this section we show that the pragmatic motives of effect systems arise naturally from
+ordinary programming scenarios, and we prepare the ground for the central idea of the work
+(Section~\ref{sec:idea}). Rather than starting from the design of existing systems, we
+will derive an effect system constructively --- by a successive refactoring of an everyday
+scenario. For informal explanations we will use examples in a fictional language in the
+spirit of Scala and Kotlin, introducing its constructs as needed.
+
+Consider a running example: a business-logic function performs a query to a database. In
+the first version it establishes the connection itself:
+\begin{lstlisting}[language=colang]
+    fun business1() {
+        let db = Db.open(...)
+        db.query("...")
+    }
+\end{lstlisting}
+This solution has drawbacks. First, testability is limited: substituting a stub for the
+connection is not easy. Second, the function produces observable side effects ---
+accesses to the database --- which are part of its external contract but are in no way
+reflected in the signature.
+
+The second version is noticeably better: the function is parameterized by the connection,
+and the call site can pass a concrete implementation. Thus the function's behaviour begins
+to be determined by the execution context.
+\begin{lstlisting}[language=colang]
+    fun business2(db: Db) {
+        db.query("...")
+    }
+    fun caller() {
+        let db = Db.open(...)
+        business2(db)
+    }
+\end{lstlisting}
+Now the observable effects are explicitly expressed through the parameter \lstinline|db|.
+However, this comes at the price of syntactic noise at the call site: the administrative
+effort of explicitly passing parameters grows. For a single argument this is a trifle, but
+if four such parameters must be threaded through several levels of the call stack, the
+burden becomes tangible. A practice that aspires to wide adoption must be no less
+convenient than lower-quality alternatives.
+
+To cut down the routine, in the third version the ordinary parameter is replaced by a
+\emph{dynamic free variable} \lstinline|?db|, which obtains its value by lookup in the
+dynamic scope of the call.
+\begin{lstlisting}[language=colang]
+    fun business3() {
+        ?db.query("...")
+    }
+    fun caller() {
+        let ?db = Db.open(...)
+        business3()
+    }
+\end{lstlisting}
+Thus, through the free variable \lstinline|?db| the function \lstinline|business3|
+requests functionality from the call context.
+
+Nevertheless, the absence of syntactic noise is achieved at the cost of losing other
+advantages: the static check of the presence and type of such a variable and its explicit
+representation in the signature are lost. This is where effect systems come into play:
+they offer ways to preserve static safety without introducing extra ceremony at the term
+level. We consider concrete solutions in what follows.
+
+Let us fix the main requirement on an effect system --- \emph{effect safety}: every effect
+may be performed only in a context that supports it, otherwise the program must be
+rejected. In particular, every exception must be caught, and in general every effect ---
+handled. In terms of free variables, this means that every such variable must be resolved
+by the call context of the function.
+
+It is also useful to control what happens to such a variable after it has received a
+value. A closure may fix that value already as a \emph{lexically bound} free variable and
+outlive the context that supplied the value:
+\begin{lstlisting}[language=colang]
+    fun leak(): () => Unit {
+        let f =
+            () => ?db.query("...") // the closure fixes the value of ?db
+        return f // f outlives the context that gave the value
+    }
+\end{lstlisting}
+Since, as discussed, many effects are admissible only within a limited region, such
+captured variables must not leak beyond their contexts --- otherwise effect safety would
+be lost; to this end an effect system must support some form of escape
+analysis~\cite{park1992escape}. In return, tracking lexical capture makes it possible not
+to propagate information about the free variables of an argument function into the type of
+a higher-order function --- this technique is called \emph{contextual polymorphism} and
+will be considered later (Section~\ref{sec:capabilities}).
+
+
+\section{The Lifecycle of a Contextual Free Variable}
+\label{sec:idea}
+
+The preceding discussion has essentially been about free variables of a special kind. We
+will call them \emph{contextual free variables} and understand them broadly: these are
+dependencies of a computation on the surrounding execution context --- an effect handler,
+a capability value, a resource, or another witness, without which the computation cannot
+be safely run. The word \enquote{variable} here fixes not a mandatory syntactic
+representation but a role in the program: just as a free variable of a term must be
+resolved by its environment, so an effectful computation requires support from the
+context. We will call the obligation of the context to satisfy such a dependency a
+\emph{contextual requirement}; it is the type-level trace of a not-yet-resolved variable
+--- a technical name for what the type system must track. In different systems the same
+role is represented differently --- as an operation label in a row, as an implicit
+parameter, as a capability value, or as a modal requirement.
+
+Our view grows out of a simple observation: such a variable may pass through a
+\emph{lifecycle} of two phases --- \emph{pending} and \emph{capture}
+(Fig.~\ref{fig:lifecycle}). The variable arises \emph{pending}: the body of the function
+needs something from the context but has not yet received it. Then the pending state is
+\emph{fulfilled} --- the calling context provides a suitable value, as for the variable
+\lstinline|?db| from Section~\ref{sec:es-intro} --- and, once it enters a deferred
+computation, this value becomes \emph{captured} by a closure; the captured variable must
+be \emph{retained} within the region of its context, which is checked by type-level escape
+analysis. Here and throughout, by escape analysis we mean the static control over whether
+a value that has captured such a variable may outlive the context that bound it. Finally,
+upon crossing the boundary of the context, the captured variable may be \emph{released
+again} --- moved back into the pending phase and once more reflected in the type as a
+contextual requirement (this is what modal systems do, Section~\ref{sec:modal}). Note that
+\enquote{fulfilled} is not a separate phase but a transition: a bound but not captured
+variable lives only inside a running activation of the function and does not enter values,
+so the types need not track it.
+
+The two ends of this cycle correspond to two classical disciplines of resolving free
+variables. The pending phase is dynamic: the value of the variable (for example, a
+handler) is determined by the calling context. The capture phase is lexical: the value has
+already been obtained and fixed at the point of capture by the closure. For brevity we
+will call a variable in the pending phase \emph{dynamic}, and a captured one
+\emph{lexical}. The correspondence of the two phases is summarized in
+Table~\ref{tbl:free-vars}.
+
+Let us note a connection with a known notion: a pending contextual requirement is, in
+essence, a \emph{coeffect} in the sense of works on the context-dependence of
+computations~\cite{petricek2014coeffects}, whose canonical examples are implicit
+parameters and dynamic binding. The orthogonal contribution of the present work is the
+\emph{capture} layer, with escape analysis and uncapturing, which standard coeffect theory
+does not describe.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=1.0cm and 3.2cm,
+  phase/.style={draw, thick, rounded corners, align=center, font=\footnotesize,
+                inner sep=4pt, minimum width=2.4cm, minimum height=0.95cm},
+  lbl/.style={font=\footnotesize, align=center}]
+  \node[phase] (unf) {Pending};
+  \node[phase, right=of unf] (cap) {Captured};
+  \draw[thick, -{Latex}] (unf) to[bend left=18] node[lbl, above] {fulfilment and capture by a closure} (cap);
+  \draw[thick, -{Latex}] (cap) to[loop right] node[lbl, right] {retention\\(escape analysis)} (cap);
+  \draw[thick, -{Latex}] (cap) to[bend left=18] node[lbl, below] {uncapturing} (unf);
+\end{tikzpicture}
+\caption{Lifecycle of a contextual free variable}
+\label{fig:lifecycle}
+\end{figure}
+
+\begin{table}[t]
+  \caption{Two phases of a contextual free variable's lifecycle}
+  \label{tbl:free-vars}
+  \centering
+  \begin{tabular}{>{\raggedright\arraybackslash}p{3.3cm}>{\raggedright\arraybackslash}p{4.6cm}>{\raggedright\arraybackslash}p{4.6cm}}
+  \toprule
+    \textbf{Variable phase} & \textbf{Pending (dynamic)} & \textbf{Captured (lexical)} \\
+  \midrule
+    Meaning   & a not-yet-bound free variable & an already-obtained value, captured by a closure \\
+    Mechanism & resolution of the requirement by the call context & type-level leak control \\
+  \bottomrule
+  \end{tabular}
+\end{table}
+
+A single family of effect systems may engage both phases at once. Thus, in the scenario
+from Section~\ref{sec:es-intro}, the value for \lstinline|?db| is provided by the call
+site (dynamic binding); the obtained value may be fixed by a closure as a lexical free
+variable (capture), and then escape analysis must retain it within the region of the
+corresponding context.
+
+In the following sections we use this optic to take a fresh look at existing families of
+effect systems; the constructive upshot --- the assembly of the static discipline of an
+effect system from the mechanisms of the two phases of the cycle --- is discussed in
+Section~\ref{subsec:synthesis}.
+
+Let us reiterate: we offer a unifying point of view, not a formal classification and not a
+proof of the expressive equivalence of all systems. We stress: the lifecycle describes not
+which states a variable may occupy \enquote{in reality}, but which of its \emph{transitions}
+a given effect-system \emph{discipline} supports and how it reflects them in the type. In
+this work we focus on effects of interaction with the execution context, where the reading
+through contextual free variables is most precise.
+
+
+\section{Row-Based Effect Systems}
+\label{sec:rows}
+
+Most effect systems represent a set of effects by \emph{rows}~\cite{gaster1996polymorphic}.
+This section considers classical row-based systems, distinguished by storing in the rows
+information about \emph{all} effects of functions. Labels are the names of effects
+(possibly with type arguments), and a row is an unordered set of labels; we will write it
+after the result type, following a slash. Returning to the running example from
+Section~\ref{sec:es-intro}: access to the database becomes the effect \lstinline|db|, and
+its label in the row declares the requirement of the function body:
+\begin{lstlisting}[language=colang]
+    fun business(): Result / {db} { query("...") }
+\end{lstlisting}
+The operation \lstinline|query|, like the variable \lstinline|?db| before, will be bound
+to an implementation by a handler from the dynamic call context. We stress: to enumerate
+such pending variables, row-based systems need special row types on the arrows.
+
+Higher-order functions produce at least the same effects as their arguments. Row-based
+systems express this by \emph{row polymorphism}~\cite{gaster1996polymorphic}: type
+variables may denote rows and be spliced into other rows. The vertical bar extends a row by
+an effect variable \texttt{e}:
+\begin{lstlisting}[language=colang]
+    fun printMap<e, a, b>(f: (a) => b / {e},
+                          xs: List<a>): List<b> / {print | e}
+\end{lstlisting}
+In general, each higher-order function must be parameterized by the effects of its
+functional arguments, which substantially hinders a smooth migration to such an effect
+system and introduces significant syntactic noise; effect inference (for example, in Koka
+and Flix) mitigates this burden but does not eliminate rows from public signatures.
+
+An example of a row-based system is Java's checked exceptions~\cite{gosling2000java}: the
+language statically verifies that all checked exceptions are caught or explicitly declared
+in the method signature. This feature has gained a notorious reputation among
+programmers~\cite{checked-exceptions}: the exception row is an ad hoc construct that cannot
+be used to parameterize a function, so it is impossible to write a higher-order method
+that forwards an arbitrary number of checked exceptions.
+
+When rows are not supported directly, they are emulated by other means. The \texttt{mtl}
+library in Haskell\footnote{\url{https://hackage.haskell.org/package/mtl}} enumerates
+effects by type-class constraints~\cite{jones1995functional}: being unordered and
+supporting subtyping, they act as ad hoc rows. Let us note that only the recording of
+requirements in the type is row-based here; binding is resolved statically, by dictionary
+passing --- in essence, by implicit parameters (cf. Section~\ref{sec:capabilities}).
+Haskell effect-handler libraries also use type classes for open
+unions~\cite{swierstra2008data}; another approach is to emulate rows by intersection
+types~\cite{xie2020row}, a practical example being the ZIO
+library\footnote{\url{https://zio.dev/}} for Scala.
+
+Classical row-based systems are the most straightforward approach, so new languages often
+take it as a basis: the effect systems of Koka~\cite{leijen2014koka} and
+Links~\cite{hillerstrom2016liberating} are built around rows; in Flix the inference of
+polymorphic effects relies on Boolean unification~\cite{madsen2020polymorphic}, and the
+Unison language realizes the row discipline in the form of
+\emph{abilities}\footnote{The term \enquote{abilities} in Unison and Frank denotes the
+row-based recording of the effect context and does not coincide with
+\enquote{capabilities} --- the witness values of
+Section~\ref{sec:capabilities}.}~\cite{unison-abilities}. However, such systems track
+\emph{too much} information, leading to excessive verbosity.
+
+From the standpoint of the proposed view, a row-based system makes the \emph{pending}
+phase explicit. The effect row on an arrow is the type-level trace of the dynamic variables
+of the function body that are not yet bound: each label \texttt{db}, \texttt{print}, or
+\texttt{exn} denotes an operation for which a handler must be found in the execution
+context. In this sense the row plays the role of a list of free dependencies, although the
+labels themselves are not term variables but the names of the corresponding requirements
+to the context. A handler, having bound an operation to an implementation, \emph{subtracts}
+its label from the computation's row --- this is how effect safety is ensured
+(Section~\ref{sec:es-intro}).
+
+No less important is what this discipline does \emph{not} allow: binding a dynamic variable
+with a value and then capturing it --- such a capture is inexpressible in the type
+discipline itself. The binding of an operation to a handler is resolved anew at each
+invocation, so the type of a deferred computation continues to enumerate the variables as
+pending, into whatever context it may fall. Two consequences follow. First, row-based
+systems do not need escape analysis: bound values are stored nowhere, and there is nothing
+to leak. Second, this is precisely the root of verbosity: a dynamic variable cannot
+\enquote{hide} inside a value, so it has to be repeated in the type of every intermediate
+function --- hence the pervasive row polymorphism and the unavailability of contextual
+polymorphism.
+
+\enquote{Dynamism} here (see Section~\ref{sec:idea}) is about the spirit of the discipline
+(binding is resolved by the calling context), whereas the checking of requirements itself
+remains \emph{static}; it is precisely this that distinguishes row-based systems from
+untyped dynamic binding.
+
+The convergence of rows with the dynamic discipline also has known limits. First, there
+exist row-based systems with \emph{lexically} bound handlers: the association of an
+operation with a handler is fixed at the point of definition, rather than by lookup in the
+dynamic call context~\cite{biernacki2019binders}; handler tunneling likewise combines the
+row-based recording with a lexical discipline, solving the problem of accidental
+handling~\cite{zhang2016accepting, zhang2020handling}. Second, the technique of evidence
+passing compiles Koka's row-based effects into an explicit passing of handler witness
+values~\cite{xie2021generalized} --- that is, pending requirements are systematically
+transformed into fulfilled ones, obtained as parameters. Both observations do not refute
+the thesis but refine it. The first shows that the row-based recording of a requirement is
+separable from the discipline of binding: the row fixes only the pending state, while it
+may be resolved even lexically. The second --- that the phase itself is separable: the
+translation preserves the variable itself, changing only its representation --- from a
+pending label to an obtained witness. Hence the columns of Table~\ref{tbl:free-vars} are
+two representations of one and the same contextual variable, and a family chooses which of
+them serves as primary at the type level. The difference is in the representation, not in
+what is tracked; but, as Section~\ref{sec:comparison} will show, this choice has a real
+price: escape analysis, the kind of polymorphism, verbosity.
+
+
+\section{Capability-Based Effect Systems}
+\label{sec:capabilities}
+
+Earlier we saw effects as calls to \enquote{special} functions and enumerated operation
+labels in row-based types. Now let us look at effect tracking differently: let effects be
+performed only through \enquote{special} objects --- \emph{capabilities}, witness values
+that the context supports the corresponding effect; then the system can track these objects
+instead of the operations themselves.
+
+Let us return to the running example. Explicit passing of the connection as an argument
+(\lstinline|business2|) is statically safe but noisy; the dynamic variable \lstinline|?db|
+is convenient but unsafe. To combine the advantages of both, we approximate a dynamically
+bound variable by an \emph{implicit parameter} of the function~\cite{lewis2000implicit}: we
+declare a group of such parameters by the keyword \lstinline|context|; a
+\lstinline|context let| declaration at the call site makes the value available to the
+compiler for automatic substitution.
+\begin{lstlisting}[language=colang]
+    context(db: Db)
+    fun business4() { db.query("...") }
+
+    fun caller() {
+        context let db = Db.open(...)
+        business4()
+    }
+\end{lstlisting}
+Implicit parameters type the contextual free variables of a function: to call such a
+function, the context must provide concrete values --- those very capabilities. The list of
+a computation's implicit parameters is precisely the list of its pending variables, or, in
+technical terms, of its contextual requirements: the pending phase here is also explicit,
+but is expressed by the very presence of implicit parameters on the computation, and no
+special row types are needed to record it. Exceptions and other algebraic operations are
+tracked analogously~\cite{odersky2021safer}: the construct \lstinline|throw SomeException()|
+can be understood as a call to a function that requires an implicit parameter of type
+\lstinline|CanThrow<SomeException>|, while the constructs that handle exceptions provide
+suitable witnesses.
+
+The main new circumstance, however, is that capabilities can be captured by first-class
+functions. Thus arises a lightweight alternative to classical effect polymorphism --- the
+\emph{contextual polymorphism} promised in
+Section~\ref{sec:es-intro}~\cite{brachthauser2022effects}: the \texttt{map} function can be
+given its usual type without any explicit effect polymorphism:
+\begin{lstlisting}[language=colang]
+    fun map<a, b>(f: (a) => b, xs: List<a>): List<b>
+\end{lstlisting}
+
+Capability-based systems can be emulated even without built-in support, in a certain
+programming style: functions do not use global definitions for effects but instead accept
+capability objects and call their methods. The idea is realizable in Scala with the help of
+implicit parameters~\cite{odersky2004scala}; the language is evolving toward built-in
+exception checking with the \enquote{magic} capability
+\lstinline[language=scala]|CanThrow|~\cite{odersky2021safer}.
+
+Unfortunately, ensuring the safety of capability-based systems requires additional effort:
+a capability is easily captured by a closure and leaks out of its context. For example, if
+a \lstinline|CanThrow| witness leaves the bounds of a \lstinline|try-catch| block, the
+guarantee that all exceptions are handled --- and with it effect safety
+(Section~\ref{sec:es-intro}) --- will be lost:
+\begin{lstlisting}[language=colang]
+    fun unsafe() {
+        var f
+        try { // capability h: CanThrow<SomeException> is available
+            let g = () => throw SomeException() // captures h
+            f = g // leak of a computation that captured the capability
+        } catch (e: SomeException) { ... }
+        f() // throws SomeException outside the handler
+    }
+\end{lstlisting}
+To prevent a leak, escape analysis at the type level is needed: its results are reflected
+directly in the signatures --- which arguments are used only in place, and which may be
+embedded into the result. The idea of making the lifetime of a value an object of typing
+goes back to the region calculus of Tofte and Talpin~\cite{tofte1997region}. Let us add an
+observation: a file descriptor, being in essence a capability to work with a file, becomes
+invalid over time. The closeness of the notions of resource and capability is apparent:
+both have a limited lifetime.
+
+In the proposed optic, capability-based systems make \emph{both} phases of the cycle
+explicit. The pending phase, as already noted, is expressed by the list of a computation's
+implicit parameters --- it plays a role close to an effect row, but without special row
+types. What is new, however, is the explicit \emph{capture} phase --- exactly the one
+unavailable to row-based systems: the value of a dynamic variable here can be captured by a
+closure and carried inside the computation. Dynamic binding and capture often turn out to
+be a single step: a capability is \emph{obtained} from the context by an implicit parameter
+and becomes a lexically visible free variable of a closure
+(Table~\ref{tbl:free-vars}).
+
+Two consequences follow that explain the makeup of the family. First, contextual
+polymorphism is a direct consequence of capturing lexically visible capabilities: a
+higher-order function need not be polymorphic in effects, because its argument already
+carries its own capabilities. Second, the main difficulty becomes not the accounting of
+pending variables but \emph{escape analysis}: one must guarantee that a value that has
+captured a capability does not outlive the region of the handler or other context that
+provided that capability.
+
+The prohibition of leakage is realized in various ways. Second-class values forbid
+capabilities from entering closures, results, and mutable
+cells~\cite{osvald2016gentrification}. The Effekt language relaxes the prohibition by an
+explicit \emph{boxing}: \texttt{box} lifts a term's captured capabilities into its type,
+and \texttt{unbox} checks their availability at the point of
+use~\cite{hannan1998type, brachthauser2022effects}. Capture checking in Scala assigns to
+each value a \emph{capture set} and tracks it under
+subtyping~\cite{boruch2023capturing}. All three mechanisms are different answers to one and
+the same question of leak control, differing in price: the rigidity of the split into
+classes, boxing annotations, or capture sets in the types. A fuller discussion can be found
+in our earlier paper~\cite{stoyan2024modern}.
+
+
+\section{Modal Effect Systems}
+\label{sec:modal}
+
+Capability-based systems made it possible to describe only part of the surrounding context
+--- only those capabilities directly required by the computation. However, the price was
+retention: each of the leak-prohibition mechanisms has its own cost
+(Section~\ref{sec:capabilities}), growing in the limit to a dependence of types on
+terms~\cite{boruch2023capturing}. This section considers a system that also strives to
+specify explicitly as few parts of the context as possible, but answers leakage
+differently, remaining entirely at the type level.
+
+Originally, the Frank language proposed \emph{abilities} and \emph{adjustments} ---
+second-class type-level constructs (not to be confused with the second-class values of
+Section~\ref{sec:capabilities}) as syntactic sugar for row
+polymorphism~\cite{lindley2017do, convent2020doo}. Later, a self-standing modal system was
+proposed that makes these constructs first-class~\cite{tang2025modal}, following the idea
+of using contextual modal type theory~\cite{nanevski2008contextual} to track algebraic
+effects~\cite{zyuzin2021contextual}. The key idea: modality constructors should mark the
+\emph{transitions} between effect contexts, rather than repeat the entire context.
+
+The system uses two modality constructors, parameterized by effect labels; their values are
+first-class (they may be stored and passed freely). The general idea is to box computations
+and ascribe to them a modality describing the required context; in a suitable context the
+computations are automatically unboxed. The \emph{absolute} modality (square brackets)
+describes the entire required context. For example, \texttt{map} imposes no constraints on
+the context, while the familiar \texttt{business} function requires the effect \texttt{db}
+from Section~\ref{sec:rows}:
+\begin{lstlisting}[language=modal]
+    map      : []((a -> b) -> List a -> List b)
+    business : [db](1 -> Result)
+\end{lstlisting}
+The empty brackets \texttt{[]} in the type of \texttt{map} say that the body is closed and
+does not depend on the effect context, so it can be moved anywhere; the \texttt{[db]} on
+\texttt{business} --- that running it requires a context handling \texttt{db}; the type
+\texttt{1} here denotes the unit type.
+
+The \emph{relative} modality (angle brackets) describes relative requirements: a boxed
+computation may use both the effects of the surrounding context and those listed in the
+type. Its natural habitat is the types of \emph{effect handlers}, which we have not written
+in code until now. Let us introduce them into our example language: the effect
+\lstinline|yield| declares a single operation, and the handler in the function
+\lstinline|asList| delimits the region where this operation is available and interprets it,
+accumulating elements into a list:
+\begin{lstlisting}[language=colang]
+    effect yield<a> { op yield(x: a): Unit }
+
+    fun asList(f: () => Unit / {yield<Int>}): List<Int> {
+        var acc = []
+        handle (f()) { op yield(x) { acc = acc ++ [x]; resume(()) } }
+        return acc
+    }
+\end{lstlisting}
+The computation \lstinline|f| acts as a client: an invocation of \lstinline|yield| transfers
+control to the handler, which appends an element and resumes the client by a call to
+\lstinline|resume|.
+
+In terms of the lifecycle of a contextual free variable, an invocation of \lstinline|yield|
+(an effectful operation) is an \emph{occurrence} of such a variable, free in the lexical
+sense, while the handler \emph{binds it dynamically}: it resolves this occurrence within its
+region, just as the calling context resolves \lstinline|?db|. What in the capability family
+looks like \enquote{the handler provides a capability, and the operation awaits it} is a
+reification of this binding as a witness value; the row-based and modal families resolve the
+same occurrence without reifying it as a passed value.
+
+In the modal system, the type of the argument of the handler \lstinline|asList| is recorded
+with a relative modality:
+\begin{lstlisting}[language=modal]
+    asList : <yield>(1 -> 1) -> List Int
+\end{lstlisting}
+The angle brackets \texttt{<yield>} mean that the argument may perform \texttt{yield}
+\emph{in addition} to the effects of the surrounding context, while \texttt{asList} itself
+handles this \texttt{yield}.
+
+There is a rule: a variable should be used in a context compatible with the one in which it
+was bound; it ensures both safety and encapsulation of
+effects~\cite{lindley2018encapsulating}. The resulting system is expressive enough to encode
+the programs of row-based systems~\cite{tang2025modal}, provided that the effect variables
+on arrows refer to the lexically nearest enclosing effect context. However, it still
+requires many explicit annotations --- boxing, masking~\cite{stoyan2024modern}, and a number
+of technical marks~\cite{emrich2020freezeml} --- and the kind system further complicates the
+picture.
+
+From the standpoint of our reading, the modal system works with the same capture phase as
+capability-based systems and in essence differs only in its answer to leakage: instead of
+simply forbidding a captured contextual variable to leave the context, it re-exposes it as a
+requirement to the future context --- traversing the backward edge of
+Fig.~\ref{fig:lifecycle}. This works at the junction of two notions. The modality ascribed to
+a boxed computation expresses its \emph{residual pending} requirement to the context: in a
+suitable context the computation is automatically unboxed and becomes ready to run. The kind
+system, in turn, tracks \emph{captured} (lexical) dependencies: it distinguishes values known
+to be independent of the surrounding effect context (kind $Abs$ --- such are the values of
+absolute modalities, freely transferable between contexts) from values that may carry a
+captured dependency (kind $Any$)~\cite{tang2025modal}. When a value of kind $Any$ --- for
+example, a function defined within the region of the \texttt{yield} handler and using this
+effect as a lexically visible free variable --- is transferred to another context (say,
+returned from the handler), the system does not necessarily reject the program: the
+dependency may be expressed in the type by a relative modality that makes it explicit again.
+We call this transition the \emph{uncapturing} of a variable: a bound contextual variable,
+captured by a closure, is moved back into the pending phase and thereafter tracked in the
+type as a contextual requirement. The term fixes the abstraction proposed here over the
+mechanism of modal types, not a new rule on top of the system~\cite{tang2025modal}.
+
+Let us demonstrate uncapturing on a familiar effect. Suppose that within the region of the
+\texttt{yield} handler a function \texttt{gen'} is defined that performs this effect. As long
+as it is used there, its type is the ordinary \texttt{1 -> 1}, and the dependency on
+\texttt{yield} remains a captured lexical variable. But if \texttt{gen'} leaves the handler's
+region (for example, is returned as a result), the type is augmented with a relative
+modality:
+\begin{lstlisting}[language=modal]
+    gen' : 1 -> 1           // inside the yield handler's region
+    gen' : <yield>(1 -> 1)  // after transfer beyond it
+\end{lstlisting}
+The captured variable has become pending again and visible in the type: \texttt{gen'} can now
+be applied only in a context that supports \texttt{yield}.
+
+Thus, here leak control does not reduce to a \emph{prohibition}, as in
+Section~\ref{sec:capabilities}: part of the leaks turns into the re-exposure of a contextual
+variable in the type. We stress that the prevention of unsafe leaks does not disappear: it is
+ensured by the rule of compatibility of the contexts of use and binding of a variable together
+with the kind system; the difference from capability-based systems is that this mechanism does
+not form a separate subsystem with its own annotations but is built into the discipline of
+modalities.
+
+
+\section{Comparative Analysis}
+\label{sec:comparison}
+
+Let us bring the three families into a single picture. The proposed point of view reduces the
+comparison to two questions about the lifecycle of a contextual free variable: does the system
+allow it to be bound with a value from the context and that value to be captured, and, if it
+does, what happens upon its leakage from the context. Row-based systems answer \enquote{no} to
+the first question: variables always remain in the pending phase. Capability-based and modal
+systems answer \enquote{yes} and diverge on the second: the former forbid leakage, the latter
+return the leaked variable to the pending phase. The recording of the pending phase itself also
+differs: row-based systems need special row types to enumerate the variables, whereas in
+capability-based systems it is expressed by the very list of a computation's implicit
+parameters. Everything else --- what exactly is tracked, what polymorphism is required, and, in
+particular, where the annotations concentrate --- turns out to be a \emph{consequence} of these
+answers, not an independent dimension. The comparison is given in Table~\ref{tbl:compare}.
+
+\begin{table}[t]
+  \caption{Three families of effect systems along a single axis: the lifecycle phases and
+  transitions made explicit}
+  \label{tbl:compare}
+  \centering
+  \footnotesize
+  \begin{tabular}{>{\raggedright\arraybackslash}p{2.6cm}>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{3.2cm}>{\raggedright\arraybackslash}p{3.6cm}}
+  \toprule
+  & \textbf{Row-based} & \textbf{Capability-based} & \textbf{Modal} \\
+  \midrule
+  Explicit phases and transitions & pending (row of labels) & pending (implicit parameters) and capture & pending (modalities), capture (kinds), and the backward transition to pending \\
+  What is tracked & operation labels in the row & capability objects & transitions between contexts \\
+  Polymorphism & row & contextual & implicit, by the enclosing context (no effect variables) \\
+  Annotations (a consequence of the choice) & in the public signatures of higher-order functions & at the boundaries of capability leakage & at the points of transfer between contexts \\
+  Ensuring safety & capture inexpressible; handling subtracts the label & leak prohibition by escape analysis & context-compatibility rule; a leaked variable is returned to pending \\
+  Price & effect polymorphism & escape-analysis complexity & annotations, the kind system \\
+  Example systems & Koka, Links, Java's checked exceptions, the mtl idiom (row-based recording) & Effekt, capture checking in Scala & modal effect types~\cite{tang2025modal} (a development of Frank's ideas) \\
+  \bottomrule
+  \end{tabular}
+\end{table}
+
+The pattern is visible in the consequence rows of Table~\ref{tbl:compare}: the choice of phases
+and transitions predetermines both the kind of polymorphism and the places where annotations
+concentrate. The pending phase spares one escape analysis but requires pervasive row
+polymorphism; capture gives contextual polymorphism and dispenses with explicit effect
+variables but shifts the entire burden onto retention --- by prohibiting leakage (second-class
+values, boxing, capture sets) or by returning the leaked variable to the pending phase through
+uncapturing.
+
+The concreteness of the difference is convenient to see on the same function \texttt{printMap}
+from Section~\ref{sec:rows}, which prints and applies a functional argument
+(Table~\ref{tbl:map-three}; the first two signatures are given in our example language, the
+third --- in the syntax of the modal system~\cite{tang2025modal}). In the row-based system, the
+type carries both its own label \texttt{print} and the effect variable \texttt{e} of the
+argument. In the capability-based system, the own effect has become an implicit parameter,
+while about the effects of \lstinline|f| the type is silent thanks to contextual polymorphism;
+the silence is paid for by the annotation \lstinline|local| --- the verdict of escape analysis
+directly in the signature: the argument is used only in place. In the modal system, the
+requirement \texttt{print} is expressed by an absolute modality: as with \texttt{business}, it
+is pending \enquote{from birth}. About the effects of \lstinline|f| the type is silent here too:
+the value is unboxed in any enclosing context containing \texttt{print}, and the inner arrows
+are read relative to the context of use --- the argument may perform any of its
+effects~\cite{tang2025modal} (the modality spans the whole signature; boxing the type of the
+argument itself would, on the contrary, fix its effects to exactly \texttt{print}). No effect
+variables are needed, and the place of the leak annotation is taken by uncapturing: a dependency
+carried out of its context is re-exposed in the type by a relative modality --- as with
+\texttt{gen'} (Section~\ref{sec:modal}).
+
+\begin{table}[t]
+\caption{The type of \texttt{printMap} across the three families}
+\label{tbl:map-three}
+\centering
+\footnotesize
+\begin{tabular}{@{}l@{\hspace{6pt}}l@{}}
+\toprule
+\textbf{Family} & \textbf{Type of \texttt{printMap}} \\
+\midrule
+Row-based & \lstinline[language=colang]|fun printMap<e, a, b>(f: (a) => b / {e},| \\
+          & \lstinline[language=colang]!    xs: List<a>): List<b> / {print | e}! \\
+Capability-based & \lstinline[language=colang]|context(print: Print)| \\
+                 & \lstinline[language=colang]|fun printMap<a, b>(local f: (a) => b, xs: List<a>): List<b>| \\
+Modal            & \lstinline[language=modal]|printMap : [print]((a -> b) -> List a -> List b)| \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+
+\section{Synthesis: An Effect System from Two Familiar Parts}
+\label{subsec:synthesis}
+
+A single axis suggests a constructive programme: the static discipline of an effect system,
+understood as the management of contextual free variables, can be designed as a combination of
+two independently useful and already practitioner-familiar mechanisms --- \emph{implicit
+parameters} (for the pending phase) and \emph{type-level escape analysis} (for the capture
+phase). The recipe mirrors the lifecycle (Fig.~\ref{fig:lifecycle}):
+\begin{enumerate}
+    \item pending requirements are declared as implicit parameters: the function
+    \lstinline|business4| from Section~\ref{sec:capabilities} does not open the connection
+    itself and does not drag it along as an extra argument, but declares
+    \lstinline|context(db: Db)|;
+    \item binding is performed by the call site, providing the value through
+    \lstinline|context let|;
+    \item a closure may capture the obtained value --- this gives contextual polymorphism ---
+    while escape analysis retains the captured one within the region of the context, and its
+    verdict is visible directly in the signature (the annotation \lstinline|local| in
+    Table~\ref{tbl:map-three});
+    \item an attempt to carry the value across the context boundary is met either by a
+    prohibition (Section~\ref{sec:capabilities}) or by uncapturing (Section~\ref{sec:modal});
+    note that in the second case, too, determining the place in the program where the release
+    must be performed requires some form of escape analysis.
+\end{enumerate}
+
+Implicit parameters are easier to adopt in mainstream languages than effect rows: no special
+row types are needed, and their implementations already
+exist~\cite{KEEP-context-parameters, oliveira2010type, lewis2000implicit}. The usefulness of
+type-level escape analysis, in turn, extends beyond effect systems: it makes it possible to
+reduce interprocedurally the number of heap allocations~\cite{lorenzen2024oxidizing}, to
+support such language mechanisms as ownership-based borrowing in resource
+management~\cite{matsakis2014rust, lorenzen2024oxidizing} and non-local
+returns~\cite{akhin2021kotlin}.
+
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We have shown that static control over effects is important for the reliability of programs and
+for building clear abstraction boundaries. The main thesis of the work is that three seemingly
+unrelated families of effect systems --- row-based, capability-based, and modal --- are variants
+of a single mechanism: the management of the contextual free variables of a computation at the
+type level. The families differ in which transitions of such a variable's lifecycle --- from
+pending to captured and back --- they make expressible in types, and in what happens upon the
+leakage of a captured variable (Table~\ref{tbl:compare}).
+
+This unified view not only orders existing constructions but also suggests the structure of the
+design space. We hope that this will help researchers and programming-language developers choose
+a solution matching their tasks, and will also accelerate the adoption of effect systems into
+mainstream programming languages.
+
+A natural continuation of the work is a formalization of the proposed view: a precise
+formulation of the translations between phases (in the spirit of evidence
+passing~\cite{xie2021generalized}) and a metatheory of a minimal language assembled from
+implicit parameters and type-level escape analysis.
+
+
+\printbibliography
+
+
+\section*{About the author}
+\noindent Andrey Sergeevich \textsc{Stoyan} --- PhD student at the Department of Informatics,
+National Research University Higher School of Economics (Saint Petersburg). Research interests:
+programming language design, type systems, effect systems.
+
+\end{document}

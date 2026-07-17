@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="utf-8"?>
+<style xmlns="http://purl.org/net/xbiblio/csl" class="in-text" version="1.0" demote-non-dropping-particle="never">
+  <info>
+    <title>Trudy ISP RAN / Proceedings of ISP RAS</title>
+    <id>https://local/ispras</id>
+    <category citation-format="numeric"/>
+    <summary>Reference list in the house style of Труды ИСП РАН (Proceedings of ISP RAS): surname-first authors, numeric [n]. labels, DOI/URL at the end.</summary>
+    <updated>2026-07-16T00:00:00+00:00</updated>
+  </info>
+  <locale xml:lang="en">
+    <terms>
+      <term name="in">In</term>
+      <term name="volume" form="short">vol.</term>
+      <term name="issue" form="short">no.</term>
+      <term name="page" form="short">
+        <single>p.</single>
+        <multiple>pp.</multiple>
+      </term>
+    </terms>
+  </locale>
+
+  <macro name="author">
+    <names variable="author">
+      <name name-as-sort-order="all" sort-separator=" " initialize-with="."
+            delimiter=", " et-al-min="7" et-al-use-first="1"/>
+      <substitute>
+        <names variable="editor"/>
+        <names variable="translator"/>
+      </substitute>
+    </names>
+  </macro>
+
+  <macro name="year">
+    <date variable="issued">
+      <date-part name="year"/>
+    </date>
+  </macro>
+
+  <macro name="locators">
+    <group delimiter=", ">
+      <group delimiter=" ">
+        <text term="volume" form="short"/>
+        <text variable="volume"/>
+      </group>
+      <group delimiter=" ">
+        <text term="issue" form="short"/>
+        <text variable="issue"/>
+      </group>
+    </group>
+  </macro>
+
+  <macro name="pages">
+    <group delimiter=" ">
+      <label variable="page" form="short"/>
+      <text variable="page"/>
+    </group>
+  </macro>
+
+  <macro name="publisher">
+    <group delimiter=", ">
+      <text variable="publisher"/>
+      <text variable="publisher-place"/>
+    </group>
+  </macro>
+
+  <macro name="access">
+    <choose>
+      <if variable="DOI">
+        <text variable="DOI" prefix="DOI: "/>
+      </if>
+      <else-if variable="URL">
+        <group delimiter=" ">
+          <text value="Available at:"/>
+          <text variable="URL"/>
+        </group>
+      </else-if>
+    </choose>
+  </macro>
+
+  <citation collapse="citation-number">
+    <sort>
+      <key variable="citation-number"/>
+    </sort>
+    <layout prefix="[" suffix="]" delimiter=", ">
+      <text variable="citation-number"/>
+    </layout>
+  </citation>
+
+  <bibliography entry-spacing="0" second-field-align="flush">
+    <layout>
+      <text variable="citation-number" prefix="[" suffix="]."/>
+      <text macro="author" suffix=" "/>
+      <choose>
+        <if type="article-journal article-magazine article" match="any">
+          <group suffix="." delimiter=", ">
+            <text variable="title"/>
+            <text variable="container-title"/>
+            <text macro="year"/>
+            <text macro="locators"/>
+            <text macro="pages"/>
+          </group>
+        </if>
+        <else-if type="paper-conference chapter" match="any">
+          <text variable="title" suffix="."/>
+          <group prefix=" " suffix="." delimiter=", ">
+            <group delimiter=" ">
+              <text term="in"/>
+              <text variable="container-title"/>
+            </group>
+            <text macro="publisher"/>
+            <text macro="year"/>
+            <text macro="pages"/>
+          </group>
+        </else-if>
+        <else-if type="report thesis" match="any">
+          <group suffix="." delimiter=", ">
+            <text variable="title"/>
+            <text variable="genre"/>
+            <text macro="publisher"/>
+            <text macro="year"/>
+          </group>
+        </else-if>
+        <else-if type="book" match="any">
+          <group suffix="." delimiter=", ">
+            <text variable="title"/>
+            <text macro="publisher"/>
+            <text macro="year"/>
+          </group>
+        </else-if>
+        <else>
+          <group suffix="." delimiter=", ">
+            <text variable="title"/>
+            <text variable="container-title"/>
+            <text macro="publisher"/>
+            <text macro="year"/>
+          </group>
+        </else>
+      </choose>
+      <text macro="access" prefix=" " suffix="."/>
+    </layout>
+  </bibliography>
+</style>

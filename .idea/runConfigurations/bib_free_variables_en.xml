@@ -1,14 +1,14 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="bib synergy" type="BIBTEX_RUN_CONFIGURATION" factoryName="LaTeX configuration factory">
+  <configuration default="false" name="bib free variables en" type="BIBTEX_RUN_CONFIGURATION" factoryName="LaTeX configuration factory">
     <texify-bibtex>
-      <compiler>BIBTEX</compiler>
+      <compiler>BIBER</compiler>
       <compiler-path />
       <compiler-arguments />
       <envs>
         <env name="BSTINPUTS" value=".:styles:" />
         <env name="BIBINPUTS" value=".:styles:" />
       </envs>
-      <main-file>$PROJECT_DIR$/one-plus-one.tex</main-file>
+      <main-file>$PROJECT_DIR$/effect-systems-free-variables-en.tex</main-file>
       <aux-dir />
       <latex-distribution>PROJECT_SDK</latex-distribution>
     </texify-bibtex>

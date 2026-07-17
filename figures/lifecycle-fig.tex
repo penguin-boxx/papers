@@ -1,0 +1,18 @@
+\documentclass[border=3pt]{standalone}
+\usepackage{fontspec}
+\setmainfont{tempora}
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta}
+\begin{document}
+\begin{tikzpicture}[
+  node distance=1.0cm and 3.2cm,
+  phase/.style={draw, thick, rounded corners, align=center, font=\footnotesize,
+                inner sep=4pt, minimum width=2.4cm, minimum height=0.95cm},
+  lbl/.style={font=\footnotesize, align=center}]
+  \node[phase] (unf) {Ожидание\\\emph{Unfulfilled}};
+  \node[phase, right=of unf] (cap) {Захват\\\emph{Captured}};
+  \draw[thick, -{Latex}] (unf) to[bend left=18] node[lbl, above] {выполнение и захват замыканием} (cap);
+  \draw[thick, -{Latex}] (cap) to[loop right] node[lbl, right] {удержание\\(escape-анализ)} (cap);
+  \draw[thick, -{Latex}] (cap) to[bend left=18] node[lbl, below] {повторное освобождение} (unf);
+\end{tikzpicture}
+\end{document}

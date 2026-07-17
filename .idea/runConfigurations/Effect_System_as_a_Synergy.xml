@@ -7,8 +7,11 @@
       <pdf-viewer>BUILT-IN-PDF-VIEWER</pdf-viewer>
       <viewer-command />
       <compiler-arguments>-shell-escape</compiler-arguments>
-      <envs />
-      <expand-macros-in-environment-variables>false</expand-macros-in-environment-variables>
+      <envs>
+        <env name="TEXINPUTS" value="$PROJECT_DIR$:$PROJECT_DIR$/styles:" />
+        <env name="BSTINPUTS" value="$PROJECT_DIR$:$PROJECT_DIR$/styles:" />
+      </envs>
+      <expand-macros-in-environment-variables>true</expand-macros-in-environment-variables>
       <before-run-command />
       <main-file>$PROJECT_DIR$/one-plus-one.tex</main-file>
       <output-path>$PROJECT_DIR$</output-path>

@@ -4,7 +4,10 @@
       <compiler>BIBTEX</compiler>
       <compiler-path />
       <compiler-arguments />
-      <envs />
+      <envs>
+        <env name="BSTINPUTS" value=".:styles:" />
+        <env name="BIBINPUTS" value=".:styles:" />
+      </envs>
       <main-file>$PROJECT_DIR$/escape-analysis-ivannikov.tex</main-file>
       <aux-dir />
       <latex-distribution>PROJECT_SDK</latex-distribution>
