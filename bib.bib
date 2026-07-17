@@ -753,6 +753,25 @@
     url = {https://doi.org/10.1145/3720476},
 }
 
+@article{tang2026modal,
+    author = {Tang, Wenhao and Lindley, Sam},
+    title = {Rows and Capabilities as Modal Effects},
+    year = {2026},
+    issue_date = {January 2026},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    volume = {10},
+    number = {POPL},
+    url = {https://doi.org/10.1145/3776674},
+    doi = {10.1145/3776674},
+    abstract = {Effect handlers allow programmers to model and compose computational effects modularly. Effect systems statically guarantee that all effects are handled. Several recent practical effect systems are based on either row polymorphism or capabilities. However, there remains a gap in understanding the precise relationship between effect systems with such disparate foundations. The main difficulty is that in both row-based and capability-based systems, effect tracking is typically entangled with other features such as functions.We propose a uniform framework for encoding, analysing, and comparing effect systems. Our framework exploits and generalises modal effect types, a recent novel effect system which decouples effect tracking from functions via modalities. Modalities offer fine-grained control over when and how effects are tracked, enabling us to express different strategies for effect tracking. We give encodings as macro translations from existing row-based and capability-based effect systems into our framework and show that these encodings preserve types and semantics. Our encodings reveal the essence of effect tracking mechanisms in different effect systems, enable a direct analysis on their differences, and provide practical insights on language design.},
+    journal = {Proc. ACM Program. Lang.},
+    month = jan,
+    articleno = {32},
+    numpages = {28},
+    keywords = {effect handlers, effect types, modal types},
+}
+
 @article{xu2025s,
     title = {What’s in the Box?},
     author = {Xu, Yichen and Bra{\v{c}}evac, Oliver and Pham, Cao Nguyen and Odersky, Martin},
@@ -825,6 +844,40 @@
     year = {2019},
     publisher = {ACM},
     url = {https://doi.org/10.1145/3293880.3294101},
+}
+
+@inproceedings{marino2009generic,
+    title = {A generic type-and-effect system},
+    author = {Marino, Daniel and Millstein, Todd},
+    booktitle = {Proceedings of the 4th International Workshop on Types in Language Design and Implementation (TLDI '09)},
+    pages = {39--50},
+    year = {2009},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/1481861.1481868},
+}
+
+@inproceedings{gaboardi2016combining,
+    title = {Combining effects and coeffects via grading},
+    author = {Gaboardi, Marco and Katsumata, Shin-ya and Orchard, Dominic and Breuvart, Flavien and Uustalu, Tarmo},
+    booktitle = {Proceedings of the 21st ACM SIGPLAN International Conference on Functional Programming (ICFP '16)},
+    pages = {476--489},
+    year = {2016},
+    publisher = {Association for Computing Machinery},
+    address = {New York, NY, USA},
+    url = {https://doi.org/10.1145/2951913.2951939},
+}
+
+@article{talpin1994type,
+    title = {The Type and Effect Discipline},
+    author = {Talpin, Jean-Pierre and Jouvelot, Pierre},
+    journal = {Information and Computation},
+    volume = {111},
+    number = {2},
+    pages = {245--296},
+    year = {1994},
+    publisher = {Elsevier},
+    url = {https://doi.org/10.1006/inco.1994.1046},
 }
 
 @article{tofte1997region,
