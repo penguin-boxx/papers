@@ -99,7 +99,7 @@ system is a mechanism for managing the contextual free variables of a computatio
 i.e., dependencies that are not passed as ordinary arguments but must be resolved by the
 execution context. Such a variable goes through a lifecycle of two phases: it arises
 pending, as an unfulfilled contextual requirement, and once bound, its value can be
-captured by a closure as a lexical free variable. Families of effect systems differ in
+captured by a closure. Families of effect systems differ in
 which phases and transitions of this lifecycle they make explicit in types. Classical
 row-based systems (Koka, Links, Java's checked exceptions) keep the variables pending and
 cannot express capture. Capability-based systems allow capture but forbid a captured
@@ -120,7 +120,7 @@ already familiar to practitioners: implicit parameters and type-level escape ana
 которые не передаются обычными аргументами, а должны разрешаться контекстом исполнения.
 Такая переменная проходит \emph{жизненный цикл} из двух фаз: она возникает ожидающей ---
 невыполненным требованием к контексту, --- а после связывания её значение может быть
-захвачено замыканием как лексическая свободная переменная. Семейства систем эффектов
+захвачено замыканием. Семейства систем эффектов
 различаются тем, какие фазы и переходы этого цикла они делают явными в типах.
 Классические строковые системы (Koka, Links, проверяемые исключения Java) держат
 переменные ожидающими и не выражают захват. Системы на основе возможностей допускают
