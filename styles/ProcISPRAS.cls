@@ -136,8 +136,10 @@
 
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[LE]{\scriptsize \authorlistheadru{} \@titleru{}. Труды ИСП РАН, \theyearhead{}, том~\thevolhead{} вып.~\theissuehead{}, с.~\thepageshead{}}
-\fancyhead[LO]{\scriptsize \authorlistheaden{} \@titleen{}. Trudy ISP RAN/Proc. ISP RAS, \theyearhead{}, vol.~\thevolhead{}, issue~\theissuehead{}, pp.~\thepageshead{}}
+% Running heads use the SHORT titles (\titleheadru/\titleheaden); the full \@titleru/\@titleen
+% made two-line heads that overflow the official headheight=8pt (local fix, reported upstream).
+\fancyhead[LE]{\scriptsize \authorlistheadru{} \thetitleheadru{}. Труды ИСП РАН, \theyearhead{}, том~\thevolhead{} вып.~\theissuehead{}, с.~\thepageshead{}}
+\fancyhead[LO]{\scriptsize \authorlistheaden{} \thetitleheaden{}. Trudy ISP RAN/Proc. ISP RAS, \theyearhead{}, vol.~\thevolhead{}, issue~\theissuehead{}, pp.~\thepageshead{}}
 \fancyfoot[RO,LE]{\thepage}
 \renewcommand{\headrulewidth}{.1pt}
 \renewcommand{\footrulewidth}{0pt}

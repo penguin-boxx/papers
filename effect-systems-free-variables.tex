@@ -353,7 +353,7 @@ brachthauser2022effects, boruch2023capturing}, модальные типы~\cite
 Зафиксируем главное требование к системе эффектов --- \emph{безопасность эффектов}:
 всякий эффект может выполняться лишь в контексте, который его поддерживает, иначе
 программа должна быть отвергнута. В терминах свободных переменных это означает, что
-каждая такая переменная должна быть разрешена контекстом вызова.
+каждая такая переменная должна быть разрешена объемлющим контекстом вызова.
 
 Полезен и контроль за тем, что происходит с такой переменной после получения
 значения. Здесь различимы два события: сначала динамическая переменная \lstinline|?db|
@@ -929,7 +929,7 @@ The type of \texttt{asList} across the three families}
 \toprule
 \textbf{Семейство} & \textbf{Тип \texttt{asList}} \\
 \midrule
-Строковая & \lstinline[language=colang]!fun asList<e>(f: () -> Unit / {yield | e}):! \\
+Строковая & \lstinline[language=colang]!fun asList<e>(f: () -> Unit / {yield<Int> | e}):! \\
           & \lstinline[language=colang]|    List<Int> / {e}| \\
 Возможности      & \lstinline[language=colang]|fun asList(local f: context(Yield<Int>) () -> Unit):| \\
                  & \lstinline[language=colang]|    List<Int>| \\

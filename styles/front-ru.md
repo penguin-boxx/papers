@@ -1,7 +1,5 @@
-![](cc-by.png){width="1.6cm"}
-
-::: {custom-style="ispText_main"}
-**DOI: 10.15514/ISPRAS-2026-XX(X)-XX**
+::: {custom-style="ispDoiBadge"}
+**DOI: 10.15514/ISPRAS-2026-XX(X)-XX**`<w:r><w:tab/></w:r>`{=openxml}![](cc-by.png){width="2.5cm"}
 :::
 
 ::: {custom-style="ispHeader"}
