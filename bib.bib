@@ -193,7 +193,8 @@
     title = {A polymorphic type system for extensible records and variants},
     author = {Gaster, Benedict R and Jones, Mark P},
     year = {1996},
-    institution = {Technical Report NOTTCS-TR-96-3, Department of Computer Science, University of Nottingham},
+    number = {NOTTCS-TR-96-3},
+    institution = {Department of Computer Science, University of Nottingham},
     url = {https://web.cecs.pdx.edu/~mpj/pubs/96-3.pdf},
     urldate = {2026-07-02},
 }
@@ -285,7 +286,7 @@
 
 @misc{odersky2004scala,
     title = {The Scala language specification},
-    author = {Odersky, Martin and Altherr, Philippe and Cremet, Vincent and Emir, Burak and Micheloud, Stphane and Mihaylov, Nikolay and Schinz, Michel and Stenman, Erik and Zenger, Matthias},
+    author = {Odersky, Martin and Altherr, Philippe and Cremet, Vincent and Emir, Burak and Micheloud, St{\'e}phane and Mihaylov, Nikolay and Schinz, Michel and Stenman, Erik and Zenger, Matthias},
     year = {2004},
     publisher = {Lausanne, Switzerland},
     url = {https://www.scala-lang.org/files/archive/spec/},
@@ -363,7 +364,7 @@
     journal = {Logical methods in computer science},
     volume = {9},
     year = {2013},
-    publisher = {Episciences. org},
+    publisher = {Episciences.org},
     url = {https://doi.org/10.2168/LMCS-9(4:23)2013},
 }
 
@@ -383,12 +384,16 @@
     url = {https://doi.org/10.1145/2663171.2663188},
 }
 
-@article{leijen2014koka,
+@inproceedings{leijen2014koka,
     title = {Koka: Programming with row polymorphic effect types},
     author = {Leijen, Daan},
-    journal = {arXiv preprint arXiv:1406.2061},
+    booktitle = {Proceedings of the 5th Workshop on Mathematically Structured Functional Programming (MSFP 2014)},
+    series = {EPTCS},
+    volume = {153},
+    pages = {100--126},
     year = {2014},
-    url = {https://doi.org/10.48550/arXiv.1406.2061},
+    doi = {10.4204/EPTCS.153.8},
+    url = {https://doi.org/10.4204/EPTCS.153.8},
 }
 
 @inproceedings{wu2014effect,
@@ -400,16 +405,15 @@
     url = {https://doi.org/10.1145/2633357.2633358},
 }
 
-@article{petricek2014coeffects,
+@inproceedings{petricek2014coeffects,
     title = {Coeffects: a calculus of context-dependent computation},
     author = {Petricek, Tomas and Orchard, Dominic and Mycroft, Alan},
-    journal = {ACM SIGPLAN Notices},
-    volume = {49},
-    number = {9},
+    booktitle = {Proceedings of the 19th ACM SIGPLAN International Conference on Functional Programming (ICFP '14)},
     pages = {123--135},
     year = {2014},
-    publisher = {ACM New York, NY, USA},
-    url = {https://doi.org/10.1145/2692915.2628160},
+    publisher = {ACM},
+    doi = {10.1145/2628136.2628160},
+    url = {https://doi.org/10.1145/2628136.2628160},
 }
 
 @inproceedings{hillerstrom2016liberating,
@@ -418,7 +422,6 @@
     booktitle = {Proceedings of the 1st International Workshop on Type-Driven Development},
     pages = {15--27},
     year = {2016},
-    key = {value},
     url = {https://doi.org/10.1145/2976022.2976033},
 }
 
@@ -464,18 +467,19 @@
     url = {https://doi.org/10.1145/3122975.3122977},
 }
 
-@article{lindley2017do,
+@inproceedings{lindley2017do,
     title = {Do be do be do},
     author = {Lindley, Sam and McBride, Conor and McLaughlin, Craig},
-    journal = {Proceedings of the 44th ACM SIGPLAN Symposium on Principles of Programming Languages},
+    booktitle = {Proceedings of the 44th ACM SIGPLAN Symposium on Principles of Programming Languages},
     pages = {500--514},
     year = {2017},
+    doi = {10.1145/3009837.3009897},
     url = {https://doi.org/10.1145/3009837.3009897},
 }
 
 @inproceedings{chandrasekaran2018algebraic,
     title = {Algebraic effect handlers go mainstream (dagstuhl seminar 18172)},
-    author = {Chandrasekaran, Sivaramakrishnan Krishnamoorthy and Leijen, Daan and Pretnar, Matija and Schrijvers, Tom},
+    author = {Sivaramakrishnan, K. C. and Leijen, Daan and Pretnar, Matija and Schrijvers, Tom},
     booktitle = {Dagstuhl reports},
     volume = {8},
     number = {4},
@@ -509,7 +513,8 @@
     volume = {4},
     number = {POPL},
     pages = {1--29},
-    year = {2019},
+    year = {2020},
+    doi = {10.1145/3371116},
     publisher = {ACM New York, NY, USA},
     url = {https://doi.org/10.1145/3371116},
 }
@@ -645,7 +650,8 @@
     title = {Scoped capabilities for polymorphic effects},
     author = {Odersky, Martin and Boruch-Gruszecki, Aleksander and Lee, Edward and Brachth{\"a}user, Jonathan and Lhot{\'a}k, Ond{\v{r}}ej},
     journal = {arXiv preprint arXiv:2207.03402},
-    year = {2022}
+    year = {2022},
+    doi = {10.48550/arXiv.2207.03402},
 }
 
 @article{brachthauser2022effects,
@@ -725,8 +731,8 @@
 @misc{KEEP-context-parameters,
     author = {Alejandro Serrano and Marat Akhin and Nikita Bobko and Ilya Gorbunov and Mikhail Zarechenskii and Denis Zharkov},
     title = {Context parameters (KEEP-367)},
-    url = {https://github.com/Kotlin/KEEP/blob/context-parameters/proposals/context-parameters.md},
-    note = {Design proposal for context parameters in Kotlin. Last updated: Nov 21, 2024},
+    url = {https://github.com/Kotlin/KEEP/blob/master/proposals/context-parameters.md},
+    note = {Design proposal for context parameters in Kotlin; implemented --- stable since Kotlin 2.4.0, see \url{https://kotlinlang.org/docs/whatsnew24.html}},
     year = {2024},
     urldate = {2026-07-02},
 }
@@ -753,6 +759,19 @@
     url = {https://doi.org/10.1145/3720476},
 }
 
+@article{mueller2023regions,
+    title = {From Capabilities to Regions: Enabling Efficient Compilation of Lexical Effect Handlers},
+    author = {M{\"u}ller, Marius and Schuster, Philipp and Starup, Jonathan Lindegaard and Ostermann, Klaus and Brachth{\"a}user, Jonathan Immanuel},
+    journal = {Proceedings of the ACM on Programming Languages},
+    volume = {7},
+    number = {OOPSLA2},
+    pages = {941--970},
+    year = {2023},
+    publisher = {ACM},
+    doi = {10.1145/3622831},
+    url = {https://doi.org/10.1145/3622831},
+}
+
 @article{tang2026modal,
     author = {Tang, Wenhao and Lindley, Sam},
     title = {Rows and Capabilities as Modal Effects},
@@ -768,6 +787,7 @@
     journal = {Proc. ACM Program. Lang.},
     month = jan,
     articleno = {32},
+    pages = {923--950},
     numpages = {28},
     keywords = {effect handlers, effect types, modal types},
 }
@@ -1017,4 +1037,16 @@
     year = {2024},
     url = {https://zio.dev/},
     urldate = {2026-07-02},
+}
+
+@article{phipps2023continuing,
+  title={Continuing WebAssembly with effect handlers},
+  author={Phipps-Costin, Luna and Rossberg, Andreas and Guha, Arjun and Leijen, Daan and Hillerstr{\"o}m, Daniel and Sivaramakrishnan, K. C. and Pretnar, Matija and Lindley, Sam},
+  journal={Proceedings of the ACM on Programming Languages},
+  volume={7},
+  number={OOPSLA2},
+  pages={460--485},
+  year={2023},
+  publisher={ACM New York, NY, USA},
+  url={https://doi.org/10.1145/3622814},
 }
