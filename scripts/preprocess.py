@@ -30,11 +30,22 @@ def captionisp(block):
     norm = lambda x: re.sub(r'\s+', ' ', x.replace('%', ' ')).strip()
     return norm(a), norm(b)
 
+# Cross-reference numbers are derived from float order here (not hand-mapped):
+# each figure/table \label is recorded as it is numbered, then \ref to it resolved.
+refmap = {}
+def label_of(block):
+    m = re.search(r'\\label\{([^}]+)\}', block)
+    return m.group(1) if m else None
+
 # --- figure ---
+fc = [0]
 def figsub(m):
-    a, b = captionisp(m.group(0))
-    return ('\\includegraphics[width=12cm]{lifecycle.png}\n\n'
-            '\\begin{ispcap}\n' + 'Рис. 1. ' + a + '\\\\\n' + 'Fig. 1. ' + b + '\n\\end{ispcap}')
+    fc[0] += 1; n = fc[0]; block = m.group(0)
+    a, b = captionisp(block)
+    lab = label_of(block)
+    if lab: refmap[lab] = str(n)
+    return (f'\\includegraphics[width=12cm]{{lifecycle.png}}\n\n'
+            f'\\begin{{ispcap}}\nРис. {n}. ' + a + '\\\\\n' + f'Fig. {n}. ' + b + '\n\\end{ispcap}')
 t, nf = re.subn(r'\\begin\{figure\}.*?\\end\{figure\}', figsub, t, flags=re.S)
 
 # --- tables ---
@@ -43,9 +54,15 @@ cnt = [0]
 def tabsub(m):
     cnt[0] += 1; n = cnt[0]; block = m.group(0)
     a, b = captionisp(block); tb = tabular.search(block).group(0)
+    lab = label_of(block)
+    if lab: refmap[lab] = str(n)
     return ('\\begin{ispcapt}\n' + f'Табл. {n}. ' + a + '\\\\\n' + f'Table {n}. ' + b
             + '\n\\end{ispcapt}\n\n' + tb)
 t, nt = re.subn(r'\\begin\{table\}.*?\\end\{table\}', tabsub, t, flags=re.S)
+
+# resolve \ref to figures/tables -> their number (section refs are left for pandoc)
+for lab, num in refmap.items():
+    t = t.replace('\\ref{' + lab + '}', num)
 
 # --- dedent lstlisting blocks (source indents them; pandoc strips only line 1) ---
 def dedent_lst(m):
@@ -56,6 +73,12 @@ def dedent_lst(m):
     return head + '\n'.join(l[k:] if len(l) >= k else l for l in lines)
 t = re.sub(r'(\\begin\{lstlisting\}(?:\[[^\]]*\])?\n)(.*?)(?=\n\\end\{lstlisting\})',
            dedent_lst, t, flags=re.S)
+
+# --- trivial inline math -> plain formatting (OMML math objects render with
+# missing-glyph boxes in some Word/LO math-font fallbacks; italic/superscript
+# text is what the journal's own typesetting uses anyway) ---
+t = re.sub(r'\$\^\\epsilon\$', r'\\textsuperscript{ε}', t)
+t = re.sub(r'\$([A-Za-z]+)\$', r'\\emph{\1}', t)
 
 # --- guillemets ---
 t = t.replace('<<', '«').replace('>>', '»')

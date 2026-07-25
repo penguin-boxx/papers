@@ -20,16 +20,12 @@ function Div(el)
   end
 end
 
--- 3. Cross-references: figures/tables -> number; section refs already numbered
-local refnum = {
-  ["fig:lifecycle"] = "1",
-  ["tbl:free-vars"] = "1", ["tbl:compare"] = "2", ["tbl:map-three"] = "3",
-}
+-- 3. Section cross-references: pandoc already rendered the number; drop the dead
+--    hyperlink and keep the number. (Figure/table refs are resolved to plain
+--    numbers upstream in preprocess.py, so they never reach here as links.)
 function Link(el)
   if el.attributes["reference-type"] == "ref" then
-    local r = el.attributes["reference"]
-    if refnum[r] then return pandoc.Str(refnum[r]) end
-    return el.content  -- section refs: drop the (dead) hyperlink, keep the number text
+    return el.content
   end
 end
 
