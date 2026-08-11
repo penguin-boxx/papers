@@ -160,62 +160,68 @@ Fourth, we establish three escape-analysis guarantees as machine-checked stateme
 Fifth, we provide an executable example library and machine-checked \emph{negative} witnesses that reject locality-violating programs (Section~\ref{sec:evaluation}).
 None of this metatheory---progress, preservation, or any escape guarantee---appears in the original paper.
 
-\section{Solution Overview}\label{sec:overview}
+\section{\texorpdfstring{$Core_\Delta$}{Core-Delta} by Example}\label{sec:overview}
 
 Before the formal development, we sketch the analysis informally, in the surface notation of the original paper~\cite{stoyan2025existential}.
 Types carry \emph{lifetime} labels: a type \lstinline[language=colang]|T| with lifetime \lstinline[language=colang]|lab| is written \lstinline[language=colang]{T'lab}; the label \lstinline[language=colang]|free| marks values that may escape, \lstinline[language=colang]|local| marks values confined to their defining scope, and a function type carries the lifetime of its \emph{closure}; a type whose overall lifetime restriction is \lstinline[language=colang]|free| we call \emph{escapable}.
-A compound value's lifetime is the minimum (written \lstinline[language=colang]|+|) of its components' lifetimes, and destructuring recovers component lifetimes from the container's; that paper develops this value discipline in detail, together with lifetime polymorphism and bounded quantification over tracked types.
+A compound value's lifetime is the minimum (written \lstinline[language=colang]|+|) of its components' lifetimes; that paper develops this value discipline in detail, together with lifetime polymorphism and bounded quantification over tracked types.
 This paper extends the same discipline to algebraic effect handlers.
 
-Entering a $\keyword{handle}$ block mints a \emph{capability}---a first-class value granting the right to perform the effect's operations---and passes it to the handled code.
-Besides aborting, a handler may run the suspended computation's \emph{continuation}, reified as a first-class \emph{resumption}; resuming once recovers reader- and state-like effects, resuming more than once expresses backtracking, and not resuming at all recovers exceptions.
-A capability is meaningful only while its handler is on the stack: had it escaped the $\keyword{handle}$ block, a later $\keyword{perform}$ would address a handler that no longer exists.
-Preventing that escape needs no new machinery: a capability is simply a value whose data type sits at lifetime $\local$, and a resumption is a function whose closure is $\local$.
-
-Listing~\ref{lst:reader} shows the discipline on a reader effect.
-The capability \texttt{c} has the $\local$ data type \lstinline[language=colang]{Reader<Int>'local}, so by the ordinary closure rule any function capturing it is itself $\local$ and cannot flow where a $\free$ value is expected.
-The final function \texttt{leak} is rejected: its $\keyword{handle}$ body would answer at \lstinline[language=colang]{Reader<Int>'local}, and the handle rule requires the body's answer type to be non-local---the type system refuses to let the capability out.
-
-\begin{lstlisting}[language=colang,label={lst:reader},caption={A reader handler in surface notation. Each \texttt{perform} suspends to the handler, which resumes with \texttt{env}; the capability \texttt{c} is $\local$ and cannot leave the $\keyword{handle}$ block.}]
-        effect Reader<e> { ask: Unit -> e }
-
-        // run body, answering every ask with env
-        fun withReader(env: Int,
-                       body: (Reader<Int>) -local-> Int): Int =
-            handle c: Reader<Int> { ask => resume(env) }
-            in body(c)              // c : Reader<Int> local
-
-        withReader(42, fun(c) => perform c ())    // evaluates to 42
-
-        // rejected: the handle body would answer at
-        // Reader<Int> local, and noLocal(T_B) fails
-        fun leak(env: Int): Reader<Int> =
-            handle c: Reader<Int> { ask => resume(env) } in c
+The design's distinctive move---the original paper's namesake---is its \emph{existential} treatment of those component lifetimes.
+User-defined types take no lifetime parameters; a constructor instead absorbs the parts' lifetimes into the annotation of the whole:
+\begin{lstlisting}[language=colang]
+        fun makeRepo(file: File'lf, conn: Connection'lc): Repository'lf+lc =
+            Repository(file, conn)
 \end{lstlisting}
+The resulting type never says which part contributed which lifetime---the parts' individual lifetimes vanish from it, which is what makes them existential---yet nothing is lost for safety: a repository built around a $\local$ connection is itself $\local$, so packing a tracked value into a container cannot launder it.
+Unpacking is the mirror image: matching a \lstinline[language=colang]|Repository'local| open recovers the connection's lifetime only as a fresh variable bounded by the repository's own $\local$, and a variance-aware approximation then eliminates that variable from the branch's result type (\rname{T-Match}, Section~\ref{sec:calculus}).
 
-Effects declare any number of operations; a handler supplies one clause per operation, and a $\keyword{perform}$ selects one by name.
-Listing~\ref{lst:state} declares a two-operation state effect in state-passing style: each clause resumes and threads the state through a returned function.
-Nothing about escape analysis changes---the one capability grants both operations, and the same $\local$ discipline confines it.
+Entering a $\keyword{handle}$ block mints a \emph{capability}---a first-class value granting the right to perform the effect's operations---and passes it to the handled code; a capability is meaningful only while its handler is on the stack, so an escaped capability would address a handler that no longer exists.
+Preventing that escape needs no new machinery---a capability is simply a value whose data type sits at lifetime $\local$---and Listing~\ref{lst:state} shows the whole discipline at work on a two-operation state effect, written in state-passing style.
 
-\begin{lstlisting}[language=colang,label={lst:state},caption={A two-operation state effect. One capability \texttt{st} grants both \texttt{get} and \texttt{put}; the handler threads the state through returned functions.}]
-        effect State<s> { get: Unit -> s, put: s -> Unit }
+\begin{lstlisting}[language=colang,label={lst:state},caption={A two-operation state effect in state-passing style. One capability \texttt{st} grants both operations; the rejected \texttt{leak} tries to return it.}]
+        effect State<s> { get: (Unit) -> s, put: (s) -> Unit }
 
         fun withState<s <: Any'free, r <: Any'free>(
-                body: (State<s>) -local-> r): (s) -local-> r =
-            handle st: State<s> {
-                get    => fun(s) => resume(s)(s)
+                body: (State<s>'local) -local-> r): (s) -local-> r =
+            handle st: State<s>'local {
+                get()  => fun(s) => resume(s)(s)
                 put(x) => fun(s) => resume(())(x)
             } in
-                let y = body(st) in fun(s) => y
+                let res = body(st) in fun(s) => res
+
+        withState(fun(st) =>
+            let a = perform st.get() in    // reads 2
+            let _ = perform st.put(3) in
+            let b = perform st.get() in    // reads 3
+            a + b)(2)                      // evaluates to 5
+
+        // rejected: the body would answer at State<Int>'local,
+        // and the handle rule demands an escapable answer type
+        fun leak(): State<Int>'local =
+            handle st: State<Int>'local { ... } in st
 \end{lstlisting}
+
+The effect declares two operations; $\keyword{handle}$ installs one clause per declared operation and hands the fresh capability \texttt{st} to \texttt{body}; a $\keyword{perform}$ names the capability and the operation it invokes.
+The clauses use the classic state-passing encoding of mutable state~\cite{plotkin2013handling}: the $\keyword{handle}$'s answer is a function of the current state, and each \lstinline[language=colang]|resume| threads it onward.
+The closing call shows the observable behaviour: started at \lstinline[language=colang]|2|, the run answers the first \lstinline[language=colang]|get()| with \lstinline[language=colang]|2|, makes \lstinline[language=colang]|put(3)| visible to the second \lstinline[language=colang]|get()|, and delivers the sum \lstinline[language=colang]|5|.
+A clause that never resumes recovers exceptions, one that resumes twice expresses backtracking, and nothing in the analysis depends on how many operations an effect declares.
+
+The escape analysis itself needs nothing new for any of this.
+Safety demands one thing: nothing that can still reach the capability may leave the $\keyword{handle}$.
+The discipline delivers it from two sides.
+On the value side, locality is contagious: \texttt{st} is an ordinary $\local$ value, so by the minimum rule a closure capturing it or a container storing it is $\local$ in turn, at any depth---which is also why \texttt{body} must declare its argument $\local$.
+On the boundary side, everything the type system lets cross out---the body's answer, checked by the $\keyword{handle}$ rule, and likewise the arguments operations carry to their clauses---must be escapable.
+Together they leave no exit: the final \texttt{leak} would answer at \lstinline[language=colang]{State<Int>'local} and is rejected, and wrapping \texttt{st} in an \lstinline[language=colang]|Option| changes nothing---that container check is exactly our first negative witness (Section~\ref{sec:evaluation}).
 
 The guarantees we prove can be read informally.
 First, a capability---every one of its syntactic occurrences, even under $\lambda$s and inside data---always sits under its own handler.
 Second, the two data channels crossing the handler boundary (the operation argument going in, the delimited body's answer coming out) only ever carry values of escapable types.
-Third, a program typed at an escapable type only ever delivers values containing no capability or delimiter at any depth.
+Third, a program typed at an escapable type only ever delivers values containing no capability or \emph{running} handler at any depth.
 Section~\ref{sec:mechanization} states all three as machine-checked theorems over the reduction relation.
 
 \section{Related Work and Problem Statement}\label{sec:related-work}
+
 Classical region systems made lifetime an explicit object of typing long before modern ownership languages~\cite{tofte1997region,fluet2006monadic}.
 Their aim is close to ours: to replace a global analysis with local conditions at function boundaries.
 The difference is that $Core_\Delta$ does not parameterize every user type by a lifetime.
@@ -236,6 +242,7 @@ We deliberately use pure de Bruijn indices with ordinary recursive shift and sub
 The model must therefore (i) express lifetimes in types without overloading the user with parameters; (ii) confine a runtime capability to its handler; (iii) admit first-class continuations while keeping them out of every escapably typed position; and (iv) have a checkable metatheory suitable as a compiler specification.
 
 \section{The \texorpdfstring{$Core_\Delta$}{Core-Delta} Calculus}\label{sec:calculus}
+
 The mechanization covers the system in full; the figures of this section present the core rules, with routine well-formedness, length, and effect-lookup premises elided.
 
 \subsection{Syntax}
@@ -460,7 +467,7 @@ The operation \emph{result} delivered by the resumption may be $\local$ (Section
 And an operation clause that never resumes consumes the delimiter---\rname{H-Perform} re-installs it only inside the resumption---so its answer, possibly $\local$ since \rname{T-Handle} intentionally leaves $T_R$ unconstrained, becomes the $\keyword{handle}$ expression's own result in the enclosing scope; in the extreme it may even hand out the resumption upcast to $\Any\,\local$, harmlessly, since $\Any$ has no eliminator and $\Any\,\local$ is not escapable---precisely why the depth theorem below is stated at \emph{escapable} types.
 The two guarded channels are thus safe for local values; the boundary as a whole is deliberately \emph{not} impermeable---the unguarded flows are part of the design.
 
-\emph{Non-escape.} The headline form is depth-blind and applies at \emph{any} escapable type: \texttt{source\_noloc\_result\_no\_runtime\_forms} shows that a source program typed at a $\noloc$ type only ever delivers values containing no capability or delimiter at any depth.
+\emph{Non-escape.} The headline form is depth-blind and applies at \emph{any} escapable type: \texttt{source\_noloc\_result\_no\_runtime\_forms} shows that a source program typed at a $\noloc$ type only ever delivers values containing no capability or delimiter at any depth---the \emph{runtime} forms, not source $\keyword{handle}$ expressions, which may well sit under a $\lambda$ in a delivered closure.
 Specialized to data types, \texttt{free\_data\_result\_top\_lifetime} shows that a computation staying typed at $K\,\free\,\overline{\tau}$ along every reduction terminates only in constructors whose top-level lifetime annotation is provably non-local; by preservation the trace premise disappears for source programs (\texttt{source\_free\_data\_result\_top\_lifetime}).
 A subtyping-level companion, \texttt{local\_data\_not\_escapes}, shows the coercion $\tsub{\Gamma}{K\,\local\,\overline{\tau}}{K\,\free\,\overline{\tau}}$ underivable in any runtime environment: local data cannot even be retyped as free, let alone delivered.
 The type information therefore forbids the observable leakage of local values.
@@ -484,9 +491,9 @@ The development targets Rocq~9.1; exactly the files listed in \texttt{src/\_CoqP
 A separate target, \texttt{make check-assumptions}, re-runs the \texttt{Print Assumptions} gate over a capstone list \emph{derived} from the sources (including the example witnesses), and \texttt{make verify} adds a documentation-freshness gate; both run in continuous integration, and the maintenance tooling additionally requires Python~3, while the verified development itself needs only Rocq.
 The repository ships under the MIT license with a generated theorem index and build statistics (\texttt{STATS.md}), and the artifact guide documents the tag-release-archive procedure (GitHub release plus Zenodo DOI) to be run on the reviewed commit.
 
-\emph{Positive examples.} \texttt{Examples.v}/\texttt{ExamplesProofs.v} mechanize the programs of Listings~\ref{lst:reader} and~\ref{lst:state} in monomorphic, inlined form (\texttt{reader\_example}, \texttt{state\_example}) together with exception and optionality handlers, each with a machine-checked typing proof and a reduction trace.
-On the reader program the boundary guarantee is instantiated concretely (\texttt{reader\_example\_boundary\_noloc} specializes \texttt{source\_handler\_boundary\_noloc} to its execution), and the rejected \texttt{leak} function fails exactly the $\noloc_\Gamma(T_B)$ premise of \rname{T-Handle}.
-On the two-operation \texttt{withState} run of Listing~\ref{lst:state} (\texttt{state\_example} in the artifact), the capstone guarantees---soundness, confinement, and a boundary event---are witnessed directly (\texttt{ExamplesSafety.v}).
+\emph{Positive examples.} \texttt{Examples.v}/\texttt{ExamplesProofs.v} mechanize the program of Listing~\ref{lst:state} in monomorphic, inlined form (\texttt{state\_example}), together with reader, exception, and optionality handlers, each with a machine-checked typing proof and a reduction trace.
+On the two-operation \texttt{withState} run, the capstone guarantees---soundness, confinement, and a boundary event---are witnessed directly (\texttt{ExamplesSafety.v}); the rejected \texttt{leak} of Listing~\ref{lst:state} fails exactly the $\noloc_\Gamma(T_B)$ premise of \rname{T-Handle}.
+On the one-operation reader analogue, the boundary guarantee is instantiated concretely: \texttt{reader\_example\_boundary\_noloc} specializes \texttt{source\_handler\_boundary\_noloc} to its execution.
 A delegating handler, whose operation clause performs on an outer capability, carries its own safety witnesses, alongside bounded sums and multi-$\keyword{perform}$ runs.
 The library also exercises the resumption discipline beyond one-shot use: a multi-shot handler whose operation body resumes twice and sums both results (\texttt{multishot\_example}, with a machine-checked reduction trace evaluating to $5$) and a forwarding example that nests handlers.
 No linearity restriction is imposed or needed---a resumption is an ordinary $\local$ function, so multi-shot use is ordinary application, covered by preservation.
