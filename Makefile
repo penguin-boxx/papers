@@ -6,9 +6,9 @@
 export TEXINPUTS := .:styles:$(TEXINPUTS)
 export BSTINPUTS := .:styles:$(BSTINPUTS)
 
-.PHONY: all fvar-ru fvar-en fvar-ru-docx escape-proofs escape overview opo clean
+.PHONY: all fvar-ru fvar-en fvar-ru-docx escape-proofs escape-jfp escape overview opo clean
 
-all: fvar-ru fvar-en escape-proofs escape overview opo
+all: fvar-ru fvar-en escape-proofs escape-jfp escape overview opo
 
 ## effect-systems-free-variables — Труды ИСП РАН (RU). latexmk drives xelatex + biber
 ## and reruns until references/citations resolve (pdflatex can't do the Cyrillic bib heading).
@@ -28,6 +28,11 @@ fvar-ru-docx:
 escape-proofs:
 	python3 scripts/gen_refs.py
 	latexmk -pdf escape-analysis-proofs.tex
+
+## escape-analysis-jfp — extended Journal of Functional Programming version (article class
+## draft; swap in CUP's jfp.cls for submission). natbib author-year + bibtex over bib.bib.
+escape-jfp:
+	latexmk -pdf escape-analysis-jfp.tex
 
 ## escape-analysis-ivannikov — Ivannikov conference (article + bibtex, plain style).
 escape:

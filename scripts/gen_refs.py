@@ -120,9 +120,11 @@ for key in order:
         if not dm and f.get('note'):
             dm = re.search(r'Accessed:\s*(\d{4})-(\d{2})-(\d{2})', f['note'])
         acc = f' (accessed {dm.group(3)}.{dm.group(2)}.{dm.group(1)})' if dm else ''
+        acc_ru = f' (дата обращения: {dm.group(3)}.{dm.group(2)}.{dm.group(1)})' if dm else ''
         tail = f' Available at: \\url{{{url}}}{acc}.' if url else ''
+        tail_ru = f' URL: \\url{{{url}}}{acc_ru}.' if url else ''
         eng = f'{ea} {title}. {f["year"]}.{tail}'
-        rus = f'\\emph{{{ra}}} {title} // {f["year"]}.{tail}'
+        rus = f'\\emph{{{ra}}} {title}. {f["year"]}.{tail_ru}'
     else:
         sys.exit(f'unhandled type {etype} for {key}')
     eng_items.append(f'\\bibitem{{{key}}}\n{eng}\n')
