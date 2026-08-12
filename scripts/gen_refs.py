@@ -68,6 +68,11 @@ def initials(given):
 
 def fmt_author(a):
     a = a.strip()
+    if a.startswith('{') and a.endswith('}'):
+        # brace-protected corporate author ({{Unison Computing}}): verbatim, no initials;
+        # trailing period separates it from the title (initialed authors get this for free)
+        name = strip_outer_braces(a) + '.'
+        return name, name
     if ',' in a:
         last, given = a.split(',', 1)
     else:

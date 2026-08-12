@@ -94,28 +94,28 @@
 \authorsEng{Stoyan~A.}
 
 \abstractRus{Типизированный escape-анализ переносит вопрос о выходе значения за пределы его лексической области видимости из оптимизирующего прохода компилятора в систему типов.
-В работе рассматривается исчисление Core-Delta, в котором времена жизни образуют двухточечную решётку с операцией минимума (побеждает более короткое, более ограничительное время жизни), составные данные скрывают времена жизни полей экзистенциально и восстанавливают их при сопоставлении с образцом, а алгебраические обработчики эффектов передаются как значения-возможности.
+В работе рассматривается исчисление Core-Delta, в котором времена жизни образуют двухточечную решётку с операцией минимума (формально это join решётки), составные данные скрывают времена жизни полей экзистенциально и восстанавливают их при сопоставлении с образцом, а алгебраические обработчики эффектов передаются как значения-возможности.
 Цель~--- дать машинно-проверенную метатеорию этого исчисления, точно установить, какие гарантии escape-анализа следуют из правил типизации, и тем самым дать компиляторам, совмещающим стековое или регионное размещение значений с обработчиками эффектов, верифицированную спецификацию типизации.
 Приводится формальная система: синтаксис, подтипизация времён жизни и типов, типизация с правилом минимума для конструкторов и устранением экзистенциальных времён жизни с учётом вариантности, а также семантика редукций с runtime-маркерами, делимитерами и реифицированными продолжениями.
-Синтаксис, семантика и доказательства механизированы в Rocq/Coq на чистых индексах де Брёйна (около 29 тыс. строк; собранная разработка не содержит аксиом, незавершённых доказательств и гипотез).
+Синтаксис, семантика и доказательства механизированы в Rocq/Coq на чистых индексах де Брёйна (около 29 тыс. строк, без аксиом, незавершённых доказательств и гипотез).
 Доказаны продвижение, сохранение типа и типобезопасность: все runtime-инварианты маркерной семантики машинно доказаны сохраняющимися при редукции.
 Для исходных программ без каких-либо предположений о runtime-инвариантах доказаны три гарантии escape-анализа: каждое синтаксическое вхождение возможности имеет в области видимости делимитер со своим маркером, каждое выполненное событие на двух охраняемых каналах границы обработчика несёт значение нелокального типа, а значение, доставленное по нелокальному типу, не содержит возможностей и делимитеров ни на какой глубине.
-Библиотека примеров содержит обработчики reader, state, exception и optionality с трассами редукции, а также машинно-проверенные теоремы об отклонении целых программ, нарушающих локальность.
-Проверено, что ни одна ключевая теорема не зависит от недоказанных допущений, так что доверенная база сводится к ядру Rocq и его стандартной библиотеке.
-Механизация переиспользуема как такая спецификация; корректность размещения в памяти остаётся отдельным аргументом.}
+Библиотека примеров содержит обработчики reader, state, exception и optionality, а также машинно-проверенные теоремы об отклонении целых программ, нарушающих локальность.
+Ни одна ключевая теорема не зависит от недоказанных допущений: доверенная база сводится к ядру Rocq и его стандартной библиотеке.
+Механизация переиспользуема как спецификация типизации; размещение в памяти остаётся отдельным аргументом.}
 
-\keywordsRus{системы типов, escape-анализ, экзистенциальные времена жизни, алгебраические обработчики эффектов, удержание capabilities, машинно-проверенная метатеория, Rocq/Coq.}
+\keywordsRus{системы типов, escape-анализ, экзистенциальные времена жизни, алгебраические обработчики эффектов, ограничение области действия возможностей, машинно-проверенная метатеория, Rocq/Coq.}
 
 \abstractEng{Type-based escape analysis moves the question of whether a value outlives its lexical scope from an optimizing compiler pass into the type system.
-We study Core-Delta, a calculus in which lifetimes form a two-point lattice with a minimum operation (the shorter, more restrictive lifetime wins), compound data hide field lifetimes existentially and recover them on pattern matching, and algebraic effect handlers are passed as capability values.
+We study Core-Delta, a calculus in which lifetimes form a two-point lattice with a minimum operation (formally the lattice join), compound data hide field lifetimes existentially and recover them on pattern matching, and algebraic effect handlers are passed as capability values.
 The goal is a machine-checked metatheory of this calculus that states precisely which escape-analysis guarantees follow from the typing rules, giving compilers that combine stack or region allocation with effect handlers a verified typing specification.
 We give the formal system: syntax, lifetime and type subtyping, typing with a minimum rule for constructors and variance-aware elimination of existential lifetimes, and a reduction semantics with runtime markers, delimiters, and reified continuations.
-Syntax, semantics, and proofs are mechanized in Rocq/Coq using pure de Bruijn indices (about 29 thousand lines; the built development contains no axioms, admitted proofs, or conjectures).
+Syntax, semantics, and proofs are mechanized in Rocq/Coq using pure de Bruijn indices (about 29 thousand lines, with no axioms, admitted proofs, or conjectures).
 We prove progress, preservation, and type safety: every runtime invariant of the marker semantics is machine-checked to be preserved by reduction.
 Three escape-analysis guarantees follow for source programs with no runtime-invariant assumptions: every capability occurrence has a delimiter carrying its marker in scope, every event on the two guarded boundary channels carries an escapably typed value, and values delivered at escapable types contain no capability or delimiter at any depth.
-An example library exercises reader, state, exception, and optionality handlers with reduction traces, alongside machine-checked rejection theorems for complete leaking programs.
-Every capstone theorem is verified to depend on no unproved assumptions, so the trusted base is the Rocq kernel and its standard library.
-The mechanization is reusable as such a specification; memory placement itself remains a separate argument.}
+An example library exercises reader, state, exception, and optionality handlers, alongside machine-checked rejection theorems for complete leaking programs.
+Every capstone theorem depends on no unproved assumptions: the trusted base is the Rocq kernel and its standard library.
+The mechanization is reusable as a typing specification; memory placement remains a separate argument.}
 
 \keywordsEng{type systems, escape analysis, existential lifetimes, algebraic effect handlers, capability confinement, mechanized metatheory, Rocq/Coq.}
 
@@ -136,7 +136,7 @@ Its design, subtyping, and a prototype type-checker are presented there.
 A discipline meant to license stack or region placement, however, is only as good as its metatheory, and this metatheory is delicate: existential lifetimes interact with substitution, subtyping, and variance, and a pen-and-paper proof can easily miss a leak---a $\local$ value returned inside a closure's environment, an existential lifetime trapped in the result of a match.
 The stakes set the proof standard: an unsound rule fails silently, corrupting memory only on the programs that exercise it.
 The field's bar for such mechanisms is already machine-checked: RustBelt provides a semantic foundation for the safety of Rust~\cite{jung2018rustbelt}, complemented by the Stacked Borrows aliasing model~\cite{jung2020stacked}, while Prusti, Creusot, RustHornBelt, and RefinedRust lift properties of Rust programs to machine-checked specifications~\cite{astrauskas2022prusti,denis2022creusot,matsushita2022rusthornbelt,gaher2024refinedrust}.
-Mechanization also returns more than confidence: the proofs force every rule into executable form, so the artifact doubles as a reference implementation---reflected deciders for the side conditions and a certified evaluator---that a compiler can be tested against.
+Mechanization also returns more than confidence: it forces every rule into a precise, checked definition, and the artifact additionally makes the reduction semantics and the escape-specific side conditions executable---a certified evaluator and reflected deciders a compiler can be tested against---though the declarative typing relation itself is not algorithmic (Section~\ref{sec:discussion}).
 The present work is the proof-side companion of the original paper: a machine-checked metatheory stating exactly which escape-analysis guarantees follow from the typing rules.
 
 We prove the discipline not for the original calculus alone but extended with algebraic effect handlers, for three reasons.
@@ -154,9 +154,9 @@ Within these bounds the result is a faithful, executable, and checkable specific
 \paragraph{Contributions.}
 The organizing principle is \emph{economy of mechanism}: handlers are the single effect construct, and they add no escape-analysis structure \emph{to the type language}---only $\noloc$ premises over the existing lattice, plus runtime machinery (markers and a scoping invariant).
 First, we extend the handler-free $Core_\Delta$ with multi-operation, capability-passing effect handlers and give a reduction semantics with runtime markers, delimiters, and reified continuations (Section~\ref{sec:calculus}).
-Second, we mechanize the entire system in Rocq/Coq with pure de Bruijn indices: syntax, lifetime and type subtyping, typing---including the constructor \emph{minimum} rule and the variance-aware elimination of existential lifetimes at \texttt{match}---and operational semantics.
+Second, we mechanize the entire system in Rocq/Coq with pure de Bruijn indices: syntax, lifetime and type subtyping, typing---including the constructor \emph{minimum} rule and the variance-aware elimination of existential lifetimes at \texttt{match}---and the reduction semantics.
 Third, we prove progress, preservation, and type safety with \emph{no runtime-invariant assumptions for source programs}: every runtime invariant of the marker semantics is derived from source syntax and proved preserved by reduction (Section~\ref{sec:mechanization}).
-Fourth, we establish three escape-analysis guarantees as machine-checked statements about the \emph{dynamics}, all following for source programs with no runtime-invariant assumptions: every syntactic occurrence of a capability---including under $\lambda$s, in constructor arguments, and in stored operation bodies---has a delimiter carrying its marker in scope (\texttt{source\_capability\_occurrence\_delimited}), every executed event on the boundary's two guarded channels---operation argument in, delimited-body answer out---carries an escapably typed value (\texttt{source\_boundary\_step\_noloc}), and a value delivered at any escapable type contains no capability or delimiter at any depth (\texttt{source\_noloc\_result\_no\_runtime\_forms}); together with type safety they are bundled into one record and one theorem, \texttt{source\_safety\_suite}.
+Fourth, we establish three escape-analysis guarantees as machine-checked statements about the \emph{dynamics}, all holding for source programs with no runtime-invariant assumptions: occurrence-level capability confinement, per-event guarded-channel typing, and depth non-escape of runtime forms at escapable types; together with type safety they are bundled into one record and one theorem, displayed in Section~\ref{sec:mechanization}.
 Fifth, we provide an executable example library and machine-checked \emph{negative} witnesses that reject locality-violating programs (Section~\ref{sec:evaluation}).
 None of this metatheory---progress, preservation, or any escape guarantee---appears in the original paper.
 
@@ -208,11 +208,12 @@ The closing call shows the observable behaviour: started at \lstinline[language=
 A clause that never resumes recovers exceptions, one that resumes twice expresses backtracking, and nothing in the analysis depends on how many operations an effect declares.
 
 The escape analysis itself needs nothing new for any of this.
-Safety demands one thing: nothing that can still reach the capability may leave the $\keyword{handle}$.
+Safety demands one thing: nothing that can still reach the capability may leave the $\keyword{handle}$ \emph{escapably typed}.
 The discipline delivers it from two sides.
 On the value side, locality is contagious: \texttt{st} is an ordinary $\local$ value, so by the minimum rule a closure capturing it or a container storing it is $\local$ in turn, at any depth---which is also why \texttt{body} must declare its argument $\local$.
 On the boundary side, everything the type system lets cross out---the body's answer, checked by the $\keyword{handle}$ rule, and likewise the arguments operations carry to their clauses---must be escapable.
-Together they leave no exit: the final \texttt{leak} would answer at \lstinline[language=colang]{State<Int>'local} and is rejected, and wrapping \texttt{st} in an \lstinline[language=colang]|Option| changes nothing---that container check is exactly our first negative witness (Section~\ref{sec:evaluation}).
+Together they close every escapable exit: the final \texttt{leak} would answer at \lstinline[language=colang]{State<Int>'local} and is rejected, and wrapping \texttt{st} in an \lstinline[language=colang]|Option| changes nothing---that container check is exactly our first negative witness (Section~\ref{sec:evaluation}).
+Flows at \emph{local} types may still cross---a handler may even hand its resumption to the enclosing scope---but such values stay confined at non-escapable types, where the same discipline keeps governing them (Section~\ref{sec:mechanization}).
 
 The guarantees we prove can be read informally.
 First, a capability---every one of its syntactic occurrences, even under $\lambda$s and inside data---always sits under its handler.
@@ -222,20 +223,21 @@ Section~\ref{sec:mechanization} states all three as machine-checked theorems ove
 
 \section{Related Work and Problem Statement}\label{sec:related-work}
 
-Classical region systems made lifetime an explicit object of typing long before modern ownership languages~\cite{tofte1997region,fluet2006monadic}.
+Classical region systems made lifetime an explicit object of typing long before modern ownership languages~\cite{tofte1997region}.
 Their aim is close to ours: to replace a global analysis with local conditions at function boundaries.
+Type-based \emph{escape} analysis itself goes back to Hannan~\cite{hannan1998type}, who reformulates escape inference for functional languages as a type system.
 The difference is that $Core_\Delta$ does not parameterize user types by lifetimes: a container's restriction is derived from its fields and recovered existentially at match (Section~\ref{sec:overview}), which trades annotation burden for a harder proof of preservation under reduction.
 
-Effect handlers have been studied denotationally and operationally~\cite{plotkin2013handling,zyuzin2021contextual,van2022handling,van2024framework,tang2025modal}, integrated into OCaml and WebAssembly~\cite{sivaramakrishnan2021retrofitting,phipps2023continuing}, and compiled via evidence passing~\cite{xie2021generalized}.
+Effect handlers have been studied denotationally and operationally~\cite{plotkin2013handling,zyuzin2021contextual,van2022handling,van2024framework,tang2025modal}, integrated into OCaml, WebAssembly, and Unison's abilities~\cite{sivaramakrishnan2021retrofitting,phipps2023continuing,unison-abilities}, and compiled via evidence passing~\cite{xie2021generalized}.
 Where linear and affine disciplines police \emph{how} continuations are used~\cite{tang2024soundly,vanrooij2025affect}, $Core_\Delta$ polices \emph{which} values may cross the handler boundary.
 Closest are the capability-based systems---Effekt's scope- and type-based reasoning~\cite{brachthauser2020effects,brachthauser2022effects} and capture tracking~\cite{boruch2023capturing}; a modal framework compares row- and capability-based systems in one setting~\cite{tang2026modal}.
 $Core_\Delta$ records coarser information---a value is either free to escape or locally confined---and, unlike systems that extend the type language with rows or capture sets, adds no effect-specific type structure.
 
-Capability confinement itself has many routes: lexically scoped handler instances~\cite{biernacki2019binders} and scoped operations~\cite{wu2014effect}; scoped capabilities in Scala~\cite{odersky2022scoped}; second-class values~\cite{osvald2016gentrification}; effect rows~\cite{leijen2017type}; evidence- and tunnel-based designs~\cite{zhang2016accepting,zhang2020handling}; and mechanized capture calculi with explicit boxes~\cite{xu2023formalizing} or without them~\cite{xu2025s}---a broader survey situates these lines~\cite{stoyan2024modern}.
+Capability confinement itself has many routes: lexically scoped handler instances~\cite{biernacki2019binders} and scoped and higher-order operations~\cite{bachpoulsen2023hefty}; scoped capabilities in Scala~\cite{odersky2022scoped}; second-class values~\cite{osvald2016gentrification}; effect rows~\cite{leijen2017type}; evidence- and tunnel-based designs~\cite{zhang2020handling}; and mechanized capture calculi with explicit boxes~\cite{xu2023formalizing} or without them~\cite{xu2025s}---a broader survey situates these lines~\cite{stoyan2024modern}.
 Mainstream practice, by contrast, hands capabilities around through the typing context---Scala's safer exceptions~\cite{odersky2021safer}, context parameters in Kotlin~\cite{KEEP-context-parameters}---which controls who may \emph{obtain} a capability but not whether it \emph{outlives} its scope; escape analysis supplies exactly the missing half.
 $Core_\Delta$ folds confinement into the two-point value-lifetime discipline it already uses for ordinary data.
 
-Mechanizing type-system metatheory builds on POPLMark and the engineering of formal metatheory~\cite{aydemir2005poplmark,aydemir2008engineering}, with syntax and substitution automation available~\cite{sewell2010ott,stark2019autosubst2}; handler metatheory exists in separation-logic form~\cite{devilhena2021separation}.
+Mechanizing type-system metatheory builds on POPLMark and the engineering of formal metatheory~\cite{aydemir2005poplmark,aydemir2008engineering}, with syntax and substitution automation available~\cite{stark2019autosubst2}; handler metatheory exists in separation-logic form~\cite{devilhena2021separation}.
 We deliberately use pure de Bruijn indices with ordinary recursive shift and substitution functions: transparent and portable, at the cost of an explicit substitution metatheory.
 The alternatives fit poorly: $Core_\Delta$'s constructors, $\keyword{match}$ branches, and handler clauses bind whole lists of lifetimes, types, and terms at once---variable-arity binding that sits outside the comfortable fragment of the automation above.
 
@@ -256,7 +258,7 @@ Core functions are unary; multi-argument functions and surface effect declaratio
 
 Two runtime-only constructors extend the grammar during reduction and close it under the semantics: the capability value $\cap_E^{m,\sigma}$ and the delimiter $\hdlr_m$, each carrying a runtime marker $m$; a \emph{source} term is one containing neither.
 Type annotations ($\sigma$ is the handler's public answer type) are recorded so that preservation can re-type the reducts, and the mechanized source $\keyword{handle}$ and $\keyword{perform}$ forms carry answer- and result-type annotations (elided here) for the same reason.
-The reified resumption $\reic_m^{\,\tau,\sigma}(x.\,t)$ is \emph{derived notation}, not a constructor: it abbreviates the delimiter-re-installing abstraction $\lambda(x{:}A).\,\hdlr_m^{\,\tau,\sigma}\,t$ (Figure~\ref{fig:handlers}, caption), and is therefore a value because $\lambda$-abstractions are.
+The reified resumption $\reic_m^{\,\tau,\sigma}(x.\,t)$ is \emph{derived notation}, not a constructor: it abbreviates the delimiter-re-installing abstraction $\lambda(x{:}A).\,\hdlr_m^{\,\tau,\sigma}\,t$ (Figure~\ref{fig:handlers-sem}, caption), and is therefore a value because $\lambda$-abstractions are.
 
 \begin{figure}[h]
 \footnotesize
@@ -357,19 +359,21 @@ A constructor's tag and its declared result-type tag may differ (as in \texttt{S
 
 \subsection{Handlers: typing and semantics}
 
-A capability value has a $\local$ data type, and a resumption is a function with closure lifetime $\local$ (Figure~\ref{fig:handlers}, top): both are therefore barred from every escapably typed position by the lifetime discipline above.
+A capability value has a $\local$ data type, and a resumption is a function with closure lifetime $\local$ (Figure~\ref{fig:handlers-typing}): both are therefore barred from every escapably typed position by the lifetime discipline above.
 An effect declares a \emph{list} of operations, and a $\keyword{handle}$ supplies one clause per declared operation.
 The source rule \rname{T-Handle} types \emph{each} clause $t_{op}$ against the public answer type $T_R$, with that operation's argument $x{:}\sigma^{op}_\beta$ and resumption $k{:}\rho^{op}_\beta\arr{\local}T_R$ in scope, requires the clause list to cover exactly the declared operations, and types the handled body $b$ against $T_B$ with the capability $c$ in scope; $\sigma^{op}_\beta,\rho^{op}_\beta$ are operation $op$'s declared argument/result types instantiated at the effect's type arguments $\overline{\tau}$; each operation's type parameters $\overline{\beta}$ are bound by its signature in the effect declaration, scope over $\sigma^{op}_\beta$, $\rho^{op}_\beta$, and its clause, and are instantiated by \rname{H-Perform} at the perform site.
-The runtime forms mirror this: a capability records $T_R$ and types its stored operation clauses the same way (\rname{T-Cap}), and a handler delimiter is transparent to typing, requiring only that the body answer type $T_B$ be non-local and a subtype of the public answer $T_R$ (\rname{T-HandlerM}).
+The runtime forms mirror this: a capability records $T_R$ and types its stored operation clauses the same way (\rname{T-Cap}), and a handler delimiter is transparent to typing, requiring only that the body answer type $T_B$ be escapable and a subtype of the public answer $T_R$ (\rname{T-HandlerM}).
 The \rname{T-Perform} rule selects an operation $op$ of the capability's effect and instantiates its signature once more with the perform-site type arguments $\overline{S}$, giving argument type $\sigma^{op}_{\overline{S}}$ and result type $\rho^{op}_{\overline{S}}$; it requires the argument type and each $S_i$ to be escapable ($\noloc_\Gamma$), so a value crossing the operation boundary cannot smuggle a local capability out of scope.
 The operation \emph{result}, however, may be local, which lets a deep resumption deliver local values back to the operation site.
 
-The operational rules (Figure~\ref{fig:handlers}, bottom) are layered: head reductions $t \hstep t'$ have no congruence, and $t \step t'$ closes them under well-formed call-by-value evaluation contexts $\mathcal{E}$ via $\rname{S-Step}$.
+The reduction rules (Figure~\ref{fig:handlers-sem}) are layered: head reductions $t \hstep t'$ have no congruence, and $t \step t'$ closes them under well-formed call-by-value evaluation contexts $\mathcal{E}$ via $\rname{S-Step}$.
 Entering a handler ($\rname{S-Handle}$) picks a fresh marker $m$, builds the capability $\cap_E^{m}$, substitutes it into the body, and installs the delimiter $\hdlr_m$.
-A $\keyword{perform}$ of operation $op$ on a capability with marker $m$, sitting inside a context $P$ that is pure (delimiter-free) for $m$ and a well-formed call-by-value evaluation context, under the matching $\hdlr_m$, captures $P$ as a resumption $\reic_m$ that re-installs the delimiter, and runs \emph{that operation's} stored clause on the argument and the resumption ($\rname{H-Perform}$).
+A $\keyword{perform}$ of operation $op$ on a capability with marker $m$, sitting inside a context $P$ that is \emph{pure for $m$}---it contains no delimiter carrying $m$, delimiters for other markers being allowed---and a well-formed call-by-value evaluation context, under the matching $\hdlr_m$, captures $P$ as a resumption $\reic_m$ that re-installs the delimiter, and runs \emph{that operation's} stored clause on the argument and the resumption ($\rname{H-Perform}$).
 Purity selects the matching delimiter and well-formedness forces left-to-right call-by-value capture; together they make the captured continuation unique, so one-step reduction is deterministic up to the globally fresh marker minted by \rname{S-Handle} (Section~\ref{sec:mechanization}).
 Applying a resumption re-installs the delimiter around the resumed body ($\rname{H-Resume}$); the handlers are thus \emph{deep}---and since $\reic_m$ abbreviates exactly such a re-installing $\lambda$, shallow handlers are not expressible in this presentation.
-The invariant $\mathsf{well\_scoped}\;\overline{m}\;t$ records that every runtime capability with marker $m$ lies under its $\hdlr_m$ or within the active set $\overline{m}$, together with a provenance condition on stored operation bodies (Section~\ref{sec:mechanization}); source programs satisfy $\mathsf{well\_scoped}\;[\,]\;t$.
+The $\overline{\beta}$ binders of the selected operation carry the bound $\Any\,\free$---the static counterpart of \rname{T-Perform}'s $\overline{\noloc_\Gamma(S)}$---and in the mechanization the captured context is shifted across the resumption's new $\lambda$-binder.
+The invariant $\mathsf{well\_scoped}\;\overline{m}\;t$ records that every runtime capability with marker $m$ lies under its $\hdlr_m$ or within the active set $\overline{m}$, together with a provenance condition on stored operation bodies; source programs satisfy $\mathsf{well\_scoped}\;[\,]\;t$.
+The provenance form is forced: the two more obvious invariants---direct marker confinement and marker freshness---are not preserved by reduction (Section~\ref{sec:mechanization}).
 
 \textit{Economy of mechanism.} Handlers add no escape-analysis type structure.
 The type grammar of Figure~\ref{fig:syntax} is closed under the same formers with or without effects---there is no effect row, capture set, or effect-lifetime parameter.
@@ -382,21 +386,28 @@ What handlers \emph{do} add is operational---runtime markers, the delimiter $\hd
 \centering
 $\infer[\rname{T-Handle}]{\tj{\Gamma}{\keyword{handle}\;E\,[\overline{\tau}]\,\{\overline{op\Rightarrow t_{op}}\}\;\keyword{in}\;b}{T_R}}
   {\begin{array}{c}
-   \overline{\tj{\Gamma,x{:}\sigma^{op}_\beta,\,k{:}\rho^{op}_\beta\arr{\local}T_R}{t_{op}}{T_R}} \\[1pt]
+   \overline{\tj{\Gamma,\overline{\beta{<:}\Any\,\free},x{:}\sigma^{op}_\beta,\,k{:}\rho^{op}_\beta\arr{\local}T_R}{t_{op}}{T_R}} \\[1pt]
    \tj{\Gamma,c{:}E\,\local\,\overline{\tau}}{b}{T_B} \quad
    \noloc_\Gamma(T_B) \quad
    \tsub{\Gamma}{T_B}{T_R}
    \end{array}}$
 \\[1.6ex]
-$\infer[\rname{T-Cap}]{\tj{\Gamma}{\cap_E^{m,T_R}[\overline{\tau}]\{\overline{op\Rightarrow t_{op}}\}}{E\,\local\,\overline{\tau}}}{\overline{\tj{\Gamma,x{:}\sigma^{op}_\beta,\,k{:}\rho^{op}_\beta\arr{\local}T_R}{t_{op}}{T_R}}}$
+$\infer[\rname{T-Cap}]{\tj{\Gamma}{\cap_E^{m,T_R}[\overline{\tau}]\{\overline{op\Rightarrow t_{op}}\}}{E\,\local\,\overline{\tau}}}{\overline{\tj{\Gamma,\overline{\beta{<:}\Any\,\free},x{:}\sigma^{op}_\beta,\,k{:}\rho^{op}_\beta\arr{\local}T_R}{t_{op}}{T_R}}}$
 \quad
 $\infer[\rname{T-Resume}]{\tj{\Gamma}{\reic_m^{\,T_B,T_R}(x.t)}{A\arr{\local}T_R}}{\tj{\Gamma,x{:}A}{t}{T_B} & \noloc_\Gamma(T_B) & \tsub{\Gamma}{T_B}{T_R}}$
 \\[1.6ex]
 $\infer[\rname{T-Perform}]{\tj{\Gamma}{\keyword{perform}\;t.op\,[\overline{S}]\,a}{\rho^{op}_{\overline{S}}}}{\tj{\Gamma}{t}{E\,\Delta\,\overline{\tau}} & op\in E & \tj{\Gamma}{a}{\sigma^{op}_{\overline{S}}} & \noloc_\Gamma(\sigma^{op}_{\overline{S}}) & \overline{\noloc_\Gamma(S)}}$
 \quad
 $\infer[\rname{T-HandlerM}]{\tj{\Gamma}{\hdlr_m^{\,T_B,T_R}\,t}{T_R}}{\tj{\Gamma}{t}{T_B} & \noloc_\Gamma(T_B) & \tsub{\Gamma}{T_B}{T_R}}$
-\\[1.8ex]
-\hrulefill\\[0.6ex]
+\caption{Handler typing.
+Overlined premises and clauses range over the effect's declared operations, which the clause list must cover exactly; $op\in E$ abbreviates looking up $op$'s signature in $E$'s declaration; each clause is typed under its operation's type binders $\overline{\beta}$.
+$\sigma^{op}_\beta,\rho^{op}_\beta$ (resp.\ $\sigma^{op}_{\overline{S}},\rho^{op}_{\overline{S}}$) are operation $op$'s argument/result types instantiated at the effect's type arguments $\overline{\tau}$ (resp.\ additionally at the perform-site arguments $\overline{S}$); in the artifact $T_R$ is additionally shifted across the $\overline{\beta}$ binders; effect lookup, well-formedness, and length premises are elided.}
+\label{fig:handlers-typing}
+\end{figure}
+
+\begin{figure}[!htp]
+\footnotesize
+\centering
 $(\lambda(x{:}T).t)\,v \hstep [x{\mapsto}v]t$
 \qquad
 $\hdlr_m^{\,T_B,T_R}\,v \hstep v$
@@ -404,28 +415,26 @@ $\hdlr_m^{\,T_B,T_R}\,v \hstep v$
 $\keyword{match}\;K[\Delta;\overline{\Delta'};\overline{\tau}](\overline{v})\;\{K(\overline{x})\Rightarrow t_y\mid\_\}\hstep [\overline{l}{\mapsto}\overline{\Delta'},\,\overline{x}{\mapsto}\overline{v}]\,t_y$
 \\[1.2ex]
 $\hdlr_m^{\,T_B,T_R}\big(P[\,\keyword{perform}\;\cap_E^{m}[\dots].op\,[\overline{S}]\,v\,]\big)\hstep [x{\mapsto}v,\,k{\mapsto}\reic_m^{\,T_B,T_R}(y.\,P[y])]\;[\overline{\beta}{\mapsto}\overline{S}]\;t_{op}$
-\quad (\rname{H-Perform}; $P$ pure for $m$ and well-formed)
+\quad (\rname{H-Perform}; $P$ pure for $m$, $\mathsf{ectx\_wf}(P)$)
 \\[1.2ex]
 $(\reic_m^{\,T_B,T_R}(x.b))\,v \hstep \hdlr_m^{\,T_B,T_R}\,[x{\mapsto}v]b$
 \quad (\rname{H-Resume})
 \qquad
-$\infer[\rname{S-Step}]{\mathcal{E}[q]\step \mathcal{E}[q']}{q\hstep q'}$
+$\infer[\rname{S-Step}]{\mathcal{E}[q]\step \mathcal{E}[q']}{q\hstep q' & \mathsf{ectx\_wf}(\mathcal{E})}$
 \qquad
 $\infer[\rname{S-Handle}]{\mathcal{E}[\keyword{handle}\;E\,[\overline{\tau}]\,\{\overline{op{\Rightarrow}t_{op}}\}\;\keyword{in}\;b]\step \mathcal{E}[\hdlr_m^{\,T_B,T_R}\,([c{\mapsto}\cap_E^{m,T_R}]\,b)]}{m\ \text{globally fresh}}$
-\caption{Handler typing (top) and operational semantics (bottom).
-Overlined premises and clauses range over the effect's declared operations, which the clause list must cover exactly; $op\in E$ abbreviates looking up $op$'s signature in $E$'s declaration.
-$\sigma^{op}_\beta,\rho^{op}_\beta$ (resp.\ $\sigma^{op}_{\overline{S}},\rho^{op}_{\overline{S}}$) are operation $op$'s argument/result types instantiated at the effect's type arguments $\overline{\tau}$ (resp.\ additionally at the perform-site arguments $\overline{S}$); effect lookup, well-formedness, and length premises are elided.
+\caption{Reduction semantics of handlers.
 In the match contraction, $\overline{l}$ are the branch's fresh lifetime variables of \rname{T-Match}, instantiated with the scrutinee's stored lifetimes $\overline{\Delta'}$.
-In \rname{H-Perform}, $t_{op}$ is the stored clause that the index $op$ selects, and $P$ must be both pure for $m$ and a well-formed evaluation context ($\mathsf{ectx\_wf}$ in the artifact)---purity picks the delimiter, well-formedness the unique call-by-value capture point; $\overline{\beta}$ are the selected operation's type parameters, instantiated at the perform-site arguments $\overline{S}$ before the term substitution; their binders carry the bound $\Any\,\free$, the static counterpart of \rname{T-Perform}'s $\overline{\noloc_\Gamma(S)}$; in the mechanization the captured context $P$ is also shifted across the resumption's new $\lambda$-binder.
+In \rname{H-Perform}, $t_{op}$ is the stored clause that the index $op$ selects; purity picks the delimiter, well-formedness the unique call-by-value capture point; $\overline{\beta}$ are the selected operation's type parameters, instantiated at $\overline{S}$ before the term substitution.
 In \rname{S-Handle} the minted marker is globally fresh (it occurs nowhere in the whole term), $c$ is the variable that $\keyword{handle}$ binds to the fresh capability in $b$, and the minted capability stores the clause list.
 $\reic_m^{\,\tau,\sigma}(x.t)$ abbreviates $\lambda(x{:}A).\,\hdlr_m^{\,\tau,\sigma}\,t$, where $A$ is the resumption's argument type, so \rname{T-Resume} and \rname{H-Resume} are derived rules.}
-\label{fig:handlers}
+\label{fig:handlers-sem}
 \end{figure}
 
 \section{Mechanization and Main Results}\label{sec:mechanization}
 
 The development is in Rocq/Coq, using pure de Bruijn indices and ordinary recursive shift/substitution functions, and is published at \url{https://github.com/penguin-boxx/effect-proofs/tree/submission-iia-2026}.
-The verified core is the modules of Table~\ref{tab:modules}, which build in dependency order---\texttt{core/} fixes the calculus, \texttt{meta/} proves the substitution metatheory, and \texttt{safety/} derives the guarantees; example files are separated and are not part of the trusted base.
+The verified core is the modules of Table~\ref{tab:modules}, which build in dependency order---\texttt{core/} fixes the calculus, \texttt{meta/} proves the substitution metatheory, and \texttt{safety/} derives the guarantees; example files are separated and lie outside the dependency cone of the metatheory.
 
 \begin{table}[h]
 \centering
@@ -484,7 +493,11 @@ Specialized to data types, \texttt{free\_data\_result\_top\_lifetime} shows that
 A subtyping-level companion, \texttt{local\_data\_not\_escapes}, shows the coercion $\tsub{\Gamma}{K\,\local\,\overline{\tau}}{K\,\free\,\overline{\tau}}$ underivable for any \emph{data} tag $K$---effect tags and $\Any$ are excluded by the statement's premises---in any runtime environment: local data cannot even be retyped as free, let alone delivered.
 The type information therefore forbids the observable leakage of local values.
 
-\emph{Guarantee suite.} The principal source-facing guarantees---type safety, invariant preservation, both confinement forms, guarded-channel safety, resumption locality, and depth non-escape---are bundled as one record and one theorem: \texttt{source\_safety\_suite} (\texttt{Guarantees.v}), a single statement with a single \texttt{Print Assumptions} target.
+\emph{Guarantee suite.} The principal source-facing guarantees are bundled as one record and one theorem with a single \texttt{Print Assumptions} target (\texttt{source\_safety\_suite}, \texttt{Guarantees.v}):
+\[
+\mathsf{eval\_ctx}\;\Gamma \,\wedge\, \mathsf{sourceb}(t)=\mathsf{true} \,\wedge\, \tj{\Gamma}{t}{T} \;\Rightarrow\; \mathsf{source\_guarantees}\;\Gamma\;t\;T,
+\]
+where $\mathsf{sourceb}$ is the certified source-hood decider and the record's seven fields map the results of this section to the artifact: \texttt{sg\_type\_safety} (no reachable state is stuck), \texttt{sg\_invariants\_preserved} (the invariant bundle holds in every reachable state), \texttt{sg\_capabilities\_confined} and \texttt{sg\_capability\_occurrences\_delimited} (both confinement forms), \texttt{sg\_noloc\_results\_cap\_free} (depth non-escape of runtime forms at escapable result types), \texttt{sg\_boundary\_channels\_noloc} (every executed boundary event typed at its channel's declared, escapable type), and \texttt{sg\_boundary\_resumptions\_local} (the resumption enters its clause as a $\local$, delimiter-re-installing $\lambda$).
 
 \subsection{Trusted base and proof engineering}
 
@@ -494,7 +507,7 @@ The built development contains no \texttt{Axiom}, no \texttt{Admitted}, and no \
 The design of the well-scopedness invariant is delicate: the two natural formulations are not preserved by reduction.
 A direct marker-confinement invariant breaks at the $\keyword{perform}$ contraction, which deposits stored operation clauses \emph{outside} the consumed delimiter; and marker \emph{freshness} breaks under $\beta$-substitution, which duplicates subterms and destroys uniqueness.
 The predicate that survives records \emph{provenance} instead: each capability's stored operation clauses must be well-scoped at the scope outside that capability's own delimiter---exactly what the $\keyword{perform}$ contraction needs---and it is monotone under scope extension, so installing a new delimiter or moving a term under binders cannot invalidate it.
-The operational semantics still mints globally fresh markers in \rname{S-Handle}; freshness is simply not part of the \emph{preserved} invariant, and marker shadowing is harmless because the semantics always addresses the \emph{innermost} occurrence.
+The reduction semantics still mints globally fresh markers in \rname{S-Handle}; freshness is simply not part of the \emph{preserved} invariant, and marker shadowing is harmless because the semantics always addresses the \emph{innermost} occurrence.
 The development is about $2.9\times10^{4}$ lines with about $1.1\times10^{3}$ \texttt{Qed} obligations; the substitution metatheory (\texttt{meta/}) alone accounts for roughly $47\%$ of the lines, the price of pure de Bruijn indices with hand-rolled shift and substitution functions.
 
 \section{Evaluation}\label{sec:evaluation}
@@ -502,7 +515,7 @@ The development is about $2.9\times10^{4}$ lines with about $1.1\times10^{3}$ \t
 The evaluation has four parts---reproducibility, worked examples, negative witnesses, and complete-term rejections---followed by a comparison with related systems and a note on practical use.
 
 \emph{Reproducibility.} The verified core builds with standard Rocq/Coq and the Stdlib only; \texttt{make} generates a makefile from \texttt{src/\_CoqProject} and compiles the modules of Table~\ref{tab:modules}.
-The development targets Rocq~9.1; exactly the files listed in \texttt{src/\_CoqProject} constitute the verified development, and the example files are outside the trusted base.
+The development targets Rocq~9.1; exactly the files listed in \texttt{src/\_CoqProject} constitute the verified development; the example files are checked and gated, but no metatheory result depends on them.
 A separate target, \texttt{make check-assumptions}, re-runs the \texttt{Print Assumptions} gate over a capstone list \emph{derived} from the sources (including the example witnesses), and \texttt{make verify} adds a documentation-freshness gate; both run in continuous integration, and the maintenance tooling additionally requires Python~3, while the verified development itself needs only Rocq.
 The repository ships under the MIT license with a generated theorem index and build statistics (\texttt{STATS.md}), and the artifact guide documents the tag-release-archive procedure (GitHub release plus Zenodo DOI) to be run on the reviewed commit.
 
@@ -528,28 +541,25 @@ A closure capturing a capability types at $\local$ closure lifetime and is rejec
 One false positive is exhibited on purpose: a closed polymorphic identity is well typed (\texttt{typed\_poly\_id}) yet conservatively fails $\noloc$, since $\ltof(\forall\ldots)=\local$.
 Rejection at typing time is the static complement of the dynamic guarantees of Section~\ref{sec:mechanization}---programs that would leak do not typecheck, and programs that typecheck provably do not leak.
 
-Table~\ref{tab:comparison} situates the work.
-Unlike Rust and OCaml \texttt{local}, the model has first-class capability values and resumptions; unlike Effekt and capture tracking, it uses an explicit lifetime minimum instead of capture sets.
-The ``Mech.'' column only records \emph{whether} a mechanization exists and flattens very different depths---RustBelt is a far deeper semantic model than our syntactic type-safety result---so the table is a coarse map, not a ranking.
-In particular, Effekt couples its handlers with capture-set-style polymorphism while $Core_\Delta$ keeps the type language bare, so a ``yes'' in the Eff.\ column is a coarse match rather than a claim of equivalence.
-The Min column, in turn, proxies the deeper distinction: this work adds no effect-specific type \emph{former}---no rows, capture sets, or boxes.
-Every row refers to the cited formal system rather than the full language it comes from.
+Table~\ref{tab:comparison} situates the work; every row refers to the cited formal system rather than the full language it comes from, and the Mech.\ column flattens very different depths---RustBelt is a far deeper semantic model than our syntactic result.
+Unlike Rust and OCaml \texttt{local}, the model has first-class capability values and resumptions; unlike Effekt and capture tracking, it hides field lifetimes existentially and adds no effect-specific type former.
+In theorem strength, the mechanized capture-set systems prove type soundness for their disciplines; the guarantees here are \emph{dynamic} confinement statements---occurrence-level delimitation and per-event channel typing---obtained without extending the type language.
 
 \begin{table}[h]
 \centering
-\caption{Comparison with related systems (Mech.\ = mechanized; EA = escape analysis; Eff.\ = effect handlers; Min = explicit lifetime minimum; ``indirect'' = the minimum arises through outlives constraints rather than an explicit operator).}
+\caption{Comparison with related systems (Mech.\ = mechanized metatheory; EA = type-level escape control for values; Caps = first-class handler capabilities and resumptions; Exist.\ = existential field lifetimes; Former = adds an effect-specific type former such as rows, capture sets, or boxes; ``---'' = no effect system in the cited formalism).}
 \label{tab:comparison}
 \footnotesize
-\begin{tabular}{@{}p{0.34\linewidth}cccc@{}}
+\begin{tabular}{@{}p{0.30\linewidth}ccccc@{}}
 \toprule
-\textbf{System} & \textbf{Mech.} & \textbf{EA} & \textbf{Eff.} & \textbf{Min} \\
+\textbf{System} & \textbf{Mech.} & \textbf{EA} & \textbf{Caps} & \textbf{Exist.} & \textbf{Former} \\
 \midrule
-Rust lifetimes~\cite{matsakis2014rust} & partial & yes & no & indirect \\
-OCaml \texttt{local}~\cite{lorenzen2024oxidizing} & no & yes & no & no \\
-Effekt~\cite{brachthauser2020effects,brachthauser2022effects} & yes & yes & yes & no \\
-Capture tracking~\cite{boruch2023capturing} & yes & yes & no & no \\
-$Core_\Delta$~\cite{stoyan2025existential} & no & yes & no & yes \\
-This work & yes & yes & yes & yes \\
+Rust/RustBelt~\cite{matsakis2014rust,jung2018rustbelt} & partial & yes & no & no & --- \\
+OCaml \texttt{local}~\cite{lorenzen2024oxidizing} & no & yes & no & no & --- \\
+Effekt~\cite{brachthauser2020effects,brachthauser2022effects} & yes & yes & boxed & no & yes \\
+Capture tracking~\cite{boruch2023capturing} & yes & yes & no & no & yes \\
+$Core_\Delta$~\cite{stoyan2025existential} & no & yes & no & yes & no \\
+This work & yes & yes & yes & yes & no \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -573,10 +583,10 @@ The escape-specific checks are already executable---$\elimp$ is a computable par
 
 \section{Conclusion}\label{sec:conclusion}
 
-We presented a machine-checked metatheory of $Core_\Delta$ extended with multi-operation algebraic effect handlers, mechanizing the full system---syntax, lifetime and type subtyping, typing with a constructor minimum rule and variance-aware elimination of existential lifetimes, and a marker-indexed reduction semantics---and proving progress, preservation, and type safety with no runtime-invariant assumptions for source programs, together with occurrence-level capability confinement, guarded-channel safety, and depth non-escape of local values.
+We presented a machine-checked metatheory of $Core_\Delta$ extended with multi-operation algebraic effect handlers, mechanizing the full system---syntax, lifetime and type subtyping, typing with a constructor minimum rule and variance-aware elimination of existential lifetimes, and a marker-indexed reduction semantics---and proving progress, preservation, and type safety with no runtime-invariant assumptions for source programs, together with occurrence-level capability confinement, guarded-channel safety, and depth non-escape of runtime capabilities and delimiters.
 This discharges requirements (i)--(iv) of Section~\ref{sec:related-work}.
 An executable example library and machine-checked negative witnesses show the analysis on reader/state/exception/optionality handlers and on programs it must reject.
-The artifact is useful as a checked---and, via the certified evaluator and deciders, executable---typing specification for compiler intermediate languages with first-class capability values and capability-safe effect handlers; widening the lifetime lattice to multi-level regions, connecting to a memory model, and extracting a certified checker are the natural next steps.
+The artifact is useful as a checked typing specification---with executable reduction semantics and escape-side-condition deciders---for compiler intermediate languages with first-class capability values and capability-safe effect handlers; widening the lifetime lattice to multi-level regions, connecting to a memory model, and extracting a certified checker are the natural next steps.
 
 % Journal house style (see tmp/spiiras_latex/Template.tex): hand-formatted
 % numbered lists in both languages, generated from bib.bib in citation order
